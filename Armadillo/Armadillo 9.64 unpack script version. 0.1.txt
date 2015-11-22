@@ -1,0 +1,2100 @@
+/////////////////////////////////////////////////////////////////
+;Declare variables
+// giv@reversing.ro
+//Thanks to LCF-AT and SmilingWolf for the valuable aid
+//https://forum.tuts4you.com/topic/37352-armadillo-7xx-KeyGen-and-unpack/#entry176227
+//RESET
+LCLR
+lc
+BC
+bphwc
+VAR IATR
+VAR MUTEX
+VAR PROTECT
+VAR THREAD
+VAR HWID
+VAR HWID1
+VAR ID
+var GETDLG
+VAR OEP
+VAR IMAGEBASE
+VAR PID
+var PS
+var PS1
+var BPH1
+var BPH2
+var GASIT
+VAR SPLICESJMP
+var count
+var count1
+var splice_base
+var splice_gasit
+var SPLICE_MEM
+var SPLICE_MEM1
+var splice_memsize
+var SPLICESRVA
+var SPLICESRVA_DLL
+var NUME
+var CALE
+var INDEX
+var INDEX1
+var SIZEOFIMAGE
+var SIZEOFRES
+var POINTTOSTARTFORSPLICES
+VAR DB1
+VAR IATSCRAMBLING
+VAR IATREDIR
+VAR HWIDUSED
+var VirtualProtect
+var IATSCRAMBLINGPLACE
+var start
+var adresa
+var INDEXSPLICES1
+VAR INDEXB
+var salt
+VAR IS_DLL
+var indexsplices
+var aresplices_dll
+var sec_dll_gasit
+var mutexhit
+
+;User choices on minimise the exe 0=no minimise 1=minimise. Is not used if IAT elimination feature is present
+mov minimizeexe_userchoice, 0
+
+//
+gpi CURRENTDIR
+mov dir_curent, $RESULT
+log ""
+log "Current directory:"
+log dir_curent, ""
+eval "{dir_curent}ARImpRec.dll"
+mov path_arimprec_initial, $RESULT
+//mov arimprecpath, "C:\Documents and Settings\Administrator\Desktop\Test Script Armadillo\SmilingWolf\ARImpRec.dll"
+mov arimprecpath, path_arimprec_initial
+//
+gmi eip, PATH
+mov exepath, $RESULT
+len exepath			// length of path+name+".exe" (full path)
+sub $RESULT, 4		// length of path+name
+mov basepath, exepath, $RESULT
+
+alloc 1000
+mov tmp, $RESULT
+mov [tmp], arimprecpath
+exec
+ pushad
+ pushfd
+ push {tmp}
+ call {LoadLibraryA}
+ popfd
+ popad
+ende
+free tmp
+
+
+/////////////////////////////////////////////////////////////////
+;Determining the base of code, resources, and the end of the file VA space
+mov iat_elimination_used, 0
+GPA "VirtualProtect", "kernel32.dll" 
+mov var mutexhit, 0
+mov VirtualProtect, $RESULT
+MOV POINTTOSTARTFORSPLICES, 0
+mov sec_dll_gasit, 0
+mov INDEX, 0
+mov INDEX1, 0
+MOV INDEXB, 0
+MOV IS_DLL, 0
+MOV indexsplices, 0
+mov aresplices_dll, 0
+gmi eip, MODULEBASE
+MOV IMAGEBASE, $RESULT
+gmi eip, RESBASE
+MOV SIZEOFIMAGE, $RESULT
+add POINTTOSTARTFORSPLICES, $RESULT
+gmi eip, RESSIZE
+mov SIZEOFRES, $RESULT
+add POINTTOSTARTFORSPLICES, $RESULT
+gmi eip, NAME
+mov NUME, $RESULT
+gmi eip, PATH
+mov CALE, $RESULT
+cmp $VERSION, 1.82
+jb label_versiune
+GPI PROCESSID
+MOV PID, $RESULT
+
+;Verify is the file is exe or dll
+
+MOV MODUL_INCARCAT, IMAGEBASE
+GMI MODUL_INCARCAT, NAME
+mov nume_modul, $RESULT
+GMI MODUL_INCARCAT, NSECT
+mov numar_sectiuni, $RESULT
+//call IsEXEorDLL
+
+;Backup the PE
+//------------------------------
+var PE_BAK
+var PE_SIZE
+pusha
+gmemi IMAGEBASE, MEMORYSIZE
+mov PE_SIZE, $RESULT
+alloc PE_SIZE
+mov PE_BAK, $RESULT
+mov edi, PE_BAK
+mov esi, IMAGEBASE
+mov ecx, PE_SIZE
+exec
+REP MOVS BYTE PTR ES:[EDI],BYTE PTR DS:[ESI]
+ende
+popa
+eval "PE Backup was written to VA: {PE_BAK} | {PE_SIZE}"
+log $RESULT, ""
+//------------------------------
+
+;Get Security.dll base
+var Securitydll
+gpa "VirtualProtect", "kernel32.dll"
+mov Securitydll, $RESULT
+gn Securitydll
+mov secdll_name, $RESULT
+bp Securitydll
+
+eval "Target is a EXE [YES] or a DLL file [NO]?"
+msgyn $RESULT
+cmp $RESULT, 01
+je LABEL_START
+MOV IS_DLL, 1
+JMP LABEL_START
+
+/////////////////////////////////////////////////////////////////
+LABEL_START:
+mov ext, "exe"
+log "File is in executable format"
+cmp IS_DLL, 1
+ifeq
+lc
+mov ext, "dll"
+log "File is in dynamic link library format"
+endif
+//jmp OPEN_MUTEX
+eval "Target use DebugBlocker protection?"
+msgyn $RESULT
+cmp $RESULT, 01
+je OPEN_MUTEX
+JMP LABEL_H
+
+;Bypass DebugBlocker
+/////////////////////////////////////////////////////////////////
+OPEN_MUTEX:
+log "Debug blocker used"
+GPA "OpenMutexA", "kernel32.dll" 
+MOV MUTEX, $RESULT
+BP MUTEX
+ERUN
+gn eip
+mov nume_api, $RESULT
+cmp $RESULT, secdll_name
+ifeq
+mov Securitydll, eax
+bc
+mov sec_dll_gasit, 1
+endif
+cmp nume_api, "kernel32.OpenMutexA"
+ifeq
+inc mutexhit
+cmp mutexhit, 2
+je OPEN_MUTEX_PROCESARE
+ifeq
+endif
+inc sec_dll_gasit
+endif
+cmp sec_dll_gasit, 1
+je OPEN_MUTEX
+
+/////////////////////////////////////////////////////////////////
+OPEN_MUTEX_PROCESARE:
+BC
+RTR
+//BP eip
+//ERUN
+MOV X, 00000001
+EXEC
+MOV EAX, {X}
+ENDE
+BC
+mov DB1, 1
+lc
+log "DebugBlocker have been removed"
+
+/////////////////////////////////////////////////////////////////
+LABEL_H:
+eval "This target use HWID protection?"
+msgyn $RESULT
+cmp $RESULT, 01
+je LABEL_HWIDASK
+JMP LABEL_IMPORTASK1
+
+LABEL_HWIDASK:
+eval "This target use Standard HWID or Enhalced HWID? YES=Standard NO = Enhalced \r\n\r\nUse Armadillo key tool by mr. eXoDia to find out!  \r\n\r\nIf you input wrong setting the hardware change will fail. \r\n\r\nGIV"
+msgyn $RESULT
+cmp $RESULT, 01
+je LABEL_HWID
+jmp LABEL_HWID_ENHALCED
+
+;Standard HWID
+/////////////////////////////////////////////////////////////////
+LABEL_HWID:
+bphwc
+log "HWID protection is in use"
+ask "Enter the new HWID whithout the "-" sign (just characters whithout any space)"
+mov ID, $RESULT
+itoa ID
+mov ID1, $RESULT
+len ID1
+cmp $RESULT, 8
+jb MESAJ_HWID_ERONAT
+bc
+var Securitydll
+Var VirtualProtectLenght
+gpa "VirtualProtect", "kernel32.dll"
+mov Securitydll, $RESULT
+bp Securitydll
+erun
+bc
+mov Securitydll, edx
+mov VirtualProtectLenght, ecx
+log Securitydll, ""
+log VirtualProtectLenght, ""
+go Securitydll
+findmem #81C198250000E8????????C6????066A006A01#, Securitydll
+bp $RESULT
+erun
+bc
+find eip, #E8????????8???????????8???????????89??????????6A??#
+bp $RESULT
+erun
+bc
+find eip, #E8????????3???#
+bp $RESULT
+erun
+esti
+//
+mov patchpoint1va, eip
+mov patchpoint2va, eip+1
+mov patchpoint3va, eip+3
+mov patchpoint4va, eip+6
+GCI eip, COMMAND
+mov opcode1, $RESULT
+GCI patchpoint2va, COMMAND
+mov opcode2, $RESULT
+GCI patchpoint3va, COMMAND
+mov opcode3, $RESULT
+GCI patchpoint4va, COMMAND
+mov opcode4, $RESULT
+//
+mov y, ID
+eval "mov eax, {ID}"
+asm eip, $RESULT
+esti
+asm eip, "ret"
+esti
+mov patch2, eip
+GCI eip, COMMAND
+mov patch2command, $RESULT
+asm eip, "nop"
+esti
+asm eip, "nop"
+erun
+erun
+erun
+erun
+erun
+erun
+erun
+bc
+eval "{opcode1}"
+asm patchpoint1va, $RESULT
+eval "{opcode2}"
+asm patchpoint2va, $RESULT
+eval "{opcode3}"
+asm patchpoint3va, $RESULT
+eval "{opcode4}"
+asm patchpoint4va, $RESULT
+eval "{patch2command}"
+asm patch2, $RESULT
+mov HWIDUSED, 1
+jmp LABEL_IMPORTASK1
+
+;Enhalced HWID
+/////////////////////////////////////////////////////////////////
+LABEL_HWID_ENHALCED:
+//bphwc
+log "HWID protection is in use"
+ask "Enter the new HWID whithout the "-" sign (just characters whithout any space)"
+mov ID, $RESULT
+itoa ID
+mov ID1, $RESULT
+len ID1
+cmp $RESULT, 8
+jb MESAJ_HWID_ERONAT
+bc
+cmp sec_dll_gasit, 0
+
+ifeq
+var Securitydll
+Var VirtualProtectLenght
+gpa "VirtualProtect", "kernel32.dll"
+mov Securitydll, $RESULT
+bp Securitydll
+erun
+bc
+mov Securitydll, edx
+mov VirtualProtectLenght, ecx
+log Securitydll, ""
+log VirtualProtectLenght, ""
+go Securitydll
+findmem #81C198250000E8????????C6????066A006A01#, Securitydll
+bp $RESULT
+erun
+bc
+findmem #3?148189?5FC#, POINTTOSTARTFORSPLICES
+endif
+
+findmem #330C90#, Securitydll
+log "The place where HWID id formated"
+log $RESULT, ""
+mov hwidcount,0 
+MOV HWIDPATCHVA, $RESULT
+bphws HWIDPATCHVA, "x"
+bpgoto HWIDPATCHVA, HWIDCHANGE
+
+URMATORUL:
+cmp hwidcount, 20
+jge LABEL_IMPORTASK1
+ERUN 
+
+
+HWIDCHANGE:
+ESTI
+MOV X, ID
+cmp IS_DLL, 0
+ifeq
+EXEC
+MOV EDX, {X}
+ENDE
+else
+EXEC
+MOV ECX, {X}
+ENDE
+endif
+mov HWIDUSED, 1
+inc hwidcount
+
+jmp URMATORUL
+
+/////////////////////////////////////////////////////////////////
+LABEL_IMPORTASK1:
+mov HWIDPATCHVA, 401000
+bphws HWIDPATCHVA
+BPHWC HWIDPATCHVA
+eval "Proceed to imports?  \r\n\r\nIf you select NO you will land to OEP and no broken import will be fixed. \r\n\r\nGIV"
+msgyn $RESULT
+cmp $RESULT, 01
+je LABEL_IMPORTAS
+cmp $RESULT, 00
+je CREATE_THREAD
+
+/////////////////////////////////////////////////////////////////
+LABEL_IMPORTAS:
+eval "Target uses Import Table Elimination? \r\n\r\nGIV"
+msgyn $RESULT
+cmp $RESULT, 01
+//je LABEL_IMPORTASK
+je LABEL_IAT_ELIMINATION
+cmp $RESULT, 00
+je VIRTUAL_PROTECT
+
+/////////////////////////////////////////////////////////////////
+LABEL_IMPORTASK:
+eval "The Import Table Elimination place have been located before? \r\n\r\nGIV"
+msgyn $RESULT
+cmp $RESULT, 01
+je LABEL_IAT_ELIMINATION1
+cmp $RESULT, 00
+je LABEL_IAT_ELIMINATION
+
+/////////////////////////////////////////////////////////////////
+LABEL_IAT_ELIMINATION:
+mov iat_elimination_used, 1
+bc
+bphwc
+GPA "VirtualProtect", "kernel32.dll" 
+MOV PROTECT, $RESULT
+BP PROTECT+19
+ERUN
+ESTI
+ERUN
+ESTI
+ERUN
+ESTI
+ERUN
+ESTI
+ERUN
+ESTI
+ERUN
+ESTI
+ERUN
+ESTI
+bc
+find eip, #68000100008D??????????E8????????0FB6C099B914000000F7F9#
+cmp $RESULT, 0
+je LOOP_XOR_IAT
+
+LOOP_XOR_IAT:
+esti
+find eip, #833800#
+mov xor_iat, $RESULT
+bphws xor_iat
+erun
+bphwc xor_iat
+find eip, #68000100008D??????????E8????????0FB6C099B914000000F7F9#
+cmp $RESULT, 0
+je LOOP_XOR_IAT
+jmp LOOP_IAT
+
+LOOP_IAT:
+cmp IS_DLL, 1
+je LOOP_IAT_DLL
+find eip, #68000100008D??????????E8????????0FB6C099B914000000F7F9#
+mov constanta, eip
+sub constanta, FF
+find constanta, #6800010000#
+mov PS2, $RESULT
+bphws PS2
+erun
+//----------------------------------------------------------------------
+findmem #41726D416363657373#, POINTTOSTARTFORSPLICES
+mov armaccess, $RESULT
+cmp armaccess, 0
+ifa armaccess, 0
+repl armaccess, #41726D416363657373#, #67726D416363657373#, 9
+repl armaccess+10, #41726D416363657373#, #67726D416363657373#, 9
+repl armaccess+20, #41726D416363657373#, #67726D416363657373#, 9
+endif
+//----------------------------------------------------------------------
+bphwc PS2
+//----------------------------------------------------------------------
+MOV patch1adress, eip
+GCI eip, COMMAND
+mov patch1, $RESULT
+repl eip, #6800010000#, #6800000000#, 5
+esti
+find eip, #E8????????#
+mov redroutine, $RESULT
+bphws redroutine
+erun
+bphwc redroutine
+esti
+mov patchpoint1va, eip
+GCI eip, COMMAND
+mov opcode1, $RESULT
+asm eip, "ret"
+esti
+find eip, #F7F9#
+mov idivop, $RESULT
+bphws idivop
+erun
+bphwc idivop
+esti
+esti
+mov patchpoint2va, eip
+GCI eip, COMMAND
+mov opcode2, $RESULT
+//asm eip, "nop"
+fill eip, 7, 90
+find eip, #75??0F????????????#
+mov jnziat, $RESULT
+bphws jnziat
+erun
+bphwc jnziat
+mov patchpoint3va, eip
+GCI eip, COMMAND
+mov opcode3, $RESULT
+fill eip, 2, 90
+find eip, #76??C6??????????01#
+mov jnbjump, $RESULT
+bphws jnbjump
+erun
+bphwc jnbjump
+
+mov patchpoint4va, eip
+GCI eip, COMMAND
+mov opcode4, $RESULT
+
+repl eip,#7607#, #EB07#, 2
+find eip, #0F??????????#
+mov saltiat, $RESULT
+bphws saltiat
+erun
+bphwc saltiat
+
+gci eip, DESTINATION 
+mov destinatiejumpiat, $RESULT
+
+mov dstjmt, destinatiejumpiat+B
+bphws dstjmt
+erun
+esti
+bphwc dstjmt
+eval "{patch1}"
+asm patch1adress, $RESULT
+eval "{opcode1}"
+asm patchpoint1va, $RESULT
+eval "{opcode2}"
+asm patchpoint2va, $RESULT
+eval "{opcode3}"
+asm patchpoint3va, $RESULT
+eval "{opcode4}"
+asm patchpoint4va, $RESULT
+mov IATREDIR, 1
+jmp CREATE_THREAD
+//----------------------------------------------------------------------
+find eip, #75??0F#
+MOV PS, $RESULT
+bphws PS
+erun
+bphwc PS
+esti
+find eip, #7607C6#
+MOV PS1, $RESULT
+bphws PS1
+erun
+bphwc PS1
+esti
+log " "
+log "IAT redirection patch. Patch the adress to NOP."
+log " "
+log PS, ""
+log " "
+log "Second adress patch to JMP."
+log PS1, ""
+log " "
+eval "The place to be patched to NOP for IAT elimination is {PS}. Second adress {PS1} must be patched to JMP. Restart the Olly and run again the script selecting the option of IAT calculated before. The script will restet now. Resume the script after restart." 
+msg $RESULT
+bphws PS
+bphws PS1
+bphwc PS2
+reset
+
+
+LOOP_IAT_DLL:
+find eip, #68000100008D??????????E8????????0FB6C099B914000000F7F9#
+mov constanta, eip
+sub constanta, FF
+find constanta, #6800010000#
+mov PS2, $RESULT
+bphws PS2
+erun
+//----------------------------------------------------------------------
+findmem #41726D416363657373#, POINTTOSTARTFORSPLICES
+mov armaccess, $RESULT
+cmp armaccess, 0
+ifa armaccess, 0
+repl armaccess, #41726D416363657373#, #67726D416363657373#, 9
+repl armaccess+10, #41726D416363657373#, #67726D416363657373#, 9
+repl armaccess+20, #41726D416363657373#, #67726D416363657373#, 9
+endif
+//----------------------------------------------------------------------
+bphwc PS2
+//----------------------------------------------------------------------
+MOV patch1adress, eip
+GCI eip, COMMAND
+mov patch1, $RESULT
+repl eip, #6800010000#, #6800000000#, 5
+esti
+find eip, #E8????????#
+mov redroutine, $RESULT
+bphws redroutine
+erun
+bphwc redroutine
+esti
+mov patchpoint1va, eip
+GCI eip, COMMAND
+mov opcode1, $RESULT
+asm eip, "ret"
+esti
+find eip, #F7F9#
+mov idivop, $RESULT
+bphws idivop
+erun
+bphwc idivop
+esti
+esti
+mov patchpoint2va, eip
+GCI eip, COMMAND
+mov opcode2, $RESULT
+//asm eip, "nop"
+fill eip, 7, 90
+find eip, #75??0F????????????#
+mov jnziat, $RESULT
+mov patchpoint3va, jnziat
+GCI jnziat, COMMAND
+mov opcode3, $RESULT
+fill jnziat, 2, 90
+find jnziat, #76??C6??????????01#
+mov jnbjump, $RESULT
+bphws jnbjump
+erun
+bphwc jnbjump
+
+mov patchpoint4va, eip
+GCI eip, COMMAND
+mov opcode4, $RESULT
+
+repl eip,#7607#, #EB07#, 2
+find eip, #0F??????????#
+mov saltiat, $RESULT
+bphws saltiat
+erun
+bphwc saltiat
+
+gci eip, DESTINATION 
+mov destinatiejumpiat, $RESULT
+
+mov dstjmt, destinatiejumpiat+B
+bphws dstjmt
+erun
+esti
+bphwc dstjmt
+eval "{patch1}"
+asm patch1adress, $RESULT
+eval "{opcode1}"
+asm patchpoint1va, $RESULT
+eval "{opcode2}"
+asm patchpoint2va, $RESULT
+eval "{opcode3}"
+asm patchpoint3va, $RESULT
+eval "{opcode4}"
+asm patchpoint4va, $RESULT
+mov IATREDIR, 1
+jmp CREATE_THREAD
+
+
+/////////////////////////////////////////////////////////////////
+LABEL_IAT_ELIMINATION1:
+erun
+findmem #41726D416363657373#, POINTTOSTARTFORSPLICES
+mov armaccess, $RESULT
+cmp armaccess, 0
+ifa armaccess, 0
+repl armaccess, #41726D416363657373#, #67726D416363657373#, 9
+repl armaccess+10, #41726D416363657373#, #67726D416363657373#, 9
+repl armaccess+20, #41726D416363657373#, #67726D416363657373#, 9
+endif
+MOV IATR11VA, eip
+GCI eip, COMMAND
+mov IATR11, $RESULT
+mov BPH1, IATR11VA
+mov [eip], #9090#
+bphwc BPH1
+esti
+erun
+MOV IATR12VA, eip
+GCI eip, COMMAND
+mov IATR12, $RESULT
+mov BPH2, IATR12VA
+mov [eip], #EB07#
+bphwc BPH2
+find eip, #0F??????????#
+mov saltiat, $RESULT
+bphws saltiat
+erun
+bphwc saltiat
+gci eip, DESTINATION 
+mov destinatiejumpiat, $RESULT
+mov dstjmt, destinatiejumpiat+B
+bphws dstjmt
+erun
+esti
+bphwc dstjmt
+eval "{IATR11}"
+asm IATR11VA, $RESULT
+eval "{IATR12}"
+asm IATR12VA, $RESULT
+mov IATREDIR, 1
+jmp CREATE_THREAD
+
+/////////////////////////////////////////////////////////////////
+VIRTUAL_PROTECT:
+eval "Should we cancel default Armadillo IAT scrambing?  \r\n\r\nIf you press NO the script will go to the O.E.P. whithout import fixing. \r\n\r\nGIV"
+msgyn $RESULT
+cmp $RESULT, 01
+je VIRTUAL_PROTECT1
+cmp $RESULT, 00
+je CREATE_THREAD
+
+/////////////////////////////////////////////////////////////////
+VIRTUAL_PROTECT1:
+bc
+bphwc
+GPA "VirtualProtect", "kernel32.dll" 
+MOV PROTECT, $RESULT
+BP PROTECT+B
+ERUN
+rtr
+bc
+bp eip
+ESTI
+call NEXT2
+
+/////////////////////////////////////////////////////////////////
+NEXT2:
+cmp [eip], #6A14#, 02
+je INTERMEDIAR1
+JMP NEXT3
+
+/////////////////////////////////////////////////////////////////
+INTERMEDIAR1:
+bc
+findmem #41726D416363657373#, POINTTOSTARTFORSPLICES
+mov armaccess, $RESULT
+cmp armaccess, 0
+ifa armaccess, 0
+repl armaccess, #41726D416363657373#, #67726D416363657373#, 9
+repl armaccess+10, #41726D416363657373#, #67726D416363657373#, 9
+repl armaccess+20, #41726D416363657373#, #67726D416363657373#, 9
+endif
+find eip, #6800010000#
+mov p100, $RESULT
+bphws p100
+ERUN
+BPHWC p100
+mov patchpoint1va, eip
+GCI eip, COMMAND
+mov opcode1, $RESULT
+repl eip, #6800010000#, #6800000000#, 5
+find eip, #E8#
+mov constantae8, $RESULT
+bphws constantae8
+ERUN
+BPHWC constantae8
+ESTI
+lc
+log "This is the place where IAT is scrambled"
+log " "
+cmt eip, "IAT scrambling place"
+log eip, ""
+mov patchpoint2va, eip
+GCI eip, COMMAND
+mov opcode2, $RESULT
+ASM eip, "ret"
+mov IATSCRAMBLINGPLACE, eip
+bc
+mov IATSCRAMBLING, 1
+esti
+find eip, #F7F9#
+bp $RESULT
+erun
+bc
+bp eip+8
+erun
+bc
+mov patchpoint3va, eip
+GCI eip, COMMAND
+mov opcode3, $RESULT
+fill eip, 07, 90
+find eip, #76??C6??????????01#
+mov jnbjump, $RESULT
+bphws jnbjump
+erun
+bphwc jnbjump
+
+mov patchpoint4va, eip
+GCI eip, COMMAND
+mov opcode4, $RESULT
+
+repl eip,#7607#, #EB07#, 2
+find eip, #0F??????????#
+mov saltiat, $RESULT
+bphws saltiat
+erun
+bphwc saltiat
+
+gci eip, DESTINATION 
+mov destinatiejumpiat, $RESULT
+
+mov dstjmt, destinatiejumpiat+B
+bphws dstjmt
+erun
+esti
+bphwc dstjmt
+
+eval "{opcode1}"
+asm patchpoint1va, $RESULT
+eval "{opcode2}"
+asm patchpoint2va, $RESULT
+eval "{opcode3}"
+asm patchpoint3va, $RESULT
+eval "{opcode4}"
+asm patchpoint4va, $RESULT
+////////////////////////////////////////////////////////////////////
+
+CMP IS_DLL, 1
+JE OEP_DLL
+jmp CREATE_THREAD
+
+/////////////////////////////////////////////////////////////////
+NEXT3:
+ERUN
+ESTI
+JMP NEXT2
+
+/////////////////////////////////////////////////////////////////
+CREATE_THREAD:
+CMP IS_DLL, 1
+JE OEP_DLL
+bc
+bphwc
+GPA "CreateThread", "kernel32.dll" 
+MOV PROTECT, $RESULT
+bphws PROTECT+1F
+ERUN
+ESTI
+CALL NEXT
+
+/////////////////////////////////////////////////////////////////
+NEXT:
+cmp [eip], #50FF15#, 03
+je INTERMEDIAR
+JMP NEXT1
+
+/////////////////////////////////////////////////////////////////
+INTERMEDIAR:
+mov x, eip+0C
+cmp [x], #C3#, 1
+je LABEL_OEP
+jmp NEXT1
+
+/////////////////////////////////////////////////////////////////
+NEXT1:
+ERUN
+ESTI
+JMP NEXT
+
+/////////////////////////////////////////////////////////////////
+LABEL_OEP:
+RTR
+ESTI
+JMP OEP
+
+/////////////////////////////////////////////////////////////////
+OEP:
+CMP IS_DLL, 0
+JE OEP_EXE
+
+/////////////////////////////////////////////////////////////////
+OEP_DLL:
+;First method for OEP
+//GPA "CreateThread", "kernel32.dll" 
+//MOV PREOEP, $RESULT
+//bc
+//bphwc
+//BP PREOEP
+//ERUN
+//RTR
+//ESTI
+//mov y, eip
+//cmp [y], #50#, 1
+
+GPA "CreateEventA", "kernel32.dll" 
+MOV PREOEP, $RESULT
+bc
+bphwc
+BP PREOEP
+ERUN
+RTR
+ESTI
+RTR
+esti
+MOV z, eip
+cmp [z], #83C404#, 3
+jne OEP_DLL
+bc
+find eip, #E9#
+mov jnesalt, $RESULT
+bp jnesalt
+erun
+bc
+repl eip, #E9????????#, #9090909090#, 5
+find eip, #EB??8???0883??017???#
+mov locatiesecunda, $RESULT
+repl locatiesecunda, #EB??8???0883??017???#, #90909090909090909090#, A
+find locatiesecunda, #F???89????8B????#
+mov saltoep, $RESULT
+bp saltoep
+ERUN
+esti
+cmt eip, "<--------------DLL OEP - GIV"
+bc saltoep
+JMP AFISARE_LOG
+
+
+/////////////////////////////////////////////////////////////////
+OEP_EXE:
+bphwc
+LCLR
+BC
+find eip, #83????75??#
+mov trickoep, $RESULT
+cmp trickoep, 0
+ifa
+bphws trickoep
+erun
+esti
+xor !ZF, !ZF
+esti
+endif
+find eip, #F???89????8B????#
+bphws $RESULT
+ERUN
+BC
+esti
+BPHWC
+mov vccp1, 2
+mov vccp2, 0
+cmp [eip], #E8#, 1
+ifeq
+mov vccp1, 1
+endif
+mov vcc2constanta, eip+5
+cmp [vcc2constanta], #E9#, 1
+ifeq
+mov vccp2, 1
+endif
+and vccp1, vccp2
+cmp $RESULT, 0
+
+ifa
+find 401000, #C1E81FF7D083E001# ; Visual C++ R6002 error after unpack find and patch
+mov cp_point, $RESULT
+repl cp_point-3, #8B????C1E81FF7D083E001#, #B801000000909090909090#, B
+endif
+JMP AFISARE_LOG
+
+/////////////////////////////////////////////////////////////////
+AFISARE_LOG: 
+mov OEP, eip
+log "//////////////////////////2014///////////////////////////////////"
+log "////////////////////////ROMANIA//////////////////////////////////"
+log "//////////////////////reversing.ro///////////////////////////////"
+log " "
+log "******************************************************************************************************************************************************"
+cmp iat_elimination_used, 1 
+ifeq
+log "IAT elimination feature was used. Load Scylla after the script was finished, on Options check New IAT and thed dump and fix imports."
+endif
+log " "
+log "Armadillo 9.64 unpack script by GIV"
+log " "
+log "Supported features: DebugBlocker, O.E.P. find, standard HW.ID. change "
+log "Strategic Code Splicing memory area find and dump."
+log " "
+log "Some useful info:"
+log " "
+log "The imagebase of the section containing E.P.:"
+log " "
+log IMAGEBASE, ""
+log " "
+log "The full path of the file:"
+log " "
+log CALE
+log " "
+log "The OllyScript version:"
+log " "
+log $VERSION, ""
+log " "
+log "ProcessID:"
+log " "
+log PID
+log ""
+//
+log "This is the OEP VA for use with Scylla"
+log " "
+log eip, ""
+log " "
+sub OEP, IMAGEBASE
+log "This is the OEP RVA for use with ImpRec or Imports Fixer"
+log " "
+log OEP, ""
+IFA DB1, 0
+log ""
+log "Debug blocker protection used and bypasses"
+ENDIF
+IFA IATSCRAMBLING, 0
+log ""
+log "IAT scambling disabled"
+log ""
+log "IAT scrambling place:"
+LOG ""
+log IATSCRAMBLINGPLACE, ""
+ENDIF
+IFA IATREDIR, 0
+log ""
+log "IAT elimination used and disabled"
+ENDIF
+IFA HWIDUSED, 0
+log ""
+log "Hardware ID lock used and bypassed"
+ENDIF
+
+
+//
+cmp IS_DLL, 0
+je LABEL_FILE_FORMAT
+log ""
+log "File unpacked is a dynamic link library"
+log ""
+jmp LABEL_OEP_COMMENT
+endif
+
+
+LABEL_FILE_FORMAT:
+log ""
+log "File unpacked is in executable format"
+log ""
+jmp LABEL_OEP_COMMENT
+
+//
+LABEL_OEP_COMMENT:
+cmt eip, "<----This is the OEP - GIV"
+msg "The script was paused at OEP.\r\n\r\nIf you want to do more operations do so or else resume the script.\r\n\r\nGIV"
+pause
+
+//------------------------------
+call SAVE_REGISTER
+pusha
+exec
+lea eax, [esp-100]
+push eax
+push 4
+push {PE_SIZE}
+push {IMAGEBASE}
+call {VirtualProtect}
+ende
+mov edi, IMAGEBASE
+mov esi, PE_BAK
+mov ecx, PE_SIZE
+exec
+REP MOVS BYTE PTR ES:[EDI],BYTE PTR DS:[ESI]
+ende
+popa
+eval "PE was restored to VA: {IMAGEBASE} | {PE_SIZE}"
+log $RESULT, ""
+//------------------------------
+
+
+//------------------------------
+////////////////////////////////
+DUMPER:
+call DUMP_THE_FILE
+call dumpexe
+mov adresadestart, eip
+call SORTARE_SPLICES
+//call iatrebuild
+//------------------------------
+
+mov count, eip
+//dpe "Dumped.exe", eip 
+//log "The file was dumped into the current directory. Fix imports with Scylla. Select option - New IAT in section- ."
+
+mov adresadestart, eip
+eval "OEP found at {adresadestart}. Search for Strategic Code Splicing?"
+msgyn $RESULT
+cmp $RESULT, 01
+je SORTARE_SPLICES
+cmp $RESULT, 00
+je MESAJ_SFARSIT
+
+/////////////////////////////////////////////////////////////////
+SORTARE_SPLICES:
+cmp [adresadestart], #68#, 1
+je SORTARE_SPLICES1
+jmp pornire_cautare_splices
+
+/////////////////////////////////////////////////////////////////
+SORTARE_SPLICES1:
+mov variabila, eip+5
+cmp [variabila], #E8#, 1
+je SPLICES_VISUAL_BASIC
+jmp pornire_cautare_splices
+
+/////////////////////////////////////////////////////////////////
+pornire_cautare_splices:
+cmp INDEX, 14
+je LOOP_SPLICES2
+inc INDEX
+find adresadestart, #E8????????#
+cmp $RESULT, 0
+je haide
+mov adresadestart, $RESULT
+GCI adresadestart, DESTINATION
+mov adresadestinatiejmp, $RESULT
+mov adresadestart, adresadestinatiejmp
+ifa adresadestinatiejmp, POINTTOSTARTFORSPLICES
+//log adresadestart, " Adresa de start unde JMP este extern: "
+//log adresadestinatiejmp, " Adresa unde JMP ajunge: "
+endif
+find adresadestart, #E9??????0?#
+cmp $RESULT, 0
+je haide
+//log " "
+//log "Codesplice jump adress:"
+//log " "
+//log $RESULT, ""
+GCI $RESULT, DESTINATION
+mov astae, $RESULT
+ifa $RESULT, POINTTOSTARTFORSPLICES
+//msg "Gasit"
+find $RESULT, #E9??????F?#
+
+cmp $RESULT, 00
+ifeq
+je LOOP_SPLICES2
+endif
+
+GCI $RESULT, DESTINATION
+
+ifb $RESULT, POINTTOSTARTFORSPLICES
+mov splice_base, astae
+GMEMI splice_base, MEMORYBASE  
+mov SPLICE_MEM, $RESULT
+log " "
+log "The imagebase of the splices memory area"
+log " "
+log $RESULT, "" 
+GMEMI splice_base, MEMORYSIZE 
+mov splice_memsize, $RESULT
+log " "
+log "The imagesize of the splices memory area"
+log " "
+log $RESULT, ""
+///msg "Bine bine"
+jmp MESAJ_SPLICES_GASIT
+endif
+//pause
+endif
+cmp INDEX, 15
+je LOOP_SPLICES2
+jmp pornire_cautare_splices
+
+haide:
+inc adresadestart
+cmp INDEX, 15
+je MESAJ_SFARSIT
+jmp pornire_cautare_splices
+
+haide1:
+inc adresadestart
+cmp INDEXB, 15
+je MESAJ_SFARSIT
+jmp SPLICES_VISUAL_BASIC
+
+/////////////////////////////////////////////////////////////////
+LOOP_SPLICES2:
+inc INDEX1
+find eip, #E9????????8???8???#
+cmp $RESULT, 0
+je MESAJ_SFARSIT
+mov INDEXSPLICES1, $RESULT
+GCI $RESULT, DESTINATION
+mov astae, $RESULT
+ifa astae, POINTTOSTARTFORSPLICES
+mov splice_base, astae
+GMEMI splice_base, MEMORYBASE  
+mov SPLICE_MEM, $RESULT
+log " "
+log "The imagebase of the splices memory area"
+log " "
+log $RESULT, "" 
+GMEMI splice_base, MEMORYSIZE 
+mov splice_memsize, $RESULT
+log " "
+log "The imagesize of the splices memory area"
+log " "
+log $RESULT, ""
+///msg "Bine bine"
+jmp MESAJ_SPLICES_GASIT
+endif
+cmp INDEX1, 5
+je MESAJ_SFARSIT
+cmp IS_DLL, 1
+ifeq
+jmp SPLICES_DLL
+endif
+jmp LOOP_SPLICES2
+
+/////////////////////////////////////////////////////////////////
+SPLICES_VISUAL_BASIC:
+INC INDEXB
+find adresadestart, #87??87??90#
+cmp $RESULT, 0
+je haide1
+find $RESULT, #E9????????#
+mov salt, $RESULT
+mov adresadestart, $RESULT
+GCI adresadestart, DESTINATION
+mov adresadestinatiejmp, $RESULT
+mov adresadestart, adresadestinatiejmp
+ifa adresadestinatiejmp, POINTTOSTARTFORSPLICES
+endif
+find adresadestart, #E9????????#
+cmp $RESULT, 0
+je haide1
+//log " "
+//log "Codesplice jump adress:"
+//log " "
+//log $RESULT, ""
+GCI $RESULT, DESTINATION
+mov astae, $RESULT
+ifb $RESULT, POINTTOSTARTFORSPLICES
+//msg "Gasit"
+//find $RESULT, #E9??????F?#
+//GCI $RESULT, DESTINATION
+ifb astae, POINTTOSTARTFORSPLICES
+mov splice_base, adresadestinatiejmp
+GMEMI splice_base, MEMORYBASE  
+mov SPLICE_MEM, $RESULT
+log " "
+log "The imagebase of the splices memory area"
+log " "
+log $RESULT, "" 
+GMEMI splice_base, MEMORYSIZE 
+mov splice_memsize, $RESULT
+log " "
+log "The imagesize of the splices memory area"
+log " "
+log $RESULT, ""
+///msg "Bine bine"
+jmp MESAJ_SPLICES_GASIT
+endif
+//pause
+endif
+mov adresadestart, salt
+//msg salt
+cmp INDEXB, 15
+je MESAJ_SFARSIT
+jmp SPLICES_VISUAL_BASIC
+
+/////////////////////////////////////////////////////////////////
+label_versiune:
+eval "Use a OllyDbgScript version 1.82 or higher"
+msg $RESULT
+ret
+
+SPLICES_DLL:
+inc indexsplices
+findmem #66??66????87??66????66??#, 00400000
+cmp $RESULT, 0
+je MESAJ_SFARSIT
+mov INDEXSPLICES1, $RESULT
+GMEMI $RESULT, MEMORYBASE                                      
+mov astae, $RESULT
+ifb astae, POINTTOSTARTFORSPLICES
+mov splice_base, astae
+GMEMI splice_base, MEMORYBASE  
+mov SPLICE_MEM, $RESULT
+log " "
+log "The imagebase of the splices memory area"
+log " "
+log $RESULT, "" 
+GMEMI splice_base, MEMORYSIZE 
+mov splice_memsize, $RESULT
+log " "
+log "The imagesize of the splices memory area"
+log " "
+log $RESULT, ""
+mov aresplices_dll, 1
+jmp MESAJ_SPLICES_GASIT_DLL
+endif
+cmp indexsplices, 2
+je MESAJ_SFARSIT
+jmp SPLICES_DLL
+
+/////////////////////////////////////////////////////////////////
+MESAJ_SPLICES_GASIT:
+mov SPLICE_MEM1, SPLICE_MEM
+gmi eip, MODULEBASE
+mov X, $RESULT
+sub SPLICE_MEM1, X
+mov SPLICESRVA, SPLICE_MEM1
+
+cmp IS_DLL, 1
+ifeq
+sub X, SPLICE_MEM1
+mov SPLICESRVA, SPLICE_MEM1
+endif
+
+//gma "WININET", MODULEBASE
+//IFA SPLICE_MEM, $RESULT
+//jmp MESAJ_SFARSIT
+//ENDIF
+IFA splice_memsize, 00030000
+jmp MESAJ_SFARSIT
+ENDIF
+log " "
+log "Codesplice memory area R.V.A.:"
+log ""
+log SPLICESRVA, ""
+log ""
+eval "Splices_VA_{SPLICE_MEM}_RVA_{SPLICESRVA}.bin"
+log ""
+mov fisier, $RESULT
+dm SPLICE_MEM, splice_memsize, $RESULT
+
+//------------------------------
+call ADDING_SPLICES
+//------------------------------
+
+eval  "Strategic Code Splicing have been found at 0x{SPLICE_MEM}h with the size of 0x{splice_memsize}h.  \r\n\r\nThe splice section RVA is 0x{SPLICESRVA}h.  \r\n\r\nThe file containing splices is {fisier} and is dumped in file directory.  \r\n\r\nResolve Strategic Code Splicing with Arminline before fix and dump OR dump the file from memory, add the splice section to the dump using Lord PE with the correct RVA, then validate PE and fix dumped file IAT. \r\n\r\nGIV"
+msg $RESULT
+//
+cmp IS_DLL, 1
+ifeq
+jmp REBUILD_CALL
+endif
+
+cmp iat_elimination_used, 0
+ifeq
+//call minimizeexe
+endif
+
+REBUILD_CALL:
+cmp aresplices_dll, 1
+ifeq
+msg "Is a dll with code splicing. \r\n\r\nThe ArImprec rebuild will not work. \r\n\r\nStart Scylla and fix the imports. \r\n\r\nThe splices was added to dump. \r\n\r\nYou only need to fix the imports of the dll. \r\n\r\nGIV"
+jmp MESAJ_SFARSIT
+endif
+
+call iatrebuild
+//
+jmp MESAJ_SFARSIT
+
+/////////////////////////////////////////////////////////////////
+MESAJ_HWID_ERONAT:
+eval "HWID must have 8 characters. \r\n\r\nThe script will restart to enter a correct WHID. \r\n\r\nGIV"
+msg $RESULT
+reset
+jmp MESAJ_SFARSIT
+
+/////////////////////////////////////////////////////////////////
+MESAJ_SFARSIT:
+eval "Script is finished.  \r\n\r\nIf you encountered erors check whatever the problem might be and restart the script.  \r\n\r\n1. If the Strategic Code Splicing is present fix-it with ArmInline by Admiral before dump.  \r\n\r\n2. If all is good check for Nanomites.  \r\n\r\n3. If the nano are present after dump and rebuild use Armadillo nanomite fixer by NeVaDa.  \r\n\r\nCheck the LOG for more info.  \r\n\r\n4. See ya! \r\n\r\nGIV"
+msg $RESULT
+log " "
+log "******************************************************************************************************************************************************"
+log " "
+log "The results and adresses are in HEX"
+log " "
+log "Thank you to all Armadillo unpackers."
+log " "
+log "Respect from ROMANIA"
+log " "
+//------------------------------
+call RESTORE_REGISTER
+//------------------------------
+call iatrebuild
+msg "Check if IAT restore was OK. \r\n\r\nGIV"
+pause
+ret
+
+//------------------------------
+////////////////////////////////
+//LCF-AT
+DUMP_THE_FILE:
+call VARS
+gpi EXEFILENAME
+mov EXEFILENAME,     $RESULT
+len EXEFILENAME
+mov EXEFILENAME_LEN, $RESULT
+gpi CURRENTDIR
+mov CURRENTDIR,      $RESULT
+len CURRENTDIR
+mov CURRENTDIR_LEN,  $RESULT
+pusha
+alloc 1000
+mov eax, $RESULT
+mov esi, eax
+mov [eax], EXEFILENAME
+add eax, CURRENTDIR_LEN
+mov ecx, EXEFILENAME_LEN
+sub ecx, CURRENTDIR_LEN
+readstr [eax], ecx
+mov EXEFILENAME_SHORT, $RESULT
+str EXEFILENAME_SHORT
+add eax, 10
+add eax, ecx
+mov [eax], "msvcrt.dll"
+mov edi, LoadLibraryA
+exec
+push eax
+call edi
+ende
+cmp eax, 00
+jne MSVCRT_LOADED
+msg "Can't load msvcrt.dll!"
+pause
+ret
+////////////////////
+//LCF-AT
+MSVCRT_LOADED:
+free esi
+popa
+gpa "malloc", "msvcrt.dll"
+mov  malloc,   $RESULT
+gpa "free",   "msvcrt.dll"
+mov  free,     $RESULT
+gpa "ldiv",   "msvcrt.dll"
+mov  ldiv,     $RESULT
+mov OEP_RVA, OEP-IMAGEBASE
+////////////////////
+START_OF_PATCH:
+mov BAK_EIP, eip
+alloc 2000
+mov PATCH_CODESEC, $RESULT
+mov eip, PATCH_CODESEC+09F
+alloc 1000
+mov NAME_FILE, $RESULT
+mov [NAME_FILE], EXEFILENAME_SHORT
+mov [PATCH_CODESEC],    OEP_RVA
+mov [PATCH_CODESEC+86], "msvcrt.dll"
+mov [PATCH_CODESEC+09F], #C705AAAAAAAA000000008925AAAAAAAAA3AAAAAAAA890DAAAAAAAA8915AAAAAAAA891DAAAAAAAA892DAAAAAAAA8935AAAAAAAA893DAAAAAAAA#
+mov [PATCH_CODESEC+0D8], #68AAAAAAAAE8D9BA21BB83F8000F84920400006A40680010000068004000006A00E8BDBA21BB83F8000F8476040000A3AAAAAAAA05002000008BE08BE881ED000200006A40680010000068001000006A00E88DBA21BB#
+mov [PATCH_CODESEC+12E], #83F8000F8446040000A3AAAAAAAA6A40680010000068001000006A00E86CBA21BB83F8000F8425040000A3AAAAAAAA68AAAAAAAAE854BA21BB83F8000F840D0400006800100000FF35AAAAAAAA50E83ABA21BB83F8000F84F303000068AAAAAAAAE827BA21BB#
+mov [PATCH_CODESEC+194], #83F8000F84E0030000A3AAAAAAAA8B483C03C88B51508915AAAAAAAA6800100000FF35AAAAAAAAFF35AAAAAAAAE8F5B921BB83F8000F84AE030000A3AAAAAAAA0305AAAAAAAA#
+mov [PATCH_CODESEC+1DA], #83E8046681382E64741A6681382E4474136681382E65741B6681382E457414E97F030000C7005F44502EC74004646C6C00EB0FC7005F44502EC7400465786500EB00E89AB921BBA3AAAAAAAAFF35AAAAAAAA6A006A10E886B921BB#
+mov [PATCH_CODESEC+235], #83F8000F843F030000A3AAAAAAAA33C0FF35AAAAAAAAE86BB921BB83F8000F8424030000A3AAAAAAAA8D55D852FF35AAAAAAAAFF35AAAAAAAAA1AAAAAAAA50FF35AAAAAAAAE83CB921BB83F8000F84F5020000FF35AAAAAAAAE828B921BB#
+mov [PATCH_CODESEC+293], #83F8000F84E10200006A40680010000068002000006A00E80CB921BB83F8000F84C5020000A3AAAAAAAAA1AAAAAAAA8B0DAAAAAAAA518B35AAAAAAAA568BD052E883010000A1AAAAAAAA03403C8BF08B1DAAAAAAAA#
+mov [PATCH_CODESEC+2E8], #895E28E805010000A1AAAAAAAA03403C8B40508B15AAAAAAAA8B35AAAAAAAA894424108954246C525056E87A0000008B25AAAAAAAA68008000006A00FF35AAAAAAAA#
+mov [PATCH_CODESEC+32A], #E88CB821BB68008000006A00FF35AAAAAAAAE87AB821BB68008000006A00FF35AAAAAAAAE868B821BB68008000006A00FF35AAAAAAAAE856B821BBA1AAAAAAAA8B0DAAAAAAAA8B15AAAAAAAA8B1DAAAAAAAA8B2DAAAAAAAA8B35AAAAAAAA8B3DAAAAAAAA#
+mov [PATCH_CODESEC+38E], #9090908974240CA1AAAAAAAA566A0068800000006A026A006A0368000000C050E808B821BB8BF083FEFF0F84BF0100008B54240CA1AAAAAAAA8D4C24106A0051525056E8E5B721BB83F8000F849E01000056E8D6B721BB#
+mov [PATCH_CODESEC+3E5], #83F8000F848F010000B8010000005EC333D23BC20F847E01000033C9668B48148D4C08188955FC8955E433F6668B70063BD6731C8B710C8971148B710889711083C128894DE042EBDEC745FCFFFFFFFFB90010000089483C894854C3#
+mov [PATCH_CODESEC+441], #9090B8010000008B4DF064890D000000005F5E5B8BE55DC3909081EC3C01000053555633ED575568800000006A03556A01680000008050E83EB721BB8BF083FEFF7512E9F40000005F5E5D33C05B81C43C010000C3#
+mov [PATCH_CODESEC+496], #6A0056E81DB721BB83F8FF0F84D6000000BFBBBBBBBB8D4C24106A00518D54241C6A405256FFD785C00F84B800000066817C24144D5A7412E9AA0000005F5E5D33C05B81C43C010000C38B442450BBBBBBBBBB#
+mov [PATCH_CODESEC+4E9], #6A006A005056FFD38D4C24106A00518D54245C68F80000005256FFD785C00F8470000000817C2454504500000F85620000008B8424A80000008B8C24580100003BC10F874C0000006A006A006A0056FFD38B9424A80000008B8424540100008D4C24106A0051525056FFD7#
+mov [PATCH_CODESEC+554], #85C00F8421000000BD0100000056E854B621BB83F8000F840D0000005F8BC55E5D5B81C43C010000C39090#
+pusha
+mov eax, PATCH_CODESEC
+add eax, 09F
+mov ecx, PATCH_CODESEC
+mov [eax+002], ecx
+mov [eax+006], OEP_RVA
+mov [eax+00C], ecx+04E
+mov [eax+011], ecx+05A
+mov [eax+017], ecx+05E
+mov [eax+01D], ecx+062
+mov [eax+023], ecx+066
+mov [eax+029], ecx+06A
+mov [eax+02F], ecx+06E
+mov [eax+035], ecx+072
+mov [eax+03A], ecx+086
+eval "call {LoadLibraryA}"
+asm eax+03E, $RESULT
+eval "call {VirtualAlloc}"
+asm eax+05A, $RESULT
+mov [eax+069], ecx+052
+eval "call {VirtualAlloc}"
+asm eax+08A, $RESULT
+mov [eax+099], ecx+076
+eval "call {VirtualAlloc}"
+asm eax+0AB, $RESULT
+mov [eax+0BA], ecx+07A
+mov [eax+0BF], NAME_FILE
+eval "call {GetModuleHandleA}"
+asm eax+0C3, $RESULT
+mov [eax+0D8], ecx+07A
+eval "call {GetModuleFileNameA}"
+asm eax+0DD, $RESULT
+mov [eax+0EC], NAME_FILE
+eval "call {GetModuleHandleA}"
+asm eax+0F0, $RESULT
+mov [eax+0FF], ecx+032
+mov [eax+10D], ecx+036
+mov [eax+118], ecx+076
+mov [eax+11E], ecx+032
+eval "call {GetModuleFileNameA}"
+asm eax+122, $RESULT
+mov [eax+131], ecx+056
+mov [eax+137], ecx+076
+eval "call {GetCurrentProcessId}"
+asm eax+17D, $RESULT
+mov [eax+183], ecx+03A
+mov [eax+189], ecx+03A
+eval "call {OpenProcess}"
+asm eax+191, $RESULT
+mov [eax+1A0], ecx+03E
+mov [eax+1A8], ecx+036
+eval "call {malloc}"
+asm eax+1AC, $RESULT
+mov [eax+1BB], ecx+046
+mov [eax+1C5], ecx+036
+mov [eax+1CB], ecx+046
+mov [eax+1D0], ecx+032
+mov [eax+1D7], ecx+03E
+eval "call {ReadProcessMemory}"
+asm eax+1DB, $RESULT
+mov [eax+1EB], ecx+03E
+eval "call {CloseHandle}"
+asm eax+1EF, $RESULT
+eval "call {VirtualAlloc}"
+asm eax+20B, $RESULT
+mov [eax+21A], ecx+02E
+mov [eax+21F], ecx+07A
+mov [eax+225], ecx+036
+mov [eax+22C], ecx+02E
+mov [eax+23A], ecx+046
+mov [eax+245], ecx
+mov [eax+252], ecx+046
+mov [eax+25E], ecx+046
+mov [eax+264], ecx+076
+mov [eax+27A], ecx+04E
+mov [eax+287], ecx+052
+eval "call {VirtualFree}"
+asm eax+28B, $RESULT
+mov [eax+299], ecx+076
+eval "call {VirtualFree}"
+asm eax+29D, $RESULT
+mov [eax+2AB], ecx+07A
+eval "call {VirtualFree}"
+asm eax+2AF, $RESULT
+mov [eax+2BD], ecx+02E
+eval "call {VirtualFree}"
+asm eax+2C1, $RESULT
+mov [eax+2C7], ecx+05A
+mov [eax+2CD], ecx+05E
+mov [eax+2D3], ecx+062
+mov [eax+2D9], ecx+066
+mov [eax+2DF], ecx+06A
+mov [eax+2E5], ecx+06E
+mov [eax+2EB], ecx+072
+mov [eax+2F7], ecx+076
+eval "call {CreateFileA}"
+asm eax+30F, $RESULT
+mov [eax+324], ecx+046
+eval "call {WriteFile}"
+asm eax+332, $RESULT
+eval "call {CloseHandle}"
+asm eax+341, $RESULT
+eval "call {CreateFileA}"
+asm eax+3D9, $RESULT
+eval "call {GetFileSize}"
+asm eax+3FA, $RESULT
+mov [eax+409], ReadFile
+mov [eax+446], SetFilePointer
+eval "call {CloseHandle}"
+asm eax+4C3, $RESULT
+popa
+bp PATCH_CODESEC+38F  // success dumping
+bp PATCH_CODESEC+57D  // PROBLEM
+esto
+bc
+cmp eip, PATCH_CODESEC+38F
+je DUMPING_SUCCESSFULLY
+msg "Dumping failed by the script! \r\n\r\nDump the file manually! \r\n\r\nLCF-AT"
+pause
+pause
+ret
+////////////////////
+//LCF-AT
+DUMPING_SUCCESSFULLY:
+//msg "Dumping was successfully by the script! \r\n\r\nLCF-AT"
+log "Dumping was successfully by the script! LCF-AT"
+mov eip, BAK_EIP
+free PATCH_CODESEC
+
+ret
+////////////////////
+VARS:
+var EXEFILENAME
+var CURRENTDIR
+var EXEFILENAME_LEN
+var CURRENTDIR_LEN
+var LoadLibraryA
+var VirtualAlloc
+var GetModuleHandleA
+var GetModuleFileNameA
+var GetCurrentProcessId
+var OpenProcess
+var malloc
+var free
+var ReadProcessMemory
+var CloseHandle
+var VirtualFree
+var CreateFileA
+var WriteFile
+var GetFileSize
+var ReadFile
+var SetFilePointer
+var GetCommandLineA
+var CreateFileMappingA
+var MapViewOfFile
+var lstrcpynA
+var VirtualLock
+var SetEndOfFile
+var VirtualUnlock
+var UnmapViewOfFile
+var lstrlenA
+var ldiv
+var DeleteFileA
+var PATCH_CODESEC
+var BAK_EIP
+var HANDLE
+var EXEFILENAME_SHORT  // xy.exe oder xy.dll
+var OEP_RVA            // new rva ohne IB
+var NEW_SEC_RVA        // rva of new section
+var NEW_SECTION_NAME   // name of dumped section to add
+var NEW_SECTION_PATH   // section full path
+var eax_is
+var ecx_is
+var edx_is
+var ebx_is
+var esp_is
+var ebp_is
+var esi_is
+var edi_is
+gpa "LoadLibraryA",        "kernel32.dll"
+mov  LoadLibraryA,          $RESULT
+gpa "VirtualAlloc",        "kernel32.dll"
+mov  VirtualAlloc,          $RESULT
+gpa "GetModuleHandleA",    "kernel32.dll"
+mov  GetModuleHandleA,      $RESULT
+gpa "GetModuleFileNameA",  "kernel32.dll"
+mov  GetModuleFileNameA,    $RESULT
+gpa "GetCurrentProcessId", "kernel32.dll"
+mov  GetCurrentProcessId,   $RESULT
+gpa "OpenProcess",         "kernel32.dll"
+mov  OpenProcess,           $RESULT
+gpa "ReadProcessMemory",   "kernel32.dll"
+mov  ReadProcessMemory,     $RESULT
+gpa "CloseHandle",         "kernel32.dll"
+mov  CloseHandle,           $RESULT
+gpa "VirtualFree",         "kernel32.dll"
+mov  VirtualFree,           $RESULT
+gpa "CreateFileA",         "kernel32.dll"
+mov  CreateFileA,           $RESULT
+gpa "WriteFile",           "kernel32.dll"
+mov  WriteFile,             $RESULT
+gpa "GetFileSize",         "kernel32.dll"
+mov  GetFileSize,           $RESULT
+gpa "ReadFile",            "kernel32.dll"
+mov  ReadFile,              $RESULT
+gpa "SetFilePointer",      "kernel32.dll"
+mov  SetFilePointer,        $RESULT
+gpa "GetCommandLineA",     "kernel32.dll"
+mov  GetCommandLineA,       $RESULT
+gpa "CreateFileMappingA",  "kernel32.dll"
+mov  CreateFileMappingA,    $RESULT
+gpa "MapViewOfFile",       "kernel32.dll"
+mov  MapViewOfFile,         $RESULT
+gpa "lstrcpynA",           "kernel32.dll"
+mov  lstrcpynA,             $RESULT
+gpa "VirtualLock",         "kernel32.dll"
+mov  VirtualLock,           $RESULT
+gpa "SetEndOfFile",        "kernel32.dll"
+mov  SetEndOfFile,          $RESULT
+gpa "VirtualUnlock",       "kernel32.dll"
+mov  VirtualUnlock,         $RESULT
+gpa "UnmapViewOfFile",     "kernel32.dll"
+mov  UnmapViewOfFile,       $RESULT
+gpa "lstrlenA",            "kernel32.dll"
+mov  lstrlenA,              $RESULT
+gpa "DeleteFileA",         "kernel32.dll"
+mov  DeleteFileA,           $RESULT
+ret
+//------------------------------
+////////////////////
+//LCF-AT
+ADDING_SPLICES:
+alloc 2000
+mov PATCH_CODESEC, $RESULT
+mov NEW_SECTION_NAME, fisier
+log NEW_SECTION_NAME, ""
+mov NEW_SEC_RVA, SPLICESRVA
+eval "{CURRENTDIR}{NEW_SECTION_NAME}"
+mov NEW_SECTION_PATH, $RESULT
+log NEW_SECTION_PATH, ""
+mov [PATCH_CODESEC],     NEW_SEC_RVA
+mov [PATCH_CODESEC+08],  NEW_SECTION_NAME
+// mov [PATCH_CODESEC+37],  EXEFILENAME_SHORT
+mov [PATCH_CODESEC+59],  NEW_SECTION_PATH
+mov [PATCH_CODESEC+216], #2E73706C69636573#
+pusha
+mov eax, PATCH_CODESEC
+mov ecx, PATCH_CODESEC
+add eax, 222
+mov eip, eax
+mov [eax],     #60B8AAAAAAAAA3AAAAAAAAB8AAAAAA0AA3AAAAAAAA618925AAAAAAAAA3AAAAAAAA890DAAAAAAAA8915AAAAAAAA891DAAAAAAAA892DAAAAAAAA8935AAAAAAAA893DAAAAAAAA8925AAAAAAAA6A40680010000068004000006A00E83BB921BB83F8000F84FD060000A3AAAAAAAA05002000008BE08BE881ED000200006A40680010000068001000006A00E80BB921BB83F800#
+mov [eax+091], #0F84CD060000A3AAAAAAAA8BF868AAAAAAAAE8F1B821BB83F8000F84B30600006800100000FF35AAAAAAAA50E8D7B821BB83F8000F84990600000305AAAAAAAA83E8046681382E64741A6681382E4474136681382E65741B6681382E457414E96F060000C7005F44502EC74004646C6C00EB0FC7005F44502EC7400465786500EB00A1AAAAAAAA8BF8EB37E878B821BB#
+mov [eax+121], #4033C980382274044140EBF72BC1890DAAAAAAAA96F3A4A1AAAAAAAA8BD8031DAAAAAAAA83EB048B3BC7035F44502E897B03FF35AAAAAAAAE80700000090E806010000905355568B742410576A0068800000006A036A006A0368000000C056E814B821BB#
+mov [eax+185], #8BF8A3AAAAAAAA83FFFF7505E9CE0500006A0057E8FBB721BB83F8FF0F84BD0500006A006A006A006A046A0057A3AAAAAAAA898608010000E8D7B721BB83F8008BE885ED7505E9940500006A006A006A006A0655E8BBB721BB83F8000F847D05000055BDBBBBBBBB#
+mov [eax+1ED], #8BD8FFD583F8000F846A050000891DAAAAAAAA8BC38B403C03C3A3AAAAAAAAC780D000000000000000C780D4000000000000008BC885C08D511889861001000089961C010000740583C270EB0383C26033C0899620010000668B4114C78628010000000000005F8D4C081833C0898E24010000890DAAAAAAAA83C40CC36A0068800000006A036A006A01B9AAAAAAAA#
+mov [eax+27C], #680000008051E812B721BB8BD883FBFF7505E9D1040000BDBBBBBBBB6A0053FFD583F8FF0F84BE0400008BF056E8EBB621BBA3AAAAAAAA8BF88D5424146A0052565753E8D5B621BB83F8000F8497040000E8550400008B48148B501003CA8B15AAAAAAAA518B423C50E8560400008B0DAAAAAAAA#
+mov [eax+2F0], #6A006A005051E89EB621BBA1AAAAAAAA8D5424146A0052565750BDBBBBBBBB83F8000F844C04000057E8FD030000E82B030000E8FF0300008BF8566800100000897710E8080400008B0DAAAAAAAA89470851E8E302000083C4108D5424186A095052E842B621BB#
+mov [eax+357], #83F8000F84040400008B4424186A0089078B4C2420894F048B15AAAAAAAA52FFD568AAAAAAAAA3AAAAAAAAE8630200008B1DAAAAAAAA6A0068800000006A036A006A0368000000C053E8F4B521BB83F8FF894424147505E9B10300008B5424146A0052E8DAB521BB83F8FF0F849C0300008BD8895C241C895C24186A046800100000536A00E8B8B521BB#
+mov [eax+3E1], #85C0894424107505E9760300008B4424105350E8A0B521BB8B5424108B4424148D4C24246A0051535250E889B521BB83F8000F844B0300008B4C24108B413C03C1A3AAAAAAAA8BD08B4C24188B5424105152A1AAAAAAAA6033D2668B500633C9668B48148D4C0818BF2800000003CF4A83FA0075F883E928833DAAAAAAAA00#
+mov [eax+460], #74098B35AAAAAAAA89710C61E8940000008BD88B4C24105183C40C8B542414BBBBBBBBBB6A006A006A0052FFD38B4C24188B5424108D4424246A00508B44241C515250E8F1B421BB83F8000F84B30200008B4C24188B5424146A006A005152FFD38B44241450E8CEB421BB#
+mov [eax+4CB], #8B5C241CC7442420010000008B4C24105351E8B7B421BB8B54241068008000006A0052E8A6B421BB8B44241450E89CB421BB909090E9890000005333C9668B481433D2668B5006565783CFFF85D28D4C08187619558D59148BEA8B3385F67406#
+mov [eax+52B], #3BF773028BFE83C3284D75EE5D33F64A85D2897854761A8B51348B790C2BD789510833D2668B500683C128464A3BF272E68B5424148B59148B71082BD38951108B490C85F6740E03CE5F8948505EB8010000005BC3#
+mov [eax+580], #03CA5F8948505EB8010000005BC38B25AAAAAAAA68008000006A00FF35AAAAAAAAE8F3B321BB68008000006A00FF35AAAAAAAAE8E1B321BB8B25AAAAAAAAA1AAAAAAAA8B0DAAAAAAAA8B15AAAAAAAA8B1DAAAAAAAA8B2DAAAAAAAA8B35AAAAAAAA8B3DAAAAAAAA909090#
+mov [eax+5EA], #568B742408A1AAAAAAAA50E89FB321BB8B0DAAAAAAAA8B15AAAAAAAA6A006A005152E888B321BBA1AAAAAAAA50E87DB321BB8B0DAAAAAAAA51E871B321BB5EC3568B74240856E864B321BB8A4C30FF8D4430FF80F9005E7409#
+mov [eax+643], #8A48FF4880F90075F740C3E89A00000085C00F8505000000E9040100005657E8C00000008BF033FFC7464CE00000E0897E30A1AAAAAAAA8B08894E288B500466897E4A89562C66897E48897E448B46148B56108B0DAAAAAAAA03C28B513C5052E898000000#
+mov [eax+6A8], #89463C897E40897E388B460883C4083BC774088B4E0C03C851EB098B560C8B461003D0526800100000E86A000000894634A1AAAAAAAA83C40866FF4006B8010000005F5EC3#
+mov [eax+6ED], #8B0DAAAAAAAA33C033D2668B4106668B51148D04808D04C28B15AAAAAAAA8B523C8D4410408B51543BD01BC040C38B44240450E874B221BB59C38B0DAAAAAAAA33C0668B41068D1480A1AAAAAAAA8D44D0D8C3#
+mov [eax+740], #568B742408578B7C24105657E848B221BB83C40885D27407405F0FAFC65EC38BC75F5EC39090#
+mov [eax+02], ecx+216
+mov [eax+07], ecx+20E
+mov [eax+0C], ecx+008
+mov [eax+11], ecx+1E6
+mov [eax+18], ecx+1DE
+mov [eax+1D], ecx+1BE
+mov [eax+23], ecx+1C2
+mov [eax+29], ecx+1C6
+mov [eax+2F], ecx+1CA
+mov [eax+35], ecx+1CE
+mov [eax+3B], ecx+1D2
+mov [eax+41], ecx+1D6
+mov [eax+47], ecx+1DE
+eval "call {VirtualAlloc}"
+asm eax+59, $RESULT
+mov [eax+68], ecx+1DA
+eval "call {VirtualAlloc}"
+asm eax+89, $RESULT
+mov [eax+98], ecx+20A
+mov [eax+9F], NAME_FILE
+eval "call {GetModuleHandleA}"
+asm eax+0A3, $RESULT
+mov [eax+0B8], ecx+20A
+eval "call {GetModuleFileNameA}"
+asm eax+0BD, $RESULT
+mov [eax+0CD], ecx+20A
+mov [eax+114], ecx+20A
+eval "call {GetCommandLineA}"
+asm eax+11C, $RESULT
+mov [eax+131], ecx+21E
+mov [eax+139], ecx+20A
+mov [eax+141], ecx+21E
+mov [eax+155], ecx+20A
+eval "call {CreateFileA}"
+asm eax+180, $RESULT
+mov [eax+188], ecx+206
+eval "call {GetFileSize}"
+asm eax+199, $RESULT
+mov [eax+1B3], ecx+1F2
+eval "call {CreateFileMappingA}"
+asm eax+1BD, $RESULT
+eval "call {MapViewOfFile}"
+asm eax+1D9, $RESULT
+mov [eax+1E9], CloseHandle
+mov [eax+1FC], ecx+1FA
+mov [eax+208], ecx+1FE
+mov [eax+262], ecx+202
+mov [eax+278], ecx+059
+eval "call {CreateFileA}"
+asm eax+282, $RESULT
+mov [eax+294], GetFileSize
+eval "call {malloc}"
+asm eax+2A9, $RESULT
+mov [eax+2AF], ecx+1EA
+eval "call {ReadFile}"
+asm eax+2BF, $RESULT
+mov [eax+2DC], ecx+1FE
+mov [eax+2EC], ecx+206
+eval "call {SetFilePointer}"
+asm eax+2F6, $RESULT
+mov [eax+2FC], ecx+206
+eval "call {WriteFile}"
+asm eax+30A, $RESULT
+mov [eax+33A], ecx+1E6
+eval "call {lstrcpynA}"
+asm eax+352, $RESULT
+mov [eax+371], ecx+206
+mov [eax+379], ecx+20A
+mov [eax+37E], ecx+1F6
+mov [eax+389], ecx+20A
+eval "call {CreateFileA}"
+asm eax+3A0, $RESULT
+eval "call {GetFileSize}"
+asm eax+3BA, $RESULT
+eval "call {VirtualAlloc}"
+asm eax+3DC, $RESULT
+eval "call {VirtualLock}"
+asm eax+3F4, $RESULT
+eval "call {ReadFile}"
+asm eax+40B, $RESULT
+mov [eax+423], ecx+1FE
+mov [eax+434], ecx+1FE
+mov [eax+45B], ecx
+mov [eax+464], ecx
+mov [eax+480], SetFilePointer
+eval "call {WriteFile}"
+asm eax+4A3, $RESULT
+eval "call {SetEndOfFile}"
+asm eax+4C6, $RESULT
+eval "call {VirtualUnlock}"
+asm eax+4DD, $RESULT
+eval "call {VirtualFree}"
+asm eax+4EE, $RESULT
+eval "call {CloseHandle}"
+asm eax+4F8, $RESULT
+mov [eax+590], ecx+1DE
+mov [eax+59D], ecx+1DA
+eval "call {VirtualFree}"
+asm eax+5A1, $RESULT
+mov [eax+5AF], ecx+20A
+eval "call {VirtualFree}"
+asm eax+5B3, $RESULT
+mov [eax+5BA], ecx+1DE
+mov [eax+5BF], ecx+1BE
+mov [eax+5C5], ecx+1C2
+mov [eax+5CB], ecx+1C6
+mov [eax+5D1], ecx+1CA
+mov [eax+5D7], ecx+1CE
+mov [eax+5DD], ecx+1D2
+mov [eax+5E3], ecx+1D6
+mov [eax+5F0], ecx+1FA
+eval "call {UnmapViewOfFile}"
+asm eax+5F5, $RESULT
+mov [eax+5FC], ecx+1F6
+mov [eax+602], ecx+206
+eval "call {SetFilePointer}"
+asm eax+60C, $RESULT
+mov [eax+612], ecx+206
+eval "call {SetEndOfFile}"
+asm eax+617, $RESULT
+mov [eax+61E], ecx+206
+eval "call {CloseHandle}"
+asm eax+623, $RESULT
+eval "call {lstrlenA}"
+asm eax+630, $RESULT
+mov [eax+676], ecx+20E
+mov [eax+698], ecx+1FE
+mov [eax+6DA], ecx+1FE
+mov [eax+6EF], ecx+1FE
+mov [eax+707], ecx+1FA
+eval "call {free}"
+asm eax+720, $RESULT
+mov [eax+729], ecx+1FE
+mov [eax+737], ecx+202
+eval "call {ldiv}"
+asm eax+74C, $RESULT
+bp eax+5E7
+bp eax+764
+popa
+mov [PATCH_CODESEC+588], #90908B4C2420909090#
+bp PATCH_CODESEC+5A9
+esto
+bc PATCH_CODESEC+5A9
+mov HANDLE, ebx
+esto
+bc
+cmp eip, PATCH_CODESEC+809
+je SECTION_ADDED_OK
+cmp eip, PATCH_CODESEC+886
+je NO_SECTION_ADDED
+pause
+pause
+////////////////////
+NO_SECTION_ADDED:
+msg "Can't add the dumped section to file! \r\n\r\nDo it manually later! \r\n\r\nLCF-AT"
+pause
+pause
+ret
+////////////////////
+SECTION_ADDED_OK:
+//msg "Section was successfully added to dumped file! \r\n\r\nPE Rebuild was successfully! \r\n\r\nLCF-AT"
+log "Section was successfully added to dumped file! LCF-AT"
+log "PE Rebuild was successfully! LCF-AT"
+mov eax, HANDLE
+mov edi, CloseHandle
+exec
+push eax
+call edi
+ende
+mov eax, PATCH_CODESEC+59
+mov edi, DeleteFileA
+exec
+push eax
+call edi
+ende
+mov eip, BAK_EIP
+free PATCH_CODESEC
+ret
+//------------------------------
+////////////////////
+SAVE_REGISTER:
+mov eax_is, eax
+mov ecx_is, ecx
+mov edx_is, edx
+mov ebx_is, ebx
+mov esp_is, esp
+mov ebp_is, ebp
+mov esi_is, esi
+mov edi_is, edi
+ret
+//------------------------------
+////////////////////
+RESTORE_REGISTER:
+mov eax, eax_is
+mov ecx, ecx_is
+mov edx, edx_is
+mov ebx, ebx_is
+mov esp, esp_is
+mov ebp, ebp_is
+mov esi, esi_is
+mov edi, edi_is
+ret
+
+//SmilingWolf
+IsEXEorDLL:
+ gmi eip, MODULEBASE
+ mov modulebase, $RESULT, 4
+ mov tmp, modulebase
+ //add tmp, 3C		// e_lfanew
+ //mov PEOffset, [tmp], 4	// Start of PE Header
+ //add PEOffset, modulebase
+ //add PEOffset, 16	// Characteristics
+ //mov tmp, [PEOffset], 2
+ //shr tmp, 0D
+ //cmp tmp, 1
+
+alloc 1000
+mov adresaalocata, $RESULT
+MEMCPY adresaalocata, tmp, 1000
+find adresaalocata, #8EA1#
+CMP $RESULT, 0 
+ jne IS_DLL
+ mov IS_DLL, 0
+ mov ext, "exe"
+ log "File is in executable format"
+ jmp end
+
+ IS_DLL:
+ mov IS_DLL, 1
+ mov ext, "dll"
+ log "File is in dynamic link library format"
+end:
+free adresaalocata
+ret
+
+//SmilingWolf
+iatrebuild:
+ alloc 1000
+ mov memarea, $RESULT
+ gpi PROCESSID
+ mov pid, $RESULT
+ mov [memarea], exeforiat
+ mov param1, memarea
+ mov param2, memarea
+ add param2, 200
+ mov tmp, memarea
+ add tmp, 204
+ mov param3, memarea
+ add param3, 300
+ exec
+  pushad
+  pushfd
+  push {param3}
+  push {tmp}
+  push {param2}
+  push 1
+  push {eip}
+  push {param1}
+  push {pid}
+  call SearchAndRebuildImportsIATOptimized@28
+  popfd
+  popad
+ ende
+ gstr param3
+ log $RESULT, "ARImpRec: "
+ free memarea
+ret
+
+dumpexe:
+ gmi eip, MODULEBASE
+ mov tmp, $RESULT
+ find tmp, #50450000#
+ sub $RESULT, tmp
+ add tmp, 03C
+ mov oldelfanew, [tmp]
+ mov [tmp], $RESULT
+ eval "{basepath}_DP.{ext}"
+ mov exeforiat, $RESULT
+ //dpe $RESULT, eip
+ mov [tmp], oldelfanew
+ log "Process dumped to:"
+ log $RESULT, ""
+ret
+
+
+minimizeexe:
+ alloc 1000
+ mov memarea, $RESULT
+ mov [memarea], exepath
+ mov param1, memarea	// *MSNameOfProtected
+ eval "{basepath}_DP.{ext}"
+ mov tmp, memarea
+ add tmp, 300
+ mov param2, tmp	// *MSNameOfDumped
+ mov [param2], $RESULT
+ mov tmp, memarea
+ add tmp, 600
+ mov param3, tmp
+ 
+ exec
+  pushad
+  pushfd
+  push {param3}
+  push {param2}
+  push {param1}
+  call RebuildSectionsFromArmadillo@12
+  popfd
+  popad
+ ende
+ eval "{basepath}_DP_OptimizedSize.exe"
+ mov exeforiat, $RESULT
+ gstr param3
+ log $RESULT, "ARImpRec: "
+ free memarea
+ret
+
+//////////////////////////////////
+MESAJ_SPLICES_GASIT_DLL:
+mov SPLICE_MEM1, SPLICE_MEM
+gmi eip, MODULEBASE
+mov X, $RESULT
+sub SPLICE_MEM1, X
+mov SPLICESRVA, SPLICE_MEM1
+//gma "WININET", MODULEBASE
+//IFA SPLICE_MEM, $RESULT
+//jmp MESAJ_SFARSIT
+//ENDIF
+IFA splice_memsize, 00030000
+jmp MESAJ_SFARSIT
+ENDIF
+log " "
+log "Codesplice memory area R.V.A.:"
+log ""
+log SPLICESRVA, ""
+log ""
+eval "Splices_VA_{SPLICE_MEM}_RVA_{SPLICESRVA}.bin"
+log ""
+mov fisier, $RESULT
+dm SPLICE_MEM, splice_memsize, $RESULT
+eval  "Strategic Code Splicing have been found at 0x{SPLICE_MEM}h with the size of 0x{splice_memsize}h.  \r\n\r\nThe splice section RVA is 0x{SPLICESRVA}h.  \r\n\r\nThe file containing splices is {fisier} and is dumped in file directory.  \r\n\r\nResolve Strategic Code Splicing with Arminline before fix and dump OR add the splice section to the dump using Lord PE with the correct RVA, then validate PE and fix dumped file IAT. \r\n\r\nGIV"
+msg $RESULT
+jmp MESAJ_SFARSIT_DLL
+
+/////////////////////////////////
+MESAJ_SFARSIT_DLL:
+msg "The script is finished."
+pause
