@@ -1,0 +1,56 @@
+var counter
+var ImageBase
+var OEP
+var iat_start
+var x
+var y
+var pf
+
+mov counter,0
+gmi eip,MODULEBASE// Надо, чтобы фиксить PEHeader
+mov ImageBase,$RESULT
+gmi eip,CODEBASE
+mov x,$RESULT
+ask "введите размер секции кода(Enter the size  section code)"
+mov y,$RESULT
+
+gpa  "GetProcAddress","kernel32.dll"
+bp $RESULT
+run
+bc eip
+rtu
+mov iat_start,esi
+mov  pf,eip
+add pf,B
+fill pf,4,90
+add pf,1E
+fill pf,3,90
+
+bprm x,y
+run
+cmt eip,"OEP"
+mov OEP,eip
+bpmc
+// Original idea by PE_Kill
+
+sub OEP,ImageBase
+sub iat_start,ImageBase
+mov counter,ImageBase
+add counter,3C
+mov counter,[counter]
+add counter,ImageBase
+add counter,28
+mov [counter],OEP
+add counter,58
+mov [counter],iat_start
+
+eval "The file is completely unpacked! Dump it on a disk. Do not use ImpREC, import is already restored! OEP: {OEP}, IAT Start: {iat_start}"
+msg $RESULT
+ret
+
+quit:
+MSG "Not CrypToCrackPeProtector0.9.2"
+ret
+
+ 
+

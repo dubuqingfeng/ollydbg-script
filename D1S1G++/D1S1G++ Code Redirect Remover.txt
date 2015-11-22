@@ -1,0 +1,335 @@
+
+//1call
+var st_sk
+var jmp_vz
+var new_wr
+var chk_1b
+var len
+var call_len
+var f_b
+var Chk_pop
+ask "Enter base redirect code"
+cmp $RESULT, 0
+je quit
+mov st_sk,$RESULT
+
+
+mov f_b,st_sk
+loop:
+findop st_sk, #E9#
+cmp $RESULT,0
+je quit
+mov jmp_vz,$RESULT+5
+mov st_sk,$RESULT+5
+mov len,[$RESULT+1]
+mov Chk_pop,f_b
+add Chk_pop,6
+add jmp_vz,len
+sub jmp_vz,5
+mov chk_1b,[f_b]
+and chk_1b,000000FF
+cmp chk_1b,0E8
+jne r32
+call:
+mov new_wr,f_b
+add new_wr,0A
+mov new_wr,[new_wr]
+mov call_len,jmp_vz
+add call_len,5
+sub new_wr,call_len
+mov [jmp_vz],#E8#
+add jmp_vz,1
+mov [jmp_vz],new_wr
+mov f_b,st_sk
+jmp loop
+
+
+r32://2 push
+//pause
+var con_dw
+var chr_32
+var ch_eax
+var arifm
+var 1_arg
+var 2_arg
+var ch_or32
+
+
+//mov f_b,st_sk
+//loop_r32:
+
+cmp chk_1b,68
+jne lpush   //loop
+mov 1_arg,f_b
+mov 2_arg,f_b
+add 1_arg,1
+mov 1_arg,[1_arg]
+
+
+mov chr_32,f_b
+add chr_32,5
+mov ch_or32,f_b
+add ch_or32,6
+mov ch_eax,[chr_32]
+and ch_eax,000000FF
+cmp ch_eax,A1
+jne nextR
+//eax
+add 2_arg,6
+mov 2_arg,[2_arg]
+mov 2_arg,[2_arg]
+mov arifm,f_b
+add arifm,0A
+mov arifm,[arifm]
+and arifm,000000FF
+cmp arifm,01
+jne lsub
+//add
+
+add 1_arg,2_arg
+mov [jmp_vz],#B8#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lsub:
+cmp arifm,29
+jne lxor
+sub 1_arg,2_arg
+mov [jmp_vz],#B8#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lxor:
+xor 1_arg,2_arg
+mov [jmp_vz],#B8#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+nextR:
+//pause
+add 2_arg,7
+mov 2_arg,[2_arg]
+mov 2_arg,[2_arg]
+mov arifm,f_b
+add arifm,0B
+mov arifm,[arifm]
+and arifm,000000FF
+mov ch_or32,[ch_or32],
+and ch_or32,FF
+cmp ch_or32,0D
+jne redx
+//ecx
+
+cmp arifm,01
+jne lsubecx
+add 1_arg,2_arg
+mov [jmp_vz],#B9#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lsubecx:
+cmp arifm,29
+jne lxorecx
+sub 1_arg,2_arg
+mov [jmp_vz],#B9#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lxorecx:
+xor 1_arg,2_arg
+mov [jmp_vz],#B9#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+redx:
+cmp ch_or32,15
+jne rebx
+//edx
+
+cmp arifm,01
+jne lsubedx
+add 1_arg,2_arg
+mov [jmp_vz],#BA#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lsubedx:
+cmp arifm,29
+jne lxorecx
+sub 1_arg,2_arg
+mov [jmp_vz],#BA#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lxoredx:
+xor 1_arg,2_arg
+mov [jmp_vz],#BA#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+rebx:
+// ebx
+
+cmp arifm,01
+jne lsubebx
+add 1_arg,2_arg
+mov [jmp_vz],#BB#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lsubebx:
+cmp arifm,29
+jne lxorebx
+sub 1_arg,2_arg
+mov [jmp_vz],#BB#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lxorebx:
+xor 1_arg,2_arg
+mov [jmp_vz],#BB#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+
+lpush:
+cmp chk_1b,83
+jne lmdaex
+mov 1_arg,f_b
+add 1_arg,6
+mov 1_arg,[1_arg]
+mov [jmp_vz],#68#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lmdaex:
+cmp chk_1b,50
+jne lmaex
+mov 1_arg,f_b
+add 1_arg,3
+mov 1_arg,[1_arg]
+mov [jmp_vz],#A3#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lmaex:
+//pause
+cmp chk_1b,FF
+jne lmdecx
+mov Chk_pop,[Chk_pop]
+and Chk_pop,000000FF
+cmp Chk_pop,58
+jne lpecx
+mov 1_arg,f_b
+add 1_arg,2
+mov 1_arg,[1_arg]
+mov [jmp_vz],#A1#
+add jmp_vz,1
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lpecx:
+cmp Chk_pop,59
+jne lpedx
+mov 1_arg,f_b
+add 1_arg,2
+mov 1_arg,[1_arg]
+sub jmp_vz,1
+mov [jmp_vz],#8B0D#
+add jmp_vz,2
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lpedx:
+mov 1_arg,f_b
+add 1_arg,2
+mov 1_arg,[1_arg]
+sub jmp_vz,1
+mov [jmp_vz],#8B15#
+add jmp_vz,2
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lmdecx:
+cmp chk_1b,51
+jne lmdedx
+mov 1_arg,f_b
+add 1_arg,3
+mov 1_arg,[1_arg]
+sub jmp_vz,1
+mov [jmp_vz],#890D#
+add jmp_vz,2
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lmdedx:
+cmp chk_1b,52
+jne lmdebx
+mov 1_arg,f_b
+add 1_arg,3
+mov 1_arg,[1_arg]
+sub jmp_vz,1
+mov [jmp_vz],#8915#
+add jmp_vz,2
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+lmdebx:
+cmp chk_1b,52
+jne temp_loop:
+mov 1_arg,f_b
+add 1_arg,3
+mov 1_arg,[1_arg]
+sub jmp_vz,1
+mov [jmp_vz],#891D#
+add jmp_vz,2
+mov [jmp_vz],1_arg
+mov f_b,st_sk
+jmp loop
+
+
+temp_loop:
+mov f_b,st_sk
+jmp loop
+
+quit:
+MSGYN " Check rediret remove?"
+cmp $RESULT,0
+jne checkredirect
+ret
+
+checkredirect:
+var c_red
+var faund_jmp
+var mask
+mov c_red,00401000
+ask "Enter mask jmp  redirect code,exmpl#E9??????00#"
+cmp $RESULT, 0
+je quit
+mov mask,$RESULT
+loopcheckredirect:
+find c_red,mask    //#E9????8000#
+cmp $RESULT,0
+jne findnext
+ret
+findnext:
+mov c_red,$RESULT
+mov faund_jmp,$RESULT
+eval "faund {faund_jmp}"
+msg $RESULT
+add c_red,5
+jmp loopcheckredirect

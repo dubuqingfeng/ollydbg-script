@@ -1,0 +1,81 @@
+/*
+=======================================================================
+ Quick script for rebuilding thunks at VC++ apps protected with PESpin
+=======================================================================
+*/
+
+var addr
+var pointer
+var thunk
+var new
+mov new,416000  //Points to start of PESpin section.
+
+
+//This algo will find all calls that point in table with imports:
+mov addr,401000
+LABEL1:
+find addr,#FF15????4100#    //Find CALL DWORD PTR:[constant].
+cmp $RESULT,0
+je END1
+
+add $RESULT,2
+mov addr,$RESULT
+mov pointer,[$RESULT]       //Check is DWORD PTR:[constant] belongs to table.
+
+cmp pointer,41A458
+jb LABEL1
+cmp pointer,41A558
+ja LABEL1
+
+mov [$RESULT],new
+mov pointer,[pointer]
+mov [new],pointer
+add new,8
+
+jmp LABEL1
+END1:
+
+
+
+//This algo will find all jumps that point in table with imports:
+mov addr,401000
+LABEL2:
+find addr,#FF25????4100#    //Find JMP DWORD PTR:[constant].
+cmp $RESULT,0
+je END2
+
+add $RESULT,2
+mov addr,$RESULT
+mov pointer,[$RESULT]       //Check is DWORD PTR:[constant] belongs to table.
+
+cmp pointer,41A458
+jb LABEL2
+cmp pointer,41A558
+ja LABEL2
+
+mov [$RESULT],new
+mov pointer,[pointer]
+mov [new],pointer
+add new,8
+
+jmp LABEL2
+END2:
+
+
+
+ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

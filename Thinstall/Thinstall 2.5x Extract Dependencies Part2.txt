@@ -1,0 +1,114 @@
+/*
+//////////////////////////////////////////////////
+Назначение скрипта Thinstall 2.5 extr
+/////////////////////////////////////////////////
+*/
+var va
+var va2
+var dmp
+var img_dll
+var size_dll
+var Name
+var check
+
+gpa  "SetEnvironmentVariableA","kernel32.dll"
+bp $RESULT
+run 
+bc $RESULT
+rtu
+find eip,#FF15????????85C07414C745C8E6030000C745D0010000008365EC00EB??8B45E88B40#
+cmp $RESULT,0
+je quit
+mov dmp,$RESULT
+find eip,#83A5??FEFFFF00FFB5F4FEFFFFFFB5??FEFFFF8B45??FF30FF75CCE8#
+cmp $RESULT,0
+je quit
+mov va,$RESULT
+add va,1b
+bp va
+
+run
+/*
+//////////////////////////////////////////////////
+7FF212D2    83A5 74FEFFFF 0>AND DWORD PTR SS:[EBP-18C],0
+7FF212D9    FFB5 F4FEFFFF   PUSH DWORD PTR SS:[EBP-10C]
+7FF212DF    FFB5 74FEFFFF   PUSH DWORD PTR SS:[EBP-18C]
+7FF212E5    8B45 0C         MOV EAX,DWORD PTR SS:[EBP+C]
+7FF212E8    FF30            PUSH DWORD PTR DS:[EAX]
+7FF212EA    FF75 CC         PUSH DWORD PTR SS:[EBP-34]
+7FF212ED    E8 A0D4FFFF     CALL 7FF1E792                      ; <-------alloc dlll
+7FF212F2    83C4 10         ADD ESP,10
+7FF212F5    8945 C8         MOV DWORD PTR SS:[EBP-38],EAX
+7FF212F8    837D C8 00      CMP DWORD PTR SS:[EBP-38],0
+7FF212FC    0F85 D9000000   JNZ 7FF213DB
+7FF21302    83BD 44FFFFFF 0>CMP DWORD PTR SS:[EBP-BC],0
+7FF21309    75 43           JNZ SHORT 7FF2134E
+7FF2130B    8B45 0C         MOV EAX,DWORD PTR SS:[EBP+C]
+7FF2130E    8338 02         CMP DWORD PTR DS:[EAX],2
+7FF21311    74 3B           JE SHORT 7FF2134E
+7FF21313    8B45 0C         MOV EAX,DWORD PTR SS:[EBP+C]
+7FF21316    FF30            PUSH DWORD PTR DS:[EAX]
+7FF21318    8B85 D8FEFFFF   MOV EAX,DWORD PTR SS:[EBP-128]
+7FF2131E    0385 F4FEFFFF   ADD EAX,DWORD PTR SS:[EBP-10C]
+7FF21324    50              PUSH EAX
+7FF21325    FFB5 D8FEFFFF   PUSH DWORD PTR SS:[EBP-128]
+7FF2132B    FF75 08         PUSH DWORD PTR SS:[EBP+8]
+7FF2132E    68 64A0F47F     PUSH 7FF4A064                      ; ASCII "%s does not have image base relocation information and cannot be loaded
+Address %x-%x
+Loadlib_flags=%x"
+7FF21333    68 7D050000     PUSH 57D
+7FF21338    68 789FF47F     PUSH 7FF49F78                      ; ASCII "X:\thinstall\stub\load_library.cc"
+7FF2133D    E8 16460100     CALL 7FF35958
+/////////////////////////////////////////////////
+*/
+msg "in [esp] Name dll"
+
+ 
+/*
+//////////////////////////////////////////////////
+7FF13DB3    FF15 9C81F47F   CALL DWORD PTR DS:[7FF4819C]             ; kernel32.IsBadWritePtr
+7FF13DB9    85C0            TEST EAX,EAX
+7FF13DBB    74 14           JE SHORT 7FF13DD1
+7FF13DBD    C745 C8 E603000>MOV DWORD PTR SS:[EBP-38],3E6
+7FF13DC4    C745 D0 0100000>MOV DWORD PTR SS:[EBP-30],1
+7FF13DCB    8365 EC 00      AND DWORD PTR SS:[EBP-14],0
+7FF13DCF    EB 47           JMP SHORT 7FF13E18
+7FF13DD1    8B45 E8         MOV EAX,DWORD PTR SS:[EBP-18]
+7FF13DD4    8B40 1C         MOV EAX,DWORD PTR DS:[EAX+1C]            ; <------eax Baze
+7FF13DD7    0345 98         ADD EAX,DWORD PTR SS:[EBP-68]
+/////////////////////////////////////////////////
+*/
+add dmp,21
+
+last_dll:
+bp dmp
+run
+sti
+mov img_dll,eax
+find img_dll,#5045#
+mov size_dll,$RESULT
+add size_dll,50
+mov size_dll,[size_dll]
+eval "damp partial address:{img_dll} , size:{size_dll}! If it is necessary, choose active dump engine ->IntelDump"
+msg $RESULT
+bc dmp
+jmp loop
+
+
+loop:
+run
+cmp eip,va
+jne loop
+
+msg "in [esp] Name dll"
+
+jmp last_dll
+
+
+
+quit:
+msg "not Thinstall 2.5"
+ret
+quit2:
+msg "Все больше нет!"
+ret

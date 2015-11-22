@@ -1,0 +1,15 @@
+/*
+PEComPact ver 2.55 OEP Finder
+by KingSuperFly (KingSuperFly@Gmail.com)
+www.BlackHeaf.de.vu
+*/
+var oep
+start:
+msg "Check ignore memory access violation in debug option before run this script."
+mov oep,eip
+sto
+bphws oep, "x"
+run
+cmt eip,"OEP found!now, dump it and fix IAT!"
+msg "Script by KingSuperFly from www.BlackHeaf.de.vu!"
+ret

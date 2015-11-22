@@ -1,0 +1,64 @@
+///////////////////////////////////////////////////////////////
+// FileName    :  Poly!Crypt 2.8.oSc
+// Comment     :  Poly!Crypt 2.8.UnPacK
+// Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V1.65
+// Author      :  kienmanowar [REA-cRaCkErTeAm]
+// WebSite     :  http://reaonline.net
+// Date        :  2008.03.21
+///////////////////////////////////////////////////////////////
+#LOG
+dbh
+
+var MagicAddr
+var cbase
+var csize
+var OEP
+var index
+
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+
+MSGYN "Plz Clear All BreakPoints + Make First Pause at:Entry Point Of Main Module !  "
+cmp $RESULT, 0
+je TryAgain
+cmp $VERSION, "1.65"
+jb CheckODbgScripVersion
+bphwc
+bc
+bprm cbase, csize
+esto
+bpmc
+
+find eip, #508B4424048B00894424045883C404FF6424FC83C404FF5424FC#
+cmp $RESULT,0
+je NoFind
+add $RESULT,0F
+mov MagicAddr, $RESULT
+log MagicAddr
+bp MagicAddr
+run
+bc MagicAddr
+sto
+bprm cbase, csize
+run
+
+mov OEP,eip
+eval "OEP VA:{OEP}"
+log OEP
+cmt eip, "This is the OEP!  Found By: kienmanowar[REA-cRaCkErTeAm] "                              
+msg "Just : OEP !  Dump and Fix IAT.  Good Luck   "
+ret       
+
+NoFind:
+msg "Error! Don't find."
+ret
+
+CheckODbgScripVersion:
+msg  "ODBGScript Version Need 1.65 or higher!"
+ret
+
+TryAgain:
+msg " Plz  Try  Again   !   "
+ret

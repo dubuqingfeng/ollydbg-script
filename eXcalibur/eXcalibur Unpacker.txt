@@ -1,0 +1,132 @@
+var oep
+var nm
+var counter
+var iat_start
+var imb
+var iat_stall
+var iat_end
+var isz
+var simb
+var chtyp
+var szth
+var stcpy
+var srhm
+GMI eip,CODEBASE
+mov srhm,$RESULT 
+
+GMI eip,NAME
+mov nm,$RESULT
+eval "{nm}_U.exe"
+mov nm,$RESULT
+GMI eip,MODULEBASE
+mov imb,$RESULT
+mov simb,$RESULT
+rev simb
+mov simb,$RESULT
+eval "#0000{simb}#"
+mov simb,$RESULT
+
+gpa "LoadLibraryA","kernel32.dll"
+find $RESULT,#C20400#
+bp $RESULT
+erun
+bc eip
+rtu
+mov iat_start,esi
+mov iat_end,ebx
+Alloc 10000
+Cmp $RESULT,0 
+Je abort 
+mov iat_stall ,$RESULT
+find iat_start,#00000000000000000000000000000000#
+Cmp $RESULT,0 
+Je abort 
+mov isz,$RESULT+1
+sub isz,iat_start
+MEMCPY iat_stall,iat_start,isz
+
+find eip,#DFBD??????00DFAD??????00#
+cmp $RESULT,0
+je abort
+fill $RESULT,C,90
+find eip,#DFBD??????00DFAD??????00#
+cmp $RESULT,0
+je abort
+mov [$RESULT],#891F812F0200400090909090#
+
+find eip,#68????????EB01??584050C3#
+cmp $RESULT,0
+je abort
+fill $RESULT+C,3,90
+mov oep,[$RESULT+1]
+inc oep
+
+bphws oep,"x"
+erun
+bphwc oep
+cmt eip, "This is the OEP"
+MEMCPY iat_start,iat_stall,isz
+loop:
+find iat_start,simb
+cmp $RESULT,0
+je quit
+mov stofth,$RESULT
+mov chtyp,$RESULT+4
+cmp [chtyp],imb
+je ctyp
+cmp $RESULT,iat_end
+jae quit
+mov [$RESULT],0
+jmp loop
+quit:
+find srhm,#E8??????FFFFFFFFFF#
+cmp $RESULT,0
+jne mrc
+fnl:
+mov eip,oep
+sub oep,imb
+sub iat_start,imb
+mov counter,imb
+add counter,3C
+mov counter,[counter]
+add counter,imb
+add counter,28
+mov [counter],oep
+add counter,58
+mov [counter],iat_start
+dpe nm, eip
+
+msg  "The file is completely unpacked!"
+ret
+
+abort:
+ret 
+ctyp:
+add chtyp,4
+
+l:
+cmp [chtyp],imb
+jne prct
+add chtyp,4
+jmp l
+prct:
+mov szth,chtyp
+sub szth,stofth
+mov stcpy,iat_start+10
+mov stcpy,[stcpy]
+add stcpy,imb
+MEMCPY stofth,stcpy,szth
+jmp quit
+
+mrc:
+
+mov srhm,$RESULT+5
+mov eip,$RESULT
+sti
+bp eip+19
+erun
+bc eip
+jmp quit
+
+
+

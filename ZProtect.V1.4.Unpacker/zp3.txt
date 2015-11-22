@@ -1,0 +1,191 @@
+var CreateFileAaddr
+var VirtualAllocaddr
+var kernel32base
+var kernel32size
+var vmaddr
+var apiaddr
+var iats
+var iate
+var vmapiaddr
+
+var ip1
+var ip2
+var ip3
+var oep
+var exx
+var tmp1
+var tmp2
+
+sti
+findesp:
+mov ip1, eip
+mov ip1, [ip1]
+and ip1, 0ff
+cmp ip1, 60
+jne F0
+sti
+mov exx, esp
+jmp start
+
+F0:
+sto
+jmp findesp
+
+start:
+GPA "CreateFileA", "kernel32.dll"
+cmp $RESULT, 0
+je error
+mov CreateFileAaddr, $RESULT
+BPHWS CreateFileAaddr, "x"
+
+GPA "VirtualAlloc", "kernel32.dll"
+cmp $RESULT, 0
+je error
+mov VirtualAllocaddr, $RESULT
+BPHWS VirtualAllocaddr, "x"
+
+findkernel32base:
+cmp eip, CreateFileAaddr
+je F1
+run
+jmp findkernel32base
+
+F1:
+cmp edi, 7C800000
+jne findoep
+mov kernel32base, edi
+
+run
+//add esp, 8
+//mov kernel32size, [esp]
+//sub esp, 8
+rtu
+mov vmaddr, eax
+
+findoep:
+BPHWCALL
+BPHWS exx, "r"
+run
+
+mov ip2, eip
+mov ip2, [ip2]
+and ip2, 0ff
+cmp ip2, E8
+je findoep2
+
+sto
+sto
+mov oep, eip
+jmp fixiat
+
+findoep2:
+//msg "修复后，请手动查找OEP!"
+sti
+sto
+sto
+sto
+sto
+sto
+mov oep, eip
+
+fixiat:
+mov iats, 0047100C
+mov iate, 0047175C
+
+fix:
+mov eip, [iats]
+
+mov ip3, eip
+mov ip3, [ip3]
+and ip3, 0ff
+cmp ip3, 68
+jne skipfix2
+
+sto
+sto
+sto
+sto
+sto
+sti
+
+mov tmp1, eip
+find eip, #7C#
+cmp $RESULT, 0
+je F2
+mov tmp2, $RESULT
+mov [tmp2], #EB#
+mov eip, tmp1
+
+F2:
+run
+sto
+
+cmp eip, 07000000
+ja fix2
+
+mov vmapiaddr, eip
+sub vmapiaddr, vmaddr
+add vmapiaddr, kernel32base
+mov [iats], vmapiaddr
+add iats,4
+cmp iats, iate
+ja end
+cmp [iats], 0
+je skipfix
+jmp fix
+
+fix2:
+mov eip, [iats]
+
+mov ip3, eip
+mov ip3, [ip3]
+and ip3, 0ff
+cmp ip3, 68
+jne skipfix2
+
+sto
+sto
+sto
+sto
+sto
+sti
+
+mov tmp1, eip
+find eip, #7C#
+cmp $RESULT, 0
+je F3
+mov tmp2, $RESULT
+mov [tmp2], #EB#
+mov eip, tmp1
+
+F3:
+run
+sto
+mov apiaddr, eip
+mov [iats], apiaddr
+add iats,4
+cmp iats, iate
+ja end
+cmp [iats], 0
+je skipfix
+jmp fix
+
+skipfix:
+add iats,4
+cmp [iats], 0
+je skipfix
+jmp fix
+
+skipfix2:
+add iats,4
+jmp fix
+
+error:
+msg "出错了!"
+ret
+
+end:
+BPHWCALL
+mov eip, oep
+AN eip
+ret

@@ -1,0 +1,49 @@
+script unpack:
+var oep
+var iat_st
+var isz
+var IMAGEBASE
+var icor
+var counter
+mov oep,[eip+1]
+find eip,#8B4E0CE334#
+cmp $RESULT,0
+je quit
+bp $RESULT
+erun 
+bc eip
+mov iat_st,esi
+find iat_st,#00000000000000000000000000000000#
+mov isz,$RESULT
+inc isz
+mov IMAGEBASE,[ebx+4]
+
+mov icor,iat_st+C
+loop:
+cmp icor,isz
+jae next
+sub [icor],IMAGEBASE
+add icor,4
+sub [icor],IMAGEBASE
+add icor,10
+jmp loop
+next:
+mov eip,oep
+sub oep,IMAGEBASE
+sub iat_st,IMAGEBASE
+mov counter,IMAGEBASE
+add counter,3C
+mov counter,[counter]
+add counter,IMAGEBASE
+add counter,28
+mov [counter],oep
+add counter,58
+mov [counter],iat_st
+dpe "dump.exe", eip
+
+msg ""The file is completely unpacked!"
+ret
+
+quit:
+msg "Not XPack, XComp"
+ret

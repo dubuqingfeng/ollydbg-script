@@ -1,0 +1,49 @@
+// Mr.David PC-Guard 5.0 OEP and Patch IAT v0.1b
+// This script will quickly put you at the OEP of an PC-Guard 5.0 EXE.
+// Just run it!
+
+msg "请设置OD异常设置除了单步异常外全部忽略，然后从菜单处继续运行脚本"
+pause
+
+dbh  //隐藏调试器
+
+var cbase
+
+gmi eip, CODEBASE
+mov cbase, $RESULT    
+log cbase            //将源操作数输出到OllyDbg的记录窗口[log window]中,调试用
+
+var csize           //获得指定地址所在模块的相关信息,内存镜像断点
+
+gmi eip, CODESIZE
+mov csize, $RESULT
+log csize
+
+var addr1
+
+run
+
+esto
+
+esto
+
+mov addr1,eip
+
+sub addr1,10000     //由于花指令多，当前位置已经过了特征指令，所以估计减偏移10000,待核实通用性
+
+find addr1,#8918#  //寻找特征语句
+mov addr1,$RESULT 
+bphws addr1,"x"    
+
+repl addr1, #8918#, #9090#, 10       //有病治病，无病强身
+
+esto
+
+bphwc addr1
+esto
+
+bprm cbase, csize //内存镜像断点
+esto
+          
+cmt eip,"OEP Or Next Shell To Get,Please dumped it,Enjoy!"
+

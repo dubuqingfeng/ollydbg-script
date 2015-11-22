@@ -1,0 +1,35 @@
+var GetModuleHandleA
+var AddressOfMagicJump
+var LenOfMagicJump
+var DebugString
+
+gpa "OutputDebugStringA","kernel32.dll"
+mov DebugString,$RESULT
+bp  DebugString
+esto
+bc eip
+asm eip,"RETN 4"
+
+gpa "GetModuleHandleA", "kernel32.dll"
+mov GetModuleHandleA, $RESULT
+
+bphws GetModuleHandleA, "x"
+repeat:
+esto
+rtu
+find eip, #0F84????????????????????74??????????EB??#
+cmp $RESULT,0
+je repeat
+bphwc GetModuleHandleA
+
+mov AddressOfMagicJump, $RESULT
+mov LenOfMagicJump, AddressOfMagicJump
+add LenOfMagicJump, 2
+mov LenOfMagicJump, [LenOfMagicJump]
+inc LenOfMagicJump
+mov [AddressOfMagicJump], 0E9
+inc AddressOfMagicJump
+mov [AddressOfMagicJump], LenOfMagicJump
+cmt $RESULT, "<- MagicJump fixed"
+msg "MagicJump fixed! Now, the next step is yours: OEP Finder!"
+ret

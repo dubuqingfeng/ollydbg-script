@@ -1,0 +1,44 @@
+// Mr.David PEspin V0.1 stolen OEP and Patch IAT  v0.1
+// This script will quickly put you at the OEP of an PEspin V0.1 EXE.
+// Just run it!
+
+msg "请设置OD异常设置忽略全部异常，然后从菜单处继续运行脚本"
+pause
+
+dbh  //隐藏调试器,不要好像也可以
+
+var addr   
+sto   
+sto     
+mov addr,esp  //Esp定律预留发现Stolen Code
+
+var addr1
+
+gpa "LoadLibraryA","kernel32.dll"
+mov addr1,$RESULT                    //捷径 API断点LoadLibraryA
+bp addr1
+esto
+bc addr1
+
+loop:
+
+rtu
+find eip,#85c0#    //特征指令  
+cmp $RESULT,0
+je loop          //循环查找 Test eax,eax,否则还在系统领空
+
+findop eip,#740A#    //特征指令
+mov addr1,$RESULT 
+bphws addr1,"x"    
+run               //运行
+bphwc addr1    //Clear break point  //取消断点
+
+repl eip, #740A#, #EB0A#, 10       //有病治病，无病强身
+
+bphws addr,"r" //Esp定律找入口或Stolen Code
+run
+bphwc addr
+ 
+msg "现在是Stolen Code处，如果不是就F8直接到达OEP，IAT已经修复!"
+         
+cmt eip,"OEP-1 Or Stolen Code To Get,Please dumped it,Enjoy!"

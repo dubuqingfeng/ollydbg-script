@@ -1,0 +1,41 @@
+/*
+Avant d'utiliser ce script, vous devez aller dans les options de olly, 
+dans -> debugging options et cocher toutes les erreurs!
+
+
+
+*/
+
+
+
+/*
+	============================
+	                
+	      Author: Goldocrack 30 mars 2006
+	      Packer: AHTeam EP Protector v0.3a -> FEUERRADER *
+	      Script for: AHTeam EP Protector v0.3a -> FEUERRADER *
+	      Level: Easy
+	      Date: lundi 8 mai 2006
+
+            http://reverseengineering.online.fr
+            http://www.forumcrack.new.fr/
+            http://s141422204.onlinehome.fr/forum/
+            Merci à tous 
+	 ============================
+						*/
+
+
+
+
+
+
+msgyn "English(oui) ou Francais(non)?"
+cmp $RESULT,1
+je lang1
+msg "remonte d'une ligne dans le code et met un BP sur la ligne, tu fais 1x F9 et 1x F8 et Tu sera à l'entry point ! dumpe ton fichier c'est tout !"
+ret
+lang1:
+msg "Go up 1 line in the code and put a BP on this line, do 1x F9 et 1x F8 and you'll be at the entry point ! dump your file , that's all !"
+
+
+ 

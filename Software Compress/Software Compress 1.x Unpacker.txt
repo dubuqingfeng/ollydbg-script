@@ -1,0 +1,33 @@
+var iat_st
+var oep
+var imb
+rtr
+sti
+find eip,#8B8DA01C41008B85A41C4100#
+cmp $RESULT,0
+je quit
+bp $RESULT
+erun 
+bc eip
+mov imb,[$RESULT+2]
+add imb,ebp
+mov iat_st,imb+4
+mov oep,iat_st+C
+mov imb,[imb]
+mov iat_st,[iat_st]
+mov oep,[oep]
+mov eip,oep+imb
+cmt eip,"This is the OEP"
+mov counter,imb
+add counter,3C
+mov counter,[counter]
+add counter,imb
+add counter,28
+mov [counter],oep
+add counter,58
+mov [counter],iat_st
+dpe "dump.exe", eip
+msg ""The file is completely unpacked!"
+ret
+quit:
+ret

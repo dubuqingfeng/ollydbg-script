@@ -1,0 +1,417 @@
+; Unpacking script for PESpin 1.32 
+; This Script  fix all but nanomites. To do this use the tool attached with this tutorial
+; or get it from www.AT4RE.com
+; 
+;
+; Script done by Zool@nder of AT4RE
+; Please for all remarks and suggestions, contact me at Zoolander@AT4RE.com or at
+; WWW.AT4RE.COM
+; Regards
+;
+; Tested on WINXP SP2 and VISTA ULTIMATE + OdbgScript 1.65.3mod by Zool@nder + OLLYDBG1.10
+
+var var1
+var var2
+var var3
+var var4
+var cb_packer
+var 1shot
+var memal
+var oep
+var cb_target
+var cb_target2
+var cs_packer
+var ibase
+
+
+
+
+
+mov var1,eip
+gmemi eip,MEMORYBASE
+mov cb_packer,$RESULT
+gmemi eip, MEMORYSIZE
+
+
+gmi eip, MODULEBASE
+mov ibase, $RESULT
+
+msgyn "Is DebugBlocker enabled"
+cmp $RESULT, 2
+jne continuework_1
+ret
+
+continuework_1:
+cmp $RESULT, 0
+jne DB_Exist
+mov var1, cb_packer+296C
+bphws var1, "x"
+run
+bphwc var1
+mov var1, cb_packer+29E7
+mov var1, [var1]
+bp var1
+esto
+bc var1
+jmp no_DB
+
+
+DB_Exist:
+setoption ALL
+gpa "CreateMutexA","Kernel32.dll"
+cmp $RESULT,0
+je errunknown
+
+
+find $RESULT, #C20C00#
+bp $RESULT
+esto
+bc $RESULT
+sti
+
+find eip,#3BC39C#
+add $RESULT,2
+bp $RESULT
+esto
+mov !ZF,1
+bc $RESULT
+bp $RESULT+47
+esto
+
+bc $RESULT+47
+mov eip,$RESULT+47+1F
+
+
+find eip,#F187DF57C3558BECC745FC00000000C745F800000000#
+cmp $RESULT,0
+je errunknown
+
+bp $RESULT
+esto
+bc $RESULT
+mov eip,[esp]
+add esp,4
+
+
+no_DB:
+find cb_packer,#FE4FFF83C7042BC78947FCEB02#
+cmp $RESULT,0
+je errunknown
+
+cmp 1shot,0
+je patchsinstall
+
+
+errCantalloc:
+msg "Can't alloc memory"
+ret
+
+
+
+continuework_2:
+mov var1,cb_packer+1974
+fill var1,6,90
+mov var1,cb_packer+118A
+fill var1,2,90
+mov oep,cb_packer+1CB4
+bp oep
+esto
+bc oep
+gmi oep,CODEBASE
+cmp $RESULT,0
+je errcantcontinuefix
+mov cb_target,$RESULT
+mov cb_target2,$RESULT
+dec cb_target2
+
+
+
+cleanjmpPE:
+find cb_target,#E9??????FF#
+cmp $RESULT,0
+je continuework_3
+mov cb_target,$RESULT+5
+mov fpat,$RESULT
+mov var1,$RESULT+1
+mov var1,[var1]
+add var1,$RESULT+5
+cmp var1,cb_target2
+ja cleanjmpPE
+cmp ibase, var1
+ja cleanjmpPE
+opcode var1
+add var1, $RESULT_2
+gci var1, TYPE
+cmp $RESULT, 50
+jne cleanjmpPE
+asm fpat,$RESULT_1
+jmp cleanjmpPE
+
+
+continuework_3:
+gmi oep,CODEBASE
+cmp $RESULT,0
+je errcantcontinuefix
+mov cb_target,$RESULT
+
+cleancallPE:
+find cb_target,#E8??????FF#
+cmp $RESULT,0
+je continuework_4
+mov cb_target,$RESULT+5
+mov fpat,$RESULT
+gci fpat, DESTINATION
+mov var1, $RESULT
+mov var3, $RESULT
+cmp var1,cb_target2
+ja cleancallPE
+cmp ibase, var1
+ja cleancallPE
+gci var1, TYPE
+cmp $RESULT, 50
+jne cleancallPE
+gci var3, DESTINATION
+eval "call {$RESULT}"
+asm fpat,$RESULT
+jmp cleancallPE
+
+
+continuework_4:
+mov var1,oep
+find oep,#6A00EB#
+mov var4,$RESULT
+find oep,#55EB01#
+mov var3,$RESULT
+find var1,#68????????812C24#
+mov var2,$RESULT
+eval "FAKE OEP AT : {$RESULT} or {var3} or {var4}"
+log $RESULT
+
+find var1,#EB????E9??????FF#
+cmp $RESULT,0
+je cleanjmp1b
+mov var2,$RESULT+4
+mov var2,[var2]
+add var2,$RESULT+8
+eval "REAL OEP AT : {var2}"
+log $RESULT
+
+
+
+cleanjmp1b:
+find var1,#EB01#
+cmp $RESULT,0
+je continuework_5
+
+mov var1,$RESULT+3
+fill $RESULT,3,90
+jmp cleanjmp1b
+
+
+continuework_5:
+mov var1,oep
+
+cleancalllike:
+find var1,#68????????E9??????FF#
+cmp $RESULT,0
+je continuework_6
+mov var1,$RESULT
+mov var3,$RESULT+6
+mov var3,[var3]
+add var3,$RESULT+A
+fill $RESULT,A,90
+eval "call {var3}"
+asm var1,$RESULT
+add var1,A
+jmp cleancalllike
+
+
+
+continuework_6:
+mov var1,oep
+
+cleanmetapush1:
+find var1,#68????????812C24#
+cmp $RESULT,0
+je continuework_7
+mov var1,$RESULT
+mov var3,$RESULT+1
+mov var3,[var3]
+mov var4,$RESULT+8
+mov var4,[var4]
+sub var3,var4
+fill $RESULT,C,90
+eval "push {var3}"
+asm var1,$RESULT
+add var1,C
+jmp cleanmetapush1
+
+
+
+continuework_7:
+mov var1,oep
+
+cleanmetapush2:
+find var1,#68????????810424#
+cmp $RESULT,0
+je continuework_8
+mov var1,$RESULT
+mov var3,$RESULT+1
+mov var3,[var3]
+mov var4,$RESULT+8
+mov var4,[var4]
+add var3,var4
+fill $RESULT,C,90
+eval "push {var3}"
+asm var1,$RESULT
+add var1,C
+jmp cleanmetapush2
+
+
+
+
+
+continuework_8:
+gmi oep, CODEBASE
+mov cb_target2, $RESULT
+mov var1,cb_target2
+
+gmemi oep, MEMORYBASE
+mov cb_packer, $RESULT
+
+gmemi oep, MEMORYSIZE
+mov cs_packer, $RESULT
+add cs_packer,cb_packer
+dec cs_packer
+
+cleanextracall:
+findop var1, #FF15??????00#
+cmp $RESULT,0
+je continuework_9
+mov var1, $RESULT+6
+mov var3, $RESULT+2
+mov var4, $RESULT+2
+mov var3,[var3]
+cmp cb_packer, var3
+ja cleanextracall
+cmp var3, cs_packer
+ja cleanextracall
+
+gci $RESULT, DESTINATION
+
+mov [var4], $RESULT
+jmp cleanextracall
+
+
+
+
+
+continuework_9:
+mov var1,cb_target2
+
+cleanextrajmp:
+findop var1, #FF25??????00#
+cmp $RESULT,0
+je continuework_10
+mov var1, $RESULT+6
+mov var3, $RESULT+2
+mov var4, $RESULT+2
+mov var3,[var3]
+cmp cb_packer, var3
+ja cleanextrajmp
+cmp var3, cs_packer
+ja cleanextrajmp
+
+gci $RESULT, DESTINATION
+
+mov [var4], $RESULT
+jmp cleanextrajmp
+
+
+
+
+continuework_10:
+mov var1, cb_target2
+
+
+cleanmovr32extramem:
+findop var1, #8B????????00#
+cmp $RESULT,0
+je jackpot
+mov var1, $RESULT+6
+mov var3, $RESULT+2
+mov var4, $RESULT+2
+mov var3,[var3]
+cmp cb_packer, var3
+ja cleanmovr32extramem
+cmp var3, cs_packer
+ja cleanmovr32extramem
+
+gci $RESULT, SIZE
+cmp $RESULT, 6
+jne cleanmovr32extramem
+
+mov var3, [var3]
+mov [var4], var3
+jmp cleanmovr32extramem
+
+
+
+
+jackpot:
+free memal,1000
+msg "The OEP is too near,see log window"
+msg "PARTIAL Unpacked done by Zool@nder of AT4RE {WWW.AT4RE.COM}"
+ret
+
+
+
+errcantcontinuefix:
+msg "The script can't continue fixing the target ... Please do it by hand or send me an Email"
+ret
+
+
+
+errunknown:
+msg "There was an error,sorry"
+ret
+
+patchsinstall:
+mov var1,$RESULT+8
+inc 1shot
+alloc 1000
+cmp $RESULT,0
+je errCantalloc
+
+mov memal,$RESULT
+
+eval "jmp {memal}"
+asm var1,$RESULT
+asm memal,"mov word ptr ds:[edi-5],25FF"
+asm memal+6,"mov dword ptr ds:[edi-3],edx"
+add var1,7
+eval "jmp {var1}"
+asm memal+9,$RESULT
+
+
+find cb_packer,#8BBD124240003BC77635#
+cmp $RESULT,0
+je errunknown
+
+add $RESULT,8
+mov [$RESULT],BD0335EB
+
+
+find $RESULT,#8944241C61FF0424EB02#
+cmp $RESULT,0
+je errunknown
+mov [$RESULT],90900289
+
+
+find $RESULT,#C38902E803000000EB04#
+cmp $RESULT,0
+je errunknown
+mov [$RESULT],E89090C3
+
+
+jmp continuework_2

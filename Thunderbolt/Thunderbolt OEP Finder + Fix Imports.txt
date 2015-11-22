@@ -1,0 +1,72 @@
+var oep
+var iat_st
+var cod_st
+var vz
+var fn_i
+var pf
+var new_t
+var func
+gmi eip,CODEBASE
+mov cod_st,$RESULT
+
+
+gpa  "LoadLibraryA","kernel32.dll"
+bp $RESULT
+erun
+bc eip
+rtu
+mov iat_st,edi
+and iat_st,FFFFF000
+find eip,#FFE0#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT
+bp oep
+find eip,#508BC4608BD8E8#
+cmp $RESULT,0
+je quit 
+mov fn_i,$RESULT
+mov pf,$RESULT+55
+erun
+bc eip
+sti
+cmt eip,"oep"
+mov oep,eip
+eval " OEP Faund ! Enter masc call {fn_i}"
+msg $RESULT
+ask "Enter mask call {fn_i} "
+cmp $RESULT,0
+je quit
+mov fn_i,$RESULT
+loop:
+FINDCMD cod_st, fn_i
+cmp $RESULT,0
+je end
+mov new_t,$RESULT-1
+mov vz,$RESULT+5
+mov eip,new_t
+bp pf
+run
+mov func,eax
+buf func
+find iat_st,func
+mov func,$RESULT
+mov [new_t],#FF25#
+add new_t,2
+mov [new_t],func
+mov cod_st,vz
+jmp loop
+
+end:
+bc pf
+mov eip,oep
+msg "OEP FAUND Import Fix"
+ret
+
+quit:
+msg "Not Thunderbolt"
+ret
+
+
+
+

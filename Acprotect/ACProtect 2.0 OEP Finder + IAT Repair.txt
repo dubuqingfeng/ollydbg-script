@@ -1,0 +1,72 @@
+/*
+/////////////////////////////////////////////////////////////////////////////////////////////
+// ACProtect 2.0
+// Author: ColdFever [AoRE team]
+// 
+// OS : WinXP SP2 Pro
+//
+// note: it won't work if the OEP obfuscation option is used
+//////////////////////////////////////////////////////////////////////////////////////////////
+*/
+
+var temp
+var temp1
+var temp2
+var temp3
+var vbapp
+
+mov vbapp,0
+
+MSGYN "Is This a VB application?"
+cmp $RESULT,1
+jne start_proc
+inc vbapp
+start_proc:
+sti
+mov temp1,esp
+gpa "GetModuleHandleA", "kernel32.dll"
+mov temp,$RESULT
+add temp,0B
+bphws temp,"x"
+
+again:
+run
+rtr
+sto
+find eip, #90602BC0880343380375F9610BC0#
+cmp $RESULT,0
+je again
+mov temp2,$RESULT
+add temp2, 14
+bphwc temp
+fill temp2, 14, 90
+
+cmp vbapp,1
+je vbloop
+mov temp3,"E801EB"
+bphws temp1,"r"
+dothis:
+run                   
+mov temp2,[eip]
+and temp2,00FFFFFF
+cmp temp2,temp3
+je jumpit
+jmp dothis
+jumpit:
+sti
+sti
+bphwc temp1
+log eip
+cmt eip, "   <== Your OEP"
+MSG "Dump and fix the dump in ImpRec"
+ret
+vbloop:
+gpa "ThunRTMain","msvbvm60.dll"
+mov temp1,$RESULT
+bphws temp1,"x"
+run
+cmt eip,"   <== ThunRTMain"
+bphwc temp1
+msg "Check [esp+4] for your PUSH address"
+cancel_pressed:
+ret

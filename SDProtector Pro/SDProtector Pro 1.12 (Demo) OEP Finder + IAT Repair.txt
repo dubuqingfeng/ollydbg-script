@@ -1,0 +1,94 @@
+/* OllyDbg & Phantom 
+tested UnPackMe_SDProtector Professional1.12.a
+*/
+
+var Prbase
+var crf
+var unh
+var gmh
+var oep
+var jf
+var pf
+
+var codebase
+var pf2
+var func
+
+var cnt
+mov cnt,0
+
+GMI eip, CODEBASE
+mov codebase,$RESULT
+gpa    "CreateFileA","kernel32.dll"
+find $RESULT,#C21C00#
+mov  crf,$RESULT
+gpa    "GetModuleHandleA","kernel32.dll"
+find $RESULT,#c20400#
+mov  gmh,$RESULT
+gpa    "GetSystemInfo","kernel32.dll"
+find $RESULT,#C20400#
+mov   SInfo,$RESULT
+GMEMI eip, MEMORYBASE
+mov Prbase,$RESULT
+
+
+bp     SInfo
+erun
+bc     eip
+sti
+mov    $RESULT,esp
+add    $RESULT,24
+mov    [$RESULT],0
+sti
+sti
+mov    [$RESULT],1
+
+bp  gmh
+erun
+find Prbase,#556E68616E646C6564457863657074696F6E46696C746572#
+cmp $RESULT,0
+je abort
+mov unh,$RESULT
+find Prbase,#E98D0000008B??242?8B442410525750#
+cmp $RESULT,0
+je abort
+
+
+mov pf,$RESULT+15
+bphws pf,"x"
+mov pf2,$RESULT-217
+bphws pf2,"x"
+loop:
+erun
+cmp pf2,eip
+je noem
+
+cmp [esp+8],unh
+jne loop
+pause
+oepsrh:
+find codebase,#000000000000E8000000008BE09D61#
+Cmp $RESULT,0 
+Je abort
+mov oep,$RESULT
+jmp quit
+imprec:
+mov func,eax
+sto
+sto
+sto
+sto
+mov [esi],func
+jmp loop
+
+noem:
+add eip,21C
+erun
+jmp imprec
+quit:
+mov eip,oep
+msg "OEP Faund Iat Fix"
+ret
+abort:
+msg "Not SDProtector112"
+ret

@@ -1,0 +1,145 @@
+/*
+===============================================================
+ Enigma protector 1.02 - OEP and stolen code finder script
+===============================================================
+
+The purpose of this script is to find basic information about
+protected file so you can use second script for unwrapping &
+dumping. For using this script you must ignore ALL exceptions
+and delete ALL breakpoints (hardware, toggle or memory)!
+
+Script must be started from protectors original Entry Point!
+Protector has option to emulate OEP's of couple compilers.
+those oep's are placed in original code section. You need to
+trace with F7 untill you enter in last section of file where
+first opcode is PUSHAD. Then you can run script. When script
+ends, check log and write down OEP and stolen OEP details!
+Then restart and run second script.
+
+haggar
+================================================================
+*/
+
+
+//Initialization:
+var ModBase
+var ModSize
+var loader_jump
+var loader_oep
+var loader_base
+var internal_check_start
+var internal_check_end
+var counter
+var stolen_code_start
+var stolen_code_end
+var oep
+
+mov stolen_code_start,0
+mov stolen_code_end,0
+
+dbh
+cmt eip,"!!! P L E A S E  W A I T !!!"
+
+
+//Module base and size:
+gmi eip,MODULEBASE
+mov ModBase,$RESULT
+gmi eip,MODULESIZE
+mov ModSize,$RESULT
+add ModSize,ModBase
+
+
+//Find jump to loader:
+find eip,#EB019AC35589E5FF750CFF7508E846000000#
+cmp $RESULT,0
+je ERROR
+mov loader_jump,$RESULT
+add loader_jump,3
+bp loader_jump
+esto
+bc eip
+
+
+//Find loader base:
+sti
+mov loader_oep,eip
+mov loader_base,loader_oep
+sub loader_base,2720C
+
+
+//Find internal check:
+mov internal_check_start,loader_base
+add internal_check_start,1FEE8
+mov internal_check_end,internal_check_start
+add internal_check_end,37
+
+
+//Find jump to OEP or stolen code:
+mov counter,0
+LABEL_01:
+bp internal_check_start
+esto
+bc eip
+bphws internal_check_end,"x"
+esto
+bphwc internal_check_end
+sti
+rtr
+sti
+inc counter
+cmp counter,6
+je ERROR
+find eip,#A3????????8B65088B450C8944241C61A1????????50A1????????010424C3#
+cmp $RESULT,eip
+jne LABEL_01
+rtr
+sti
+
+//OEP or stolen code:
+cmp eip,ModSize
+jb LABEL_02
+cmt eip,"<-- Start of stolen code!"
+msg "Stolen code found! Check log later."
+mov stolen_code_start,eip
+find eip,#6031C0B9????????BF????????F2AA47ABAB61C3000000000000000000000000000000#
+cmp $RESULT,0
+je ERROR
+bp $RESULT
+esto
+bc eip
+fill eip,13,90
+rtr
+mov stolen_code_end,eip
+cmt eip,"<-- End of stolen code! Press F7 to land on OEP."
+mov oep,[esp]
+cmt oep,"<== OEP found! Script by haggar ;)"
+jmp END
+
+LABEL_02:
+mov oep,eip
+cmt eip,"<== OEP found! Script by haggar ;)"
+END:
+
+
+//Logging variables:
+log " "
+log ": S C R I P T  I N F O R M A T I O N :"
+log " "
+log ModBase
+log ModSize
+log loader_jump
+log loader_oep
+log loader_base
+log internal_check_start
+log internal_check_end
+log counter
+log stolen_code_start
+log stolen_code_end
+log oep
+
+dbs
+ret
+dbs
+ERROR:
+msg "Error in script! Sorry :( . "
+ret

@@ -1,0 +1,69 @@
+/*
+//////////////////////////////////////////////////
+	PESpin v0.3 Stolen Code Finder v0.1
+	( for 'Remove OEP' mode)
+	Author:	loveboom
+	Email : bmd2chen@tom.com
+	OS    : Win2kADV sp2,OllyDbg 1.1b,OllyScript v0.7
+	Date  : 2004-4-22
+	Config: Ignore other exceptions except 'Invalid or privileged instruction'
+	Note  : If you have one or more question, email me please,thank you!
+//////////////////////////////////////////////////
+*/
+var bpaddr  	//Break point address
+var addr
+
+start:		//script start
+  run
+
+lbl1:
+  esto
+  esto
+
+lblgpa:
+  gpa "LoadLibraryA","kernel32.dll"	//LoadLibraryA
+  mov bpaddr,$RESULT
+  bp bpaddr
+  eob lbl2
+  esto
+
+lbl2:
+  bc bpaddr
+  rtu
+
+loop:
+  cmp eip,50000000   
+  jb lbl3
+  sto
+  rtu
+  jmp loop
+
+lbl3:
+  mov bpaddr,esp
+  add bpaddr,4
+  find eip,#763503BD# 		
+  cmp $RESULT,0 
+  je lblabort
+  mov addr,$RESULT
+  mov [addr],#EB#
+  find eip,#EB01FF8944241C#   //find mov [esp+1c],eax
+  cmp $RESULT,0
+  je lblabort
+  mov addr,$RESULT
+  add addr,3
+  mov [addr],#89029090#       //replace mov [edx],eax
+  bphws bpaddr,"r"
+  eob lbl4
+  run
+
+lbl4:
+  bphwc bpaddr
+
+end:
+  cmt eip,"Stole Code found.please patch OEP code and then dumped it!"
+  msg "Script by loveboom[DFCG][FCG],Thank you for using my script!"
+  ret
+
+lblabort: 
+  msg "Error,Script abort!Maybe target is not protect by PeSpin v0.41 or you forgot Ignore other exceptions except 'Invalid or privileged instruction'"
+ ret

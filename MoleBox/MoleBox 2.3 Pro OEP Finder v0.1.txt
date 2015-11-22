@@ -1,0 +1,67 @@
+/* 
+Find target's OEP [ MoleBox v2.3 Pro ] v0.1
+---------------------------------------
+Author: DeAtH HaS cOMe #eCh!2004 .:[ CracksLatinos ]:.
+Email : death.hc@gmail.com
+OS : Win XP SP1,OllyDbg 1.10,OllyScript v0.92 
+Date : 06.03.20045
+Config: -
+Note : Any bug or comments, please report at death@ech2004.net
+That's all folks!
+Un saludo para todo CracksLatinoS, maravillosos listeros, y para mi enana Aurënya :P
+*/
+
+#log
+
+var oep
+var nopIAT
+var contador
+
+mov contador, 0
+eoe Controla
+
+mov oep, eip
+sub oep, 17F3
+mov nopIAT, oep
+findop oep, #FFD0#
+mov oep, $RESULT
+
+eob RompeIAT
+log nopIAT
+add nopIAT, 7881
+log nopIAT
+bphws nopIAT, "x"
+bphws oep, "x"
+run
+
+RompeIAT:
+log eip
+log nopIAT
+cmp eip, nopIAT
+jne Sigue
+bphwc nopIAT
+Nopea:
+asm nopIAT, "nop"
+inc nopIAT
+inc contador
+cmp contador, 5
+jne Nopea
+eob Rompe
+run
+
+Rompe:
+bphwc oep
+sti
+log "El OEP del programa es:"
+log eip
+log "Dumpealo ahora y repara la IAT automaticamente con el IREC"
+log "Script CracksLatinos by DeAtH #eCh!2004"
+log "@: death@ech2004.net  WWW: http://www.ech2004.net"
+msg "Script finalizado correctamente. Ahora esta parado en el OEP, dumpealo y pasale el IREC :D"
+
+ret
+
+Controla:
+esto
+Sigue:
+run

@@ -1,0 +1,53 @@
+var iat_start
+var oep
+var counter
+
+mov counter,0
+gmi eip,MODULEBASE
+mov ImageBase,$RESULT
+
+
+
+gpa  "LoadLibraryA","kernel32.dll"
+bp $RESULT
+run
+bc eip
+rtu
+find eip,#FF5424FC8BD0AD85C074330F#
+cmp $RESULT,0
+je quit
+bp $RESULT
+fill $RESULT+3B,1,90
+run
+bc eip
+mov iat_start,edx
+find eip,#CC64FF350000000064892500000000CD03#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT+20
+add oep,1
+mov oep,[oep]
+bphws oep,"x"
+run
+bphwc oep
+cmt eip,"OEP"
+
+sub oep,ImageBase
+sub iat_start,ImageBase
+mov counter,ImageBase
+add counter,3C
+mov counter,[counter]
+add counter,ImageBase
+add counter,28
+mov [counter],oep
+add counter,58
+mov [counter],iat_start
+dpe "dump.exe", eip
+
+msg "File Unpacked!"
+ret
+
+quit:
+MSG "QrYPt0r (c)"
+ret
+

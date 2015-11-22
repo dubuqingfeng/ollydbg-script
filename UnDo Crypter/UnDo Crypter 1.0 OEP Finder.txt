@@ -1,0 +1,13 @@
+// UnDo Crypter v1.0 OEP Finder script by LaFarge/ICU
+
+var blah
+
+find eip, #6A0039C475FA83EC80#
+mov blah, $RESULT
+bp blah+9
+run
+bc eip
+sti
+cmt eip, "This is the OEP!"
+msg "This is OEP! Dump and rebuild imports now!"
+

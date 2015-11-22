@@ -1,0 +1,40 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//  OEP Find Script for UPX Mutanter 0.2 private -> Feuerrader {AHTeam}
+//  Coded by: PiONEER {RES}
+//  TEAM: TEAM RESURRECTiON
+//  Greetz to: {RES},ICU,ARTeam,SnD,CiM,RLD,AGN,trainer-paradies.de,XeonByte,Anorganix
+//  starzboy,Till.CH,oxy87,Orthodox,ALiEN,cyclops,l0calh0st/ICU,sEby,zyzygy,dR.oLLe 
+//  Data: 13:52 30.03.2007
+//  Environment :  WinXP SP1,OllyDbg V1.10,ODbgScript V1.48
+//  Contact: http://www.appzclub.tk - or - admin@appzclub.tk
+//////////////////////////////////////////////////////////////////////////////////////////
+
+start:
+#log
+find eip, #94BC????????B91700000080340CDBE2FA94909090FFE0#
+cmp $RESULT,0
+je _error
+find eip, #FFE0#
+bp $RESULT
+run
+bc $RESULT
+sto
+find eip, #FFE0#
+bp $RESULT
+run
+bc $RESULT
+sto
+find eip, #61E9D70EFAFF#
+bp $RESULT
+run
+bc $RESULT
+sto
+sto
+cmt eip, "<-- OEP found by PiONEER - TEAM {RES}!"
+msg "OEP found! - Now dump and fix the IAT!"
+ret
+
+_error:
+msg "ERROR!!! [ This is not UPX Mutanter 0.2! ]"
+ret
+end:

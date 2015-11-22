@@ -1,0 +1,77 @@
+var exx
+var oep
+var iats
+var iate
+var pushaddr
+var calladdr
+var jianyan
+
+mov iats, 401000
+mov iate, 401150
+
+BPHWS iats, "w"
+esto
+esto
+BPHWCALL
+mov exx, esp
+BPHWS exx, "r"
+
+go:
+cmp eip, 7C800000
+ja F1
+rtu
+
+F1:
+esto
+cmp [eip], FFFFE381
+je fix
+jmp go
+
+fix:
+esto
+cmp [eip], FFFFE381
+je fix2
+mov [iats], eax
+add iats, 4
+cmp iats, iate
+ja fixoep
+jmp fix
+
+fix2:
+esto
+mov [iats], eax
+add iats, 4
+cmp iats, iate
+ja fixoep
+jmp fix
+
+fixoep:
+mov eip, 401000
+find eip, #FF25??????000000#
+cmp $RESULT, 0
+je end
+mov calladdr, $RESULT
+add $RESULT, 8
+mov oep, $RESULT
+
+mov eip, 401000
+find eip, #5642352136267662366368732E646C6C#
+cmp $RESULT, 0
+je end
+mov pushaddr, $RESULT
+mov eip, oep
+eval "push {pushaddr}"
+asm eip, $RESULT
+add oep, 5
+mov eip, oep
+eval "call  {calladdr}"
+asm eip, $RESULT
+
+end:
+sub eip, 5
+
+find eip, #1C3C02#
+mov jianyan, $RESULT
+mov [jianyan], #1D3C02#
+
+ret

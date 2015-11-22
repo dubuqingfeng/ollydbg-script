@@ -1,0 +1,69 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//  tElock 0.99 OEP Finder
+//  Coded by: kNiGhT
+//  Note: Ignore all exceptions
+//  
+//////////////////////////////////////////////////////////////////////////////////////////
+
+var temp
+var temp1
+var ImgBase
+var CodeEnd
+var CodeStart
+var CodeSize
+
+gmi eip, MODULEBASE
+mov ImgBase, $RESULT
+mov temp, 3c
+add temp, ImgBase
+mov temp, [temp]
+add temp, ImgBase
+add temp, 100
+mov CodeSize, [temp]
+add temp, 4
+mov CodeStart, [temp]
+add CodeStart, ImgBase
+mov CodeEnd, CodeStart
+add CodeEnd, CodeSize
+
+gpa "LoadLibraryA", "kernel32.dll"
+add $RESULT, 2
+bp $RESULT
+run
+bc $RESULT
+rtu
+
+String_Schleife:
+sto
+mov temp, [eip]
+and temp, FFFF
+cmp temp, 858D
+jne String_Schleife
+sto
+
+mov temp, eax
+DeleteString:
+mov temp1, [temp]
+and temp1, FF000000
+cmp temp1, 0
+je FindOEP
+mov [temp], 0
+inc temp
+jmp DeleteString
+
+FindOEP:
+bprm CodeStart, CodeSize
+
+OEP_Schleife:
+run
+cmp eip, CodeStart
+jb OEP_Schleife
+
+cmp eip, CodeEnd
+ja OEP_Schleife
+
+bpmc
+cmt eip, "OEP found by kNiGhT"
+msg "Dump and rebuild IAT!"
+ret

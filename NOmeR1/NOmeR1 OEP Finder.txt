@@ -1,0 +1,42 @@
+inicio:
+
+
+gpa "GetProcAddress", "kernel32.dll" //find GetProcAddress  address
+bp $RESULT //set a bp on GetProcAddress
+
+
+empieza:
+eob corre //run untill reach a bp
+run
+
+corre:
+cmp [esp], 46b929  //if [esp] is not our value, repeat it
+jne empieza
+
+bc $RESULT  //remove BP
+find eip, #c20800#  //find API ret
+
+bp $RESULT //set a BP on api ret
+eob sigue
+run
+sigue:
+
+bc $RESULT //remove bp
+sti  //f7
+
+findop eip, #C3#  //FIND LAST RET WHO JUMP TO OEP
+log $RESULT
+bp $RESULT //SET A BP ON RET (JUMP TO OEP)
+eob final
+run
+
+final:
+
+sti //F7
+msg "OEP FOUND !"
+
+ret
+
+
+
+

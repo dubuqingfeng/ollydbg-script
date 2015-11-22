@@ -1,0 +1,290 @@
+///////////////////////////////////////////////////////////////////////
+// Comment     :  Thinstall.VS.V3.035-V3.080.Single.Main.eXe.UnPacK
+// Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+// Author      :  fly
+// Date        :  2007-04-25 24:00
+// WebSite     :  http://bbs.unpack.cn
+// UnPacKcN    :  http://www.unpack.cn
+///////////////////////////////////////////////////////////////////////
+#log
+dbh
+
+var Temp
+var Memory
+var ImageBase
+var BoundImportTable
+var UnmapViewOfFile
+var MapViewOfFile
+var GetCommandLineA
+var PassExpired
+var MagicOccasion
+var OEP
+
+
+MSGYN "Plz Clear All BreakPoints  +  Set Debugging Option Ignore All Excepions Options  +  Set Events Make first pause at Entry Point !"
+cmp $RESULT, 0
+je TryAgain
+
+
+//UnmapViewOfFile______________________________________
+
+/*
+00401CC8     FF15 48224000       call dword ptr ds:[402248] ; kernel32.UnmapViewOfFile
+00401CCE     6A 00               push 0
+00401CD0     6A 00               push 0
+00401CD2     6A 00               push 0
+00401CD4     6A 26               push 26
+00401CD6     FFB5 ACFCFFFF       push dword ptr ss:[ebp-354]
+00401CDC     FF15 18224000       call dword ptr ds:[402218] ; kernel32.MapViewOfFile
+00401CE2     A3 00264000         mov dword ptr ds:[402600],eax
+*/
+
+gpa "UnmapViewOfFile", "KERNEL32.dll"
+mov UnmapViewOfFile,$RESULT
+bp UnmapViewOfFile
+
+eob UnmapViewOfFile
+esto
+GoOn0:
+esto
+
+UnmapViewOfFile:
+cmp eip,UnmapViewOfFile
+jne GoOn0
+bc UnmapViewOfFile
+
+
+//MapViewOfFile______________________________________
+
+gpa "MapViewOfFile", "KERNEL32.dll"
+find $RESULT, #5DC21400#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,1
+mov MapViewOfFile,$RESULT
+bp MapViewOfFile
+
+eob MapViewOfFile
+esto
+GoOn1:
+esto
+
+MapViewOfFile:
+cmp eip,MapViewOfFile
+jne GoOn1
+cmp eax,0
+je GoOn1
+mov Memory,eax
+log Memory
+bc MapViewOfFile
+
+
+//BoundImportTable______________________________________
+
+eob ImageBase
+mov Temp,eax
+exec
+		push 0
+		call GetModuleHandleA
+ende
+ImageBase:
+mov ImageBase,eax
+mov eax,Temp
+mov Temp,ImageBase
+add Temp,3C
+mov Temp,[Temp]
+add Temp,ImageBase
+add Temp,0D0
+mov BoundImportTable,Temp
+
+
+//GetCommandLineA______________________________________
+
+/*
+00D3378E     68 54C8E200         push 0E2C854               ; ASCII "-ThinstallVersion"
+00D33793     FF15 B004E200       call dword ptr ds:[E204B0] ; kernel32.GetCommandLineA
+00D33799     50                  push eax
+00D3379A     E8 310D0000         call 00D344D0
+00D3379F     83C4 08             add esp,8
+00D337A2     85C0                test eax,eax
+00D337A4     74 6B               je short 00D33811
+00D337A6     8D8D E4FDFFFF       lea ecx,dword ptr ss:[ebp-21C]
+00D337AC     E8 6F940400         call 00D7CC20
+00D337B1     C745 FC 00000000    mov dword ptr ss:[ebp-4],0
+00D337B8     68 48C8E200         push 0E2C848  
+00D337BD     68 0CC5E200         push 0E2C50C               ; ASCII "3.080"
+00D337C2     68 FCC7E200         push 0E2C7FC               ; UNICODE "Thinstall Runtime Version %s",LF,"Built %s"
+*/
+
+gpa "GetCommandLineA", "KERNEL32.dll"
+mov GetCommandLineA,$RESULT
+bp GetCommandLineA
+
+eob GetCommandLineA
+esto
+GoOn2:
+esto
+
+GetCommandLineA:
+cmp eip,GetCommandLineA
+jne GoOn2
+bc GetCommandLineA
+
+
+//PassExpired______________________________________
+
+/*
+00A58F6F     FF15 4873AB00       call dword ptr ds:[AB7348] ; kernel32.SystemTimeToFileTime
+00A58F75     8B4D 0C             mov ecx,dword ptr ss:[ebp+C]
+00A58F78     51                  push ecx
+00A58F79     E8 176A0400         call 00A9F995
+00A58F7E     83C4 04             add esp,4
+00A58F81     99                  cdq
+00A58F82     68 C9000000         push 0C9
+00A58F87     68 00C0692A         push 2A69C000
+00A58F8C     52                  push edx
+00A58F8D     50                  push eax
+00A58F8E     E8 5D6C0400         call 00A9FBF0
+00A58F93     8B4D F0             mov ecx,dword ptr ss:[ebp-10]
+00A58F96     03C8                add ecx,eax
+00A58F98     8B45 F4             mov eax,dword ptr ss:[ebp-C]
+00A58F9B     13C2                adc eax,edx
+00A58F9D     894D C4             mov dword ptr ss:[ebp-3C],ecx
+00A58FA0     8945 C8             mov dword ptr ss:[ebp-38],eax
+00A58FA3     8B4D FC             mov ecx,dword ptr ss:[ebp-4]
+00A58FA6     3B4D C8             cmp ecx,dword ptr ss:[ebp-38]
+00A58FA9     7F 13               jg short 00A58FBE
+00A58FAB     7C 08               jl short 00A58FB5
+00A58FAD     8B55 F8             mov edx,dword ptr ss:[ebp-8]
+00A58FB0     3B55 C4             cmp edx,dword ptr ss:[ebp-3C]
+00A58FB3     73 09               jnb short 00A58FBE
+00A58FB5     C745 C0 01000000    mov dword ptr ss:[ebp-40],1
+00A58FBC     EB 07               jmp short 00A58FC5
+00A58FBE     C745 C0 00000000    mov dword ptr ss:[ebp-40],0
+00A58FC5     8B45 C0             mov eax,dword ptr ss:[ebp-40]
+00A58FC8     5F                  pop edi
+00A58FC9     8BE5                mov esp,ebp
+00A58FCB     5D                  pop ebp
+00A58FCC     C3                  retn
+*/
+
+find Memory,#3B4DC87F137C088B55F83B55C47309C745C001000000EB07C745C0000000008B45C0#
+cmp $RESULT,0
+je FindOccasion
+
+add $RESULT,1B
+mov PassExpired,$RESULT
+log PassExpired
+mov [PassExpired],1
+
+
+//MagicOccasion______________________________________
+
+/*
+00C074B4     6A 01              push 1
+00C074B6     E8 A5CDFFFF        call 00C04260
+00C074BB     83C4 04            add esp,4
+00C074BE     5F                 pop edi
+00C074BF     5E                 pop esi
+00C074C0     8BE5               mov esp,ebp
+00C074C2     5D                 pop ebp
+00C074C3     C3                 retn
+*/
+
+FindOccasion:
+find Memory,#6A01E8????????83C4045F5E8BE55DC3#
+cmp $RESULT,0
+je NoFind
+
+add $RESULT,0F
+mov MagicOccasion,$RESULT
+bp MagicOccasion
+log MagicOccasion
+
+eob MagicOccasion
+esto
+GoOn3:
+esto
+
+MagicOccasion:
+cmp eip,MagicOccasion
+jne GoOn3
+bc MagicOccasion
+
+
+//Dump______________________________________
+
+mov [BoundImportTable],#00000000000000000000000000000000#
+//Clear Bound Import Table and Import Address Table's Address And Size.
+log BoundImportTable
+
+MSG "Please Set  LordPE ->Option ->Task View ->Select  " Full Dump: force RAW mode "  Only  !    "
+Dump:
+MSGYN  "  OK ,  Please dump it now !  Dump file will be fixed !  Don't click " Y " before dump . "
+cmp $RESULT, 0
+je Dump
+
+
+//FindOEP______________________________________
+
+/*
+00AA18EC     51                  push ecx
+00AA18ED     68 50C3B900         push 0B9C350 ; ASCII "APISPY: Calling EXE Entry Point %x",LF
+00AA18F2     E8 C9350200         call 00AC4EC0
+00AA18F7     83C4 08             add esp,8
+00AA18FA     6A 00               push 0
+00AA18FC     FF15 CC04B900       call dword ptr ds:[B904CC] ; kernel32.GetModuleHandleA
+00AA1902     8985 3CFDFFFF       mov dword ptr ss:[ebp-2C4],eax
+00AA1908     8B95 3CFDFFFF       mov edx,dword ptr ss:[ebp-2C4]
+00AA190E     8B42 3C             mov eax,dword ptr ds:[edx+3C]
+00AA1911     8B8D 3CFDFFFF       mov ecx,dword ptr ss:[ebp-2C4]
+00AA1917     8D5401 04           lea edx,dword ptr ds:[ecx+eax+4]
+00AA191B     8995 48FDFFFF       mov dword ptr ss:[ebp-2B8],edx
+00AA1921     8B85 48FDFFFF       mov eax,dword ptr ss:[ebp-2B8]
+00AA1927     83C0 14             add eax,14
+00AA192A     8985 40FDFFFF       mov dword ptr ss:[ebp-2C0],eax
+00AA1930     E8 EBF9FFFF         call 00AA1320
+00AA1935     8985 38FDFFFF       mov dword ptr ss:[ebp-2C8],eax
+00AA193B     8D05 5119AA00       lea eax,dword ptr ds:[AA1951]
+00AA1941     8B9D 38FDFFFF       mov ebx,dword ptr ss:[ebp-2C8]
+00AA1947     8B8D 44FDFFFF       mov ecx,dword ptr ss:[ebp-2BC]
+00AA194D     50                  push eax
+00AA194E     53                  push ebx
+00AA194F     FFE1                jmp ecx
+*/
+
+find Memory,#8D??????????8B??????????8B??????????5053FFE16A00#
+cmp $RESULT,0
+je NoFind
+
+FindOEP:
+add $RESULT,14
+mov OEP,$RESULT
+bp OEP
+
+eob OEP
+esto
+GoOn4:
+esto
+
+OEP:
+cmp eip,OEP
+jne GoOn4
+bc OEP
+esti
+
+
+//GameOver______________________________________ 
+
+log eip
+cmt eip, "This is the OEP!  Found By: fly ¡º UnPacKcN ¡»   " 
+MSG "Just : OEP !  Your dump file already fiXed .    ¡î  UnPacKcN  ¡î  ¡º www.unpack.cn ¡»     Good Luck !       "
+ret                       
+
+NoFind:
+MSG "Error! Don't find.     "
+ret
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret

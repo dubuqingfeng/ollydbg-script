@@ -1,0 +1,49 @@
+///////////////////////////////////////////////////////////////////////
+//  OEP Finder Script for SimplePack 1.21 --> bagie
+//  Coded by: Sonny27 {TeaM SnD}
+//  My greetz and thanks to everyone at:
+//  SnD, gRn, RfN, iCU, CiP, ARTeam, {RES}, eXeTools and UnPacKcN
+//  Data: 2007-04-02
+//  Environment :  WinXP SP2,OllyDbg V1.10,ODbgScript V1.52
+//  Contact: http://tuts4you.com/forum/ or http://snd.astalavista.ms/
+///////////////////////////////////////////////////////////////////////
+
+MSGYN "Are all set breakpoints deleted? Otherwise script will fail!"
+cmp $RESULT,0
+je breakpoint
+MSGYN "Was Method 2 used? (It was used if you are now in "ntdll.dll")"
+cmp $RESULT, 0
+je method1
+bprm 401000, 0FFFF
+run
+bpmc
+find eip, #5B5DC3#
+bp $RESULT
+run
+bc $RESULT
+sto
+sto
+sto
+find eip, #89E805#
+bp $RESULT
+run
+bc $RESULT
+sto
+sto
+sto
+msg "This should be OEP :-)"
+ret
+
+method1:
+find eip, #6168????????C3#
+bp $RESULT
+run
+bc $RESULT
+sto
+sto
+sto
+msg "This should be OEP :-)"
+ret
+
+breakpoint:
+ret

@@ -1,0 +1,1491 @@
+////////////////////////////////////////////////////////////
+/// Themida&WinLicense.V1.9.1-V2.0.X.UnPacKScript.Public  //
+/// By fxyang[CUG]                                        //
+/// Version  0.2                                          //
+/// http://www.unpack.cn                                  //
+/// 2009.01.17                                            //
+////////////////////////////////////////////////////////////
+/*重写整个脚本,修复Bug
+
+2008：
+01.10  +对1.97版VirtualAlloc函数的定位，并实现识别1.97版本
+01.13  +在脚本的开始部分实现对VB程序的识别
+01.15  +对VB程序实行单独处理
+01.20  +修改原脚本代码，保持对1.97的兼容
+01.22  +完成 1.97&1.96 iat处理部分
+01.23  +完成对程序编程语言识别，修复ASM程序对iat调用代码,1.96可能是1.97版。
+03.07  修改VirtualAlloc重定位
+03.07  +对壳插入90在E8之前的处理，即可以不用考验90问题。
+05.20  修正脚本对修改VirtualAlloc重定位引起的错误。
+05.20  +脚本对WinLicen&Themida1.99版支持
+08.19  +增加对WinLicen&Themida2.0以上版本支持
+08.20  修正获取api时机
+08.20  修正脚本破坏堆栈平衡
+08.20  修正Ntdll.dll中Api问题
+08.28  修正vb程序中被vmp保护引起的问题
+08.29  修正vb修复代码错误
+09.01  修正使用EAX破坏堆栈问题
+09.03  +跳过输入表对api第二次加密
+09.04  +增加对2.0.30支持
+09.08  修正一个特征码定位bug
+11.17  增加对2.0.40支持
+12.29  +根据网上资料添加对加壳软件版本的获得
+12.29  修正些bug
+
+2009：
+01.09   + EXE Dll判断
+	+ pack version，pack type判断
+        * 处理vb、1.95版以下的脚本使用原代码，并修复Bug
+        + vb程序的判断更准确
+01.11   完成1.95前和VB脚本到新脚本的移植，并优化了脚本
+01.13   完成移植1.96以上版本脚本
+01.17   还是改为普通版外放
+*/
+
+
+data:
+var packver
+var packtype
+var Imgtype   
+var codebase     
+var codesize  
+var dllimg 
+var dllsize
+var modulebase
+var moduleend
+var modulesize   
+var vcflag        
+var delphiflag 
+var vbflag       
+var iatprocbegin
+var iatprocend
+var vbmain
+var kerneldll
+var V_kernel
+var advapidll
+var V_advapi
+var userdll
+var V_user
+var vbdll
+var vallocapi
+var tmdappver
+var filename
+var procname
+var filedir
+var modbase
+var modsect
+var crcadd
+var tmp
+var temp
+var tmpbp
+
+cmp $VERSION,"1.65"     
+jb Err_ver
+lc
+#LOG
+LOG "------------Statr--------------"
+
+mov vcflag,0
+mov delphiflag,0
+mov vbflag,0
+bphwcall
+bpmc
+
+gmemi eip,MEMORYBASE     
+mov dllimg,$RESULT
+gmemi eip,MEMORYSIZE     
+mov dllsize,$RESULT
+gmi eip,MODULEBASE
+mov modulebase,$RESULT
+call GetImageType
+gmi eip,CODEBASE
+mov codebase,$RESULT
+gmemi codebase,MEMORYSIZE
+mov codesize,$RESULT
+gpi PROCESSNAME
+mov procname, $RESULT
+gpi CURRENTDIR
+mov filedir, $RESULT
+GPI EXEFILENAME
+mov filename, $RESULT
+
+GETSYSAPI:
+gpa "MessageBoxA","user32.dll"
+gmi $RESULT,MODULEBASE
+mov userdll,$RESULT
+gpa "RegQueryValueExA","advapi32.dll"
+gmi $RESULT,MODULEBASE
+mov advapidll,$RESULT
+gpa "GetProcAddress", "kernel32.dll"
+mov getprocadd_1,$RESULT              
+gmi $RESULT,MODULEBASE
+mov kerneldll,$RESULT
+cmp getprocadd_1,0
+je stop
+gpa "_lclose","kernel32.dll"         
+mov getprocadd_2,$RESULT
+
+gpa "GetLocalTime", "kernel32.dll"     
+mov tmp,$RESULT
+cmp tmp,0
+je stop
+bphws tmp ,"x"
+esto
+bphwc tmp
+rtu
+
+gpa "RtlRaiseException","ntdll"
+cmp $RESULT,0
+je stop
+bphws $RESULT
+
+var tmpvall
+var vallocapi
+var rreflag
+mov rreflag,0
+gpa "VirtualAlloc", "kernel32.dll"
+mov tmpvall,$RESULT
+cmp tmpvall,0
+je stop
+mov vallocapi,tmp
+bphws  tmpvall,"x"
+esto
+
+gn eip
+scmp $RESULT,"ntdll.RtlRaiseException"
+je findver
+nextvall:
+inc rreflag
+rtu
+
+mov V_kernel,eax
+cmp rreflag,2
+je overver
+bphwc tmpvall
+esto 
+
+findver:
+call Getpacktype
+call Getpackver
+cmp rreflag,1
+je vallnext
+jmp overver
+
+vallnext:
+bphws  tmpvall,"x"
+esto
+jmp nextvall
+
+overver:
+bphws  tmpvall,"x"
+
+//重定位VirtualAlloc
+mov tmp,tmpvall
+gmi tmp,MODULEBASE
+sub tmp,$RESULT
+sub tmp,0c00
+add tmp,V_kernel
+bphws tmp,"x"
+
+tmploop:
+esto
+cmp eax,getprocadd_1  
+je findapibegin
+cmp eax,getprocadd_2
+je findapibegin
+jmp tmploop
+
+findapibegin:
+esto
+esto
+
+bphwcall
+rtr
+sti
+find eip,#83F9000F84#
+cmp $RESULT,0
+je stop
+mov iatprocbegin,$RESULT
+log $RESULT,"IAT_Procbegin:"
+bphws $RESULT,"x"
+esto
+
+sti
+mov temp,eip
+add temp,02
+mov temp,[temp]
+add temp,eip
+OPCODE eip
+add temp,$RESULT_2
+mov iatprocend,temp
+log iatprocend,"IAT_Procend:"
+
+var iattabbegin      
+var iattabend
+
+mov iattabbegin,esi
+log iattabbegin,"加密表的首地址："
+mov temp,[esi-4]
+log temp,"加密表长度:"
+add temp,esi
+sub temp,0c
+mov iattabend,temp
+
+GetVb:
+gpa "ThunRTMain","MSVBVM60.dll"
+mov vbmain,$RESULT
+gmi vbmain,MODULEBASE
+mov vbdll,$RESULT
+cmp vbdll,0    //vb程序单独处理
+jne _vbapp  
+
+/*
+-----------packversion判断------------
+1.95版前使用原脚本处理，效率比较好。
+*/
+
+cmp packver,1.90
+jbe findoldver
+
+cmp packver,1.930
+jbe findver193
+
+cmp packver,1.950
+jbe findver195
+jmp findver_196
+
+findver193:
+call GetApi_193
+jmp oepvmbegin
+
+findver195:
+call GetApi_195
+jmp oepvmbegin
+
+findver_196:
+call GetApi_196
+
+oepvmbegin:
+call oepvmbeginfn
+
+findapplanguage:
+call findapplanguagefn
+
+ret
+
+//-------------Functions--------------
+//--------------vmpatch---------------
+oepvmbeginfn:
+var i
+var vmbegin
+var vmbeginadd
+mov i,0
+
+bphwcall
+mov temp,iattabbegin
+sub temp,3000
+
+loopfindvmep:
+cmp i,10
+je findvmepover
+find temp,#68????????E9??????FF#
+mov tmp,$RESULT
+add tmp,06
+mov vmbegin,[tmp]
+add tmp,vmbegin
+add tmp,04
+push eax
+mov al,[tmp]
+cmp al,6A
+je findvmoepbegin
+cmp al,60
+je findvmoepbegin
+findvmoepnext1:
+pop eax
+sub temp,3000
+inc i
+jmp loopfindvmep
+
+findvmoepbegin:
+bphws tmp,"x"
+bprm codebase,codesize
+findvmoepbeginloop:
+esto
+
+cmp tmp,eip
+jne novm
+cmp edi,1
+jne findvmoepbeginloop
+jmp patchvm
+
+novm:
+mov temp,codebase
+add temp,codesize
+cmp eip,temp
+jb findvmepover
+jmp findvmoepbeginloop
+
+pause
+
+patchvm:
+bphwcall
+mov temp,[esp]
+mov eip,iattabbegin
+eval "push {temp}"
+asm eip,$RESULT
+add iattabbegin,05
+eval "jmp {tmp}"
+asm iattabbegin,$RESULT
+add esp,04
+add iattabbegin,30
+mov vmbeginadd,eip
+log vmbeginadd
+
+findvmepover:
+ret
+//end
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+//findapplanguagebegin
+findapplanguagefn:
+var codeendadd
+var delphiapp
+var iatlength
+var vcapp
+var mfcapp
+var asmapp
+var bcapp
+mov i,0
+
+mov tmp,iattop
+findiatbegin:
+mov iattop,tmp
+sub tmp,04
+cmp [tmp],0
+je findiatbeginnext
+jmp findiatbegin
+findiatbeginnext:
+sub tmp,4
+cmp [tmp],0
+jne findiatbegin
+
+find iattop,#0000000000000000#
+mov temp,$RESULT
+sub temp,iattop
+mov iatlength,temp
+
+cmp codeadd,0
+je findcodeerr
+find codeadd,#00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+mov codeendadd,$RESULT
+sub $RESULT,codebase
+mov codesize,$RESULT
+find codebase,#EB10#
+cmp codebase,$RESULT
+je findbcapp
+mov temp,codeadd
+
+findcodeok:
+push eax
+mov al,[temp]
+cmp al,0E9
+je findjump
+cmp al,0E8
+je findcall
+dec temp
+mov al,[temp]
+cmp al,0E9
+je findjump
+cmp al,0E8
+je findcall
+add temp,02
+mov al,[temp]
+cmp al,0E9
+je findjump
+cmp al,0E8
+je findcall
+jmp stop
+
+findjump:
+pop eax
+mov temp, codesize
+add temp,codebase
+sub temp,codeadd
+cmp temp,200
+jb findasmapp
+mov delphiapp,1
+call delphiappiatrevertfn
+ret
+
+findcall:
+pop eax
+mov vcapp,1
+call vcappiatrevertfn
+ret
+
+findbcapp:
+pop eax
+mov bcapp,1
+call bcappiatrevertfn
+ret
+
+findasmapp:
+pop eax
+mov asmapp,1
+call asmappiatrevertfn
+ret
+
+findcodeerr:
+ret
+jmp stop
+//====================delphi====================
+delphiappiatrevertfn:
+
+bphwcall
+bpmc
+add iattabbegin,50
+
+exec
+pushad
+pushfd
+ende
+
+mov ecx,codebase
+add codesize,codebase
+mov edx,codesize
+mov ebx,iattop
+
+mov [iattabbegin],#8A013CE89074163CE9741290833900750141413BCA0F8FA2000000EBE38B690103E983C5058BF3AD83F8007506833E009074DF3BE87402EBEE908079FF90753580790590741B8039E9750866C741FFFF25EB0666C741FFFF1583EE04897101EB308079068B7402EBDD807907C075D79090909090908039E9750766C701FF25EB0566C701FF1583EE0489710283C104EB818B690203E983C5068BF3AD83F800750A833E00900F8467FFFFFF3BE87402EBEA9089710283C104E955FFFFFF90909090#
+push eip
+mov eip,iattabbegin 
+sti
+mov temp,iattabbegin 
+add temp,0be
+bphws temp,"x"
+esto
+
+bphwcall
+pop eip
+bp eip
+
+exec
+popfd
+popad
+ende
+
+bc eip
+
+cmp Imgtype,"dll"
+je dllcode
+eval "Delphi_{Imgtype}程序--IAT基地址在:{iattop};IAT表长度：{iatlength}; VM_OEP地址：{eip};{packtype}: {packver}"
+msg $RESULT
+ret
+
+dllcode:
+eval "Delphi_{Imgtype}程序--IAT基地址在:{iattop};IAT表长度：{iatlength};VM_OEP地址：{eip};{packtype}: {packver}"
+msg $RESULT
+ret
+
+//====================End====================
+//====================VC====================
+vcappiatrevertfn:
+
+bphwcall
+bpmc
+exec
+pushad
+pushfd
+ende
+
+mov ecx,codebase
+add codesize,codebase
+mov edx,codesize
+mov ebx,iattop
+mov [iattabbegin],#8A013CE89074163CE9741290833900750141413BCA0F8FA2000000EBE38B690103E983C5058BF3AD83F8007506833E009074DF3BE87402EBEE908079FF9075358079FEC3741B8039E9750866C741FFFF25EB0666C741FFFF1583EE04897101EB30807905907402EBDD807906E874D7807906E974D18039E9750766C701FF25EB0566C701FF1583EE0489710283C104EB818B690203E983C5068BF3AD83F800750A833E00900F8467FFFFFF3BE87402EBEA9089710283C104E955FFFFFF90909090#
+push eip
+mov eip,iattabbegin 
+sti
+mov temp,iattabbegin 
+add temp,0be
+bphws temp,"x"
+esto
+
+bphwcall
+pop eip
+bp eip
+
+exec
+popfd
+popad
+ende
+
+bc eip
+
+cmp Imgtype,"dll"
+je dllcode
+eval "VC_{Imgtype}程序--IAT基地址在:{iattop};IAT表长度：{iatlength}; VM_OEP地址：{eip}; {packtype}: {packver} "
+msg $RESULT
+ret
+
+dllcode:
+eval "VC_dll程序--IAT基地址在:{iattop};IAT表长度：{iatlength};VM_OEP地址：{eip};{packtype}: {packver}"
+msg $RESULT
+ret
+//====================End====================
+//====================Borland C++====================
+bcappiatrevertfn:
+
+bphwcall
+bpmc
+exec
+pushad
+pushfd
+ende
+
+mov temp,iattop
+add temp,1100
+find temp,#0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+mov tmp,$RESULT
+sub tmp,temp
+add temp,tmp
+mov edi,temp
+
+mov ecx,codebase
+add codesize,codebase
+mov edx,codesize
+mov ebx,iattop
+mov [iattabbegin],#8A013CE89074273CE97423668B01663DFF159090663DFF259090833900907503419090413BCA0F8F9C000000EBD28B690103E983C5058BF3AD83F800750B833E0075063BF77FDCEBEF3BE87402EBE98079FF9075219090909090908039E9750866C741FFFF25EB0666C741FFFF1583EE04897101EB21908039E9750866C701FF2590EB0566C701FF159083EE04897102909083C104EB8C8B690203E983C5068BF3AD83F800750F833E00750A3BF70F8F6FFFFFFFEBEB3BE87402EBE589710283C104E95CFFFFFF909090#
+push eip
+mov eip,iattabbegin
+sti
+
+mov temp,iattabbegin
+add temp,0c9
+bphws temp,"x"
+esto
+
+bphwcall
+pop eip
+bp eip
+
+exec
+popfd
+popad
+ende
+bc eip
+
+cmp Imgtype,"dll"
+je dllcode
+eval "Borland C++_{Imgtype}程序--IAT基地址在:{iattop};IAT表长度：{iatlength};VM_OEP地址：{eip};{packtype}: {packver}"
+msg $RESULT
+ret
+
+dllcode:
+eval "Borland C++_dll程序--IAT基地址在:{iattop};IAT表长度：{iatlength};VM_OEP地址：{eip};{packtype}: {packver} "
+msg $RESULT
+ret
+//====================End====================
+//====================ASM====================
+asmappiatrevertfn:
+
+mov temp,codeendadd
+sub temp,05
+findopnext_asm:
+opcode temp
+cmp $RESULT_2,05
+je findop_asm
+dec temp
+jmp findopnext_asm
+
+findop_asm:
+
+bphwcall
+bpmc
+exec
+pushad
+pushfd
+ende
+mov esi,temp
+mov ebp,iattop
+push eip             	      
+mov eip,iattabbegin   
+mov [eip],#908BDE807B050074568A033CE975288B430103C383C00555837D0000740A3B4500742B83C504EBF083C504837D000075E75D83EB06EBD2807BFFE975058B0348EBD0807B01E9751B8B430240EBC49066C703FF25896B025D83EB06EBAC90904BEBA7909090#
+sti
+mov temp,eip
+add temp,64
+bphws temp,"x"
+esto
+
+bphwcall
+pop eip
+bp eip
+
+exec
+popfd
+popad
+ende
+
+bc eip
+
+
+cmp Imgtype,"dll"
+je dllcode
+eval "ASM程序--IAT基地址在:{iattop};IAT表长度：{iatlength};VM_OEP地址：{eip};{packtype}: {packver}"
+msg $RESULT
+ret
+
+dllcode:
+eval "ASM_dll程序--IAT基地址在:{iattop};IAT表长度：{iatlength};VM_OEP地址：{eip};{packtype}: {packver}"
+msg $RESULT
+ret
+//====================End====================
+//end
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//=============GetApi_193=============
+
+GetApi_193: //193-版本Api处理
+find eip,#83BD????????01#
+bphws $RESULT ,"x"
+mov tmp,$RESULT
+sub tmp,02
+mov antiadd,tmp
+esto
+
+sti
+bphwcall
+mov temp,eip
+mov [temp],#909090909090#
+mov tmp,0
+loop1:
+find eip,#3B8D????????0F84#
+bphws $RESULT ,"x"
+cmp $RESULT,0
+je findnewver
+esto
+
+bphwcall
+mov iatfn,eax        //获得函数，并修改magic jump
+log iatfn,"API:"
+sti
+mov temp,eip
+mov [temp],#909090909090#
+inc tmp
+cmp tmp,03
+je next_1
+jmp loop1
+
+next_1:
+add iattabbegin,04
+bphws iattabbegin,"r"
+esto
+
+bphwcall
+findiataddpro:               //iataddress
+find eip,#0385????????#
+bphws $RESULT,"x"
+mov tmp,$RESULT
+add tmp,05
+find tmp,#0385????????#
+bphws $RESULT,"x"
+esto
+
+sti
+bphwcall
+mov iattop,eax       
+log iattop,"EAX是iat表中函数写入地址，然后判断这个值最小时就是iat基地址:"
+add  iattabbegin,04
+bphws iattabbegin,"r"
+esto
+
+bphwcall
+find eip,#0385#
+bphws $RESULT,"x"
+esto
+sti
+
+bphwcall
+mov codeadd,eax
+cmp iatprocend,eip
+je tmd193over
+
+bprm codebase,codesize
+esto
+
+bpmc
+find eip,#83F8500F82#
+mov temp, $RESULT
+cmp temp,0
+je apicodeend193
+bphws temp,"x"
+esto
+sti
+
+bphwcall
+mov temp,eip
+add temp,02
+mov tmp,[temp]
+add tmp,temp
+add tmp,04
+eval "jmp {tmp}"
+asm eip,$RESULT
+
+apicodeend193:
+bphws antiadd,"r"
+bphws iatprocend,"x"
+esto
+
+find eip,#3985????????0F84#,
+mov temp, $RESULT
+bphws temp,"x"
+cmp temp,0
+je findvmoepbegin
+esto
+
+bphwcall
+sti
+mov temp,eip
+mov [temp],#90E9#     
+log temp
+
+bphwcall
+bphws iatprocend,"x"
+esto
+
+tmd193over:
+ret
+
+//=============GetApi_195=============
+
+GetApi_195:
+var tmdanti195
+
+bphwcall
+find eip,#2BD9#
+bphws $RESULT
+esto
+
+sti
+log eax,"API:"
+bphwcall
+//mov [eip],#909090909090#
+mov tmdanti195,eip
+
+find eip,#2BD9#
+bphws $RESULT
+esto
+
+sti
+bphwcall
+mov [eip],#909090909090#
+
+find eip,#2BD9#
+bphws $RESULT
+esto
+
+sti
+bphwcall
+mov [eip],#909090909090#
+
+mov temp,esi
+bphws temp,"r"
+esto
+
+bphwcall
+find eip,#0385????????#
+bphws $RESULT,"x"
+esto
+
+sti
+bphwcall
+mov iattop,eax        
+log iattop,"EAX是iat表中函数写入地址，然后判断这个值最小时就是iat基地址:"
+mov iattabbegin,esi
+bphws iattabbegin,"w"
+esto
+
+bphwcall
+find eip,#0385#
+bphws $RESULT,"x"
+esto
+sti
+
+bphwcall
+mov codeadd,eax
+bprm codebase,codesize
+esto
+
+bpmc
+find eip,#83F8500F82#
+mov temp, $RESULT
+cmp temp,0
+je apicodeend195
+bphws temp,"x"
+esto
+sti
+
+bphwcall
+mov temp,eip
+add temp,02
+mov tmp,[temp]
+add tmp,temp
+add tmp,04
+eval "jmp {tmp}"
+asm eip,$RESULT
+
+apicodeend195:
+
+bphws iatprocend,"x"
+bphws tmdanti195,"r"
+bprm codeadd,codesize
+esto
+
+cmp eip,dllimg
+jb tmd195end
+cmp iatprocend,eip
+je tmd195end
+find eip,#3985????????0F84#,
+mov temp, $RESULT
+bphws temp,"x"
+cmp temp,0
+je iatpatch_195over
+esto
+
+bphwcall
+sti
+mov temp,eip
+mov [temp],#90E9#       
+log temp
+
+
+iatpatch_195over:
+bphwcall
+bphws iatprocend,"x"
+esto
+
+tmd195end:
+ret
+
+//=============GetApi_196以上============= 
+GetApi_196:
+iatpatch_197:
+var getapiep
+var tmdanti197
+var codeadd
+var iatintoadd
+var iatfntmp
+var movadd
+var subadd
+var getiatadd1
+mov movadd,0
+mov subadd,0
+mov i,0
+var iatfn
+var iattop
+var codeadd
+var antiadd
+bphwcall
+
+bphws iattabbegin,"r"
+esto
+
+bphwcall
+bpmc
+
+find eip,#B90?0000000BC974#     //第一次用于定位
+cmp $RESULT,0
+je stop
+mov epapiflag,$RESULT
+bphws epapiflag,"x"
+mov temp,esi
+esto
+
+iatloop_197:
+bphwcall
+bpmc
+cmp subadd,0
+jne bpsubadd
+find eip,#3B85??????090F85????0000#
+mov getiatadd1,$RESULT
+find eip,#2BD90F84????0000#
+mov subadd,$RESULT
+bpsubadd:
+bphws getiatadd1,"x"
+bphws subadd,"x"
+bphws iatprocend,"x"
+novmapi:
+esto
+
+cmp eip,iatprocend
+je iatpatchover
+cmp [esi+8],0
+je iatpatchover
+cmp ecx,kerneldll
+je nextloopget
+cmp ecx,userdll
+je nextloopget
+cmp ecx,advapidll
+je nextloopget
+jmp novmapi
+
+nextloopget:
+cmp [eax], 4C44544E
+jne getapiadd
+find eip,#81384E54444C#
+bphwcall
+bpmc
+bphws $RESULT,"x"
+esto
+
+find eip,#894424#
+cmp $RESULT,0
+je stop
+bphwcall
+bphws $RESULT,"x"
+esto
+getapiadd:
+cmp getiatadd1,eip
+je getapiadd2
+mov getiatadd1,subadd
+getapiadd2:
+log eax,"API:"
+mov iatfn,eax
+bphwcall
+nextesto:
+bprm codebase,codesize
+esto
+
+cmp eip,10000000
+jg nextesto
+cmp movadd,0
+jne findiattop
+mov movadd,eip
+findiattop:
+//查找iat表基地址
+cmp iattop,0
+je beginfindiattop
+mov tmp,iattop
+
+cmp movadd,eip
+je beginfindiattop
+opcode eip
+cmp $RESULT_2,02                   
+jne stop
+push eax
+mov temp,eip
+mov al,[temp]
+cmp al,8F
+je findpopmode
+cmp al,89
+je findmovmode
+jne stop
+findmovmode:
+opcode eip
+
+mov al,[eip]
+cmp al,89
+jne stop
+pop eax
+mov ecx,iatfn          
+sti
+jmp loopgetpatchiat
+
+
+findpopmode:
+pop eax
+beginfindiattop:
+
+opcode eip
+cmp $RESULT_2,02
+jne stop
+push eax
+mov al,[eip]
+cmp al,89
+jne findpopapiadd
+pop eax
+mov ecx,iatfn
+mov temp,eip
+sti
+jmp loopgetpatchiat
+
+findpopapiadd:
+dec $RESULT_2
+mov temp,eip
+add temp, $RESULT_2
+mov al,[temp]
+cmp al,0
+jne findiataddnext1
+mov iattop,[esp]
+jmp findiattopend
+findiataddnext1:
+
+cmp al,1
+jne findiataddnext2
+mov iattop,ecx
+jmp findiattopend
+findiataddnext2:
+
+cmp al,02
+jne findiataddnext3
+mov iattop,edx
+jmp findiattopend
+
+findiataddnext3:
+
+cmp al,03
+jne findiataddnext4
+mov iattop,ebx
+jmp findiattopend
+findiataddnext4:
+pop eax
+jmp patch197next
+
+ 
+
+findiattopend:
+pop eax
+cmp tmp,iattop
+ja getpatchiatbegin
+mov iattop,tmp
+
+getpatchiatbegin:
+mov [esp],iatfn
+mov temp,eip
+
+find eip,#81#,50
+cmp $RESULT,0
+je loopgetpatchiat
+
+sub $RESULT,temp
+cmp $RESULT,2
+jne loopgetpatchiat
+sti
+add eip,06
+
+loopgetpatchiat:
+bphws epapiflag,"x"
+bphws iatprocend,"x"
+esto
+
+cmp temp,eip
+je iatloop_197
+cmp iatprocend,eip
+je iatpatchover
+cmp epapiflag,eip
+je iatloop_197
+
+mov iatintoadd,eip                    
+log iatintoadd
+nextaddpatch:
+//下面代码用于判断代码调用api的地址
+opcode eip
+cmp $RESULT_2,2
+ja notfindstos
+jb findmovaddcode
+push eax
+mov al,[eip]
+cmp al,8F
+je findpopintoadd
+cmp al,89
+jne notfindintoadd
+mov al,[eip+1]
+cmp al,08
+jne cmpaddnext1
+mov codeadd,[esp]
+pop eax
+jmp findpopaddover
+cmpaddnext1:
+cmp al,0a
+jne cmpaddnext2       
+mov codeadd,1              
+pop eax
+jmp findpopaddover
+cmp addnext2:
+cmp al,0b
+jne notfindintoadd:
+mov codeadd,ebx
+pop eax
+jmp findpopaddover
+notfindintoadd:
+pop eax
+jne notfindstos
+push eax
+findpopintoadd:
+mov temp,eip
+inc temp
+mov al,[temp]
+cmp al,0
+jne nextecx
+mov codeadd,[esp]
+pop eax
+jmp findpopaddover
+nextecx:
+cmp al,1
+jne nextedx
+mov codeadd,ecx
+pop eax
+jmp findpopaddover
+
+nextedx:
+cmp al,02
+jne nextebx
+mov codeadd,edx
+pop eax
+jmp findpopaddover
+
+nextebx:
+cmp al,03
+jne stop
+mov codeadd,ebx
+pop eax
+jmp findpopaddover
+
+
+notfindstos:
+esto
+cmp iatprocend,eip
+je iatpatchover
+cmp epapiflag,eip
+je iatloop_197
+jmp nextaddpatch
+
+findmovaddcode:
+cmp $RESULT_2,2
+jne findstos
+
+findstos:
+cmp $RESULT,"AB"
+jne notfindstos
+
+mov codeadd,edi
+findpopaddover:
+mov iatfntmp,iatfn
+sub iatfntmp,codeadd
+sub iatfntmp,04
+
+patch197next:
+bphwcall
+//bpmc
+bphws getiatadd1,"x"
+bphws epapiflag,"x"
+bphws iatprocend,"x"
+bphws iatintoadd,"x"
+esto
+cmp codeadd,1
+je findapino
+mov [codeadd],iatfntmp
+findapino:
+cmp iatprocend,eip
+je iatpatchover
+cmp iatintoadd,eip
+je nextaddpatch
+cmp getiatadd1,eip
+je  getapiadd
+cmp epapiflag,eip
+jne  nextaddpatch
+mov temp,esi
+jmp iatloop_197
+
+
+
+iatpatchover:
+bphwcall
+bpmc
+
+ret
+//==============VBApp=================
+_vbapp:
+var vbantiadd
+
+bphwcall
+find eip,#3B85????????0F84#
+cmp $RESULT,0
+je vbpatch1
+
+bphws $RESULT ,"x"
+esto
+
+mov temp,eip
+mov tmp,ebp
+add temp,02
+add tmp,[temp]
+cmp [tmp],vbmain
+jne vbpatch1
+sti
+mov tmp,eip
+OPCODE tmp
+cmp $RESULT_2,6
+jne opcodenext_1
+mov [eip],#90E9#
+mov vbantiadd,eip
+jmp vbnext_1
+opcodenext_1:
+mov [eip],#E9#
+mov vbantiadd,eip
+
+vbnext_1:
+
+bphwcall
+bphws vbantiadd,"r"
+mov iattabbegin,esi
+bphws iattabbegin,"r"
+esto
+
+bphwcall
+find eip,#0385????????#
+bphws $RESULT,"x"
+esto
+
+sti
+bphwcall
+mov iattop,eax        
+log iattop,"IAT表在这个附近："
+mov iattabbegin,esi
+bphwcall
+bphws iattabbegin,"w"
+esto
+
+bphwcall
+find eip,#0385#
+bphws $RESULT,"x"
+esto
+sti
+
+bphwcall
+mov codeadd,eax
+bprm codebase,codesize
+esto
+
+bpmc
+find eip,#83F8500F82#
+mov temp, $RESULT
+cmp temp,0
+je apicodeendvb
+bphws temp,"x"
+esto
+sti
+
+bphwcall
+mov temp,eip
+add temp,02
+mov tmp,[temp]
+add tmp,temp
+add tmp,04
+eval "jmp {tmp}"
+asm eip,$RESULT
+
+apicodeendvb:
+bphws iatprocend,"x"
+bphws vbantiadd,"r"
+esto
+
+cmp iatprocend,eip
+je iatpatchend
+find eip,#3985????????0F84#,
+mov temp, $RESULT
+cmp temp,0
+je iatpatchend
+mov crcadd,temp
+bphws temp,"x"
+esto
+
+bphwcall
+sti
+mov [eip],#90E9#       
+log temp,"程序CRC地址："
+sub iattabend,04
+cmp iattabend,0
+je findvmoepbegin
+sub iattabend,8
+bphws iattabend,"w"
+esto
+
+iatpatchend:
+find codeadd,#E9????0000????????????????E9????0000#
+cmp $RESULT,0
+je novapioepbegin
+sti
+sti
+novapioepbegin:
+bphwcall
+bprm codebase,9000
+esto
+
+bphwcall
+bpmc
+vbvmrecover:
+
+push eax
+mov al,[eip]
+cmp al,0E9
+pop eax
+jne novapioepbegin
+var voep
+mov voep,eip
+add eip,06
+mov temp,esp
+add temp,04
+mov temp,[temp]
+eval "push {temp}"
+asm eip,$RESULT
+mov tmp,eip
+add tmp,05
+eval "call {voep}"
+asm tmp,$RESULT
+
+vbapirecover:
+
+var iatlength
+var vbcodebegin
+find codebase,#00000000#
+mov iatlength,$RESULT
+sub iatlength,codebase
+log iatlength,"IAT表长度："
+find eip,#558BEC#
+cmp $RESULT,0
+je findvbcode
+mov vbcodebegin,$RESULT
+find $RESULT,#0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+mov codesize,$RESULT
+sub codesize,vbcodebegin
+
+exec
+pushad
+pushfd
+ende
+mov ebp,codebase          
+mov esi,vbcodebegin   
+mov edi,codesize          
+push eip             
+mov ebx,eip	      
+mov eip,iattabbegin   
+mov [eip],#9083EB06803B0074348A033CE975258B430103C383C00555837D000074133B4500740683C504EBF09066C703FF25896B025DEBCD8B4302EBD9909090908A063CE8740A464F83FF00742FEBF1908B460103C683C00555837D000074133B4500740683C504EBF09066C706FF15896E025D83C60183EF01EBC59090#
+sti
+mov temp,eip
+add temp,78
+bphws temp,"x"
+esto
+
+bphwcall
+pop eip
+bp eip
+
+exec
+popfd
+popad
+ende
+
+bc eip
+
+eval "VB_{Imgtype}程序--IAT基地址在:{iattop}; OEP地址：{eip}; {packtype}: {packver} "
+msg $RESULT
+jmp end
+
+
+findvbcode:
+msg "VB_code编码，不需要修复代码部分!"
+eval "IAT基地址在:{iattop}; OEP地址：{eip}; {packtype}: {packver} "
+msg $RESULT
+jmp end
+
+//vbend
+
+//==========================
+
+Getpacktype: //添加获取壳类型
+inc rreflag
+bphwcall
+
+mov tmp,[esp+8]
+add tmp,40
+push eax
+findtypeloop:
+mov al,[tmp]
+cmp al,20
+jne findpacktype
+inc tmp
+jmp findtypeloop
+
+findpacktype:
+cmp al,57
+je findtypewl
+cmp al,54
+je findtypetmd
+pop eax
+jmp valnext
+
+findtypewl:
+pop eax
+mov [tmp+17],0
+eval "{[tmp]}"
+mov packtype,$RESULT
+jmp valnext
+
+findtypetmd:
+pop eax
+mov [tmp+14],0
+eval "{[tmp]}"
+mov packtype,$RESULT
+jmp valnext
+
+valnext:
+bphwcall
+bpmc
+ret
+
+Getpackver: //添加壳版本获得,by qql504 感谢!
+mov  temp, [esp+8]
+mov  tmp, [esp+8]
+GMEMI temp, MEMORYBASE
+mov   temp, $RESULT
+find  temp, #000004000000322E#          //特征码
+cmp  $RESULT, 0
+jz   next
+jmp  ver
+next:
+find temp, #000004000000312E#          //特征码
+cmp $RESULT, 0
+jz  stop
+ver:
+mov temp, $RESULT
+add temp, 6
+eval "{[temp]}"
+mov packver,$RESULT
+ret
+
+GetImageType: //获得镜像类型,这个代码抄别人的。感谢!
+var characteristics
+mov tmp,modulebase
+add tmp, 3C
+mov tmp, [tmp]
+add tmp, modulebase
+add tmp,16
+mov characteristics,[tmp]
+and characteristics,0FFFF
+and characteristics,2000
+cmp characteristics,2000
+je  ImageType_DLL
+mov Imgtype,"exe"
+ret
+ImageType_DLL:
+mov Imgtype,"dll"
+ret
+
+Err_ver:
+MSG "脚本插件版本过低，请重新安装新版本再试!"
+RET
+
+stop:
+msg "出错啦！"
+ret
+
+findoldver:
+msg "发现老版本，请用老版脚本！"
+eval "{packtype}: {packver}"
+msg $RESULT
+ret
+
+end:
+ret
+

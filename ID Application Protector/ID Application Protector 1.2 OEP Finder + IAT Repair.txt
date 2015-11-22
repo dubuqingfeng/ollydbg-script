@@ -1,0 +1,20 @@
+/*
+Script written by  ~icy~Ñ§Ï°°à
+Script            : ID Application Protector 1.2_unpacker
+Date              : 2007-04-16
+Test Environment  : OllyDbg 1.1, ODBGScript 1.51, Winxp Win2003
+*/
+var addr
+find eip,#743789EA#
+go $RESULT
+repl eip, #743789EA#, #753789EA#,1F
+find eip,#0F858500000089E9#
+go $RESULT
+repl eip, #0F858500000089E9#, #0F848500000089E9#,1F
+find eip,#C390EB01#
+go $RESULT
+STO
+cmt eip,"Script finished! You are on the OEP!"
+eval "Please Dump & fix IAT!"
+msg $RESULT
+ret

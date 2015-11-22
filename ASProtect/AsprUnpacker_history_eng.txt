@@ -1,0 +1,39 @@
+History
+----------
+
+1.00
+First release.
+
+1.10
+1. Occasionally crash when fixing initialization table of Delphi apps.
+2. IAT rebuild for an early version of Asprotect.
+3. Add one more crc check pattern.
+4. Add one more Asprotect API emulation.
+
+1.11
+IAT rebuild is incomplete when the address of the API caller is beyond first section of the app.
+
+1.12
+With some version of ODBGscript it occasionally fails to locate the OEP.
+
+1.13
+1. With ODBGscript v1.63 or above it fails to fix initialization table of Delphi apps.
+2. Support a newer Asprotect whose stolen code type definition is different.
+
+1.14
+1. Script runs on ODBGscript v1.64 or above only.
+2. Modification of fixing CRC check point.
+3. Failed to locate OEP of proggie packed with verison 1.4x
+4. Unhide the Asprotect API used in proggie packed with version 1.4x.
+5. If std function can't find a match, they will be copied to .aspr section just like other stolen code.
+6. Other bugs fix.
+
+1.14a
+1. Bug fix.
+
+1.15
+1. Bug fix.
+2. Support a newer version of Asprotect.
+
+1.2
+Add the ability to fix VM code.

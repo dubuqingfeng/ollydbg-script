@@ -1,0 +1,46 @@
+/* 
+//////////////////////////////////////////////////////////////
+// PECompact 2.64 OEP Finder 
+// Author: Wildmans
+// 
+//
+// OS : WinXP Pro, OllyDbg 1.10 Final, OllyScript v0.92
+// Date ReLeAsE: 22 August 2005
+/////////////////////////////////////////////////////////////
+*/
+var tmpeax
+var tmpecx
+var tmpesp
+
+sto
+bp eax
+mov tmpeax, eax
+esto
+bc tmpeax
+sto
+sto
+mov tmpecx, ecx
+bp ecx
+esto
+bc tmpecx
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+mov tmpesp, esp
+bphws tmpesp, "r"
+esto
+bphwc tmpesp
+sto
+sto
+sto
+sto
+sto
+sto
+cmt eip, "This is the OEP. have fun dumping ;)"
+msg "You are now at the OEP. You can start your dumping tool now !!"

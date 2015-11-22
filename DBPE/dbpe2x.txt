@@ -1,0 +1,128 @@
+/*
+//////////////////////////////////////////////////
+	DBPE 2.x OEP finder v0.2
+	Author:	loveboom
+	Email : bmd2chen@tom.com
+	OS    : Winxp sp1,OllyDbg 1.1,OllyScript v0.85(latest)
+	Date  : 2004-6-14
+	Config: Ignore all Exceptions.
+	Note  : If you have one or more question, email me please,thank you!
+//////////////////////////////////////////////////
+*/
+
+var cbase
+var csize
+var addr
+var addr1
+
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+
+lblset:
+  msgyn "Setting:Ignore all exceptions,require:Ollydbg1.1,ollyscript v0.85(latest),Continue?"
+  cmp $RESULT,0
+  je end
+
+start:
+  bprm cbase,csize
+  run
+
+lbl1:
+  bpmc
+
+lblfd:
+  find eip, #39BD????????76????????????89BD#         	//Found 'MOV DWORD PTR SS:[EBP+XXXX],EDI'
+  cmp $RESULT,0						//If not found go to abort
+  je lblabort
+  mov addr,$RESULT
+  add addr,D
+  fill addr,6,90					//Replace to 'NOP'
+
+lblsel:
+  find eip,#39BD????????73????????????89BD#		//Found 'MOV DWORD PTR SS:[EBP+XXXX],EDI'
+  cmp $RESULT,0
+  jne lbldb2x
+  find eip,#39BD????????73????????????????????????????????????????????????89BD#
+  cmp $RESULT,0
+  jne lbldb233
+  jmp lblabort						//If not found then script abort
+
+lbldb2x:						//dbpe2.2 dbpe2.32
+  mov addr,$RESULT
+  add addr,D
+  fill addr,6,90					//Replace to 'NOP'
+  go addr
+  jmp lbljmpoep
+
+lbldb233:						//dbpe2.33
+  mov addr,$RESULT
+  add addr,1F
+  fill addr,6,90
+  go addr
+
+
+lbljmpoep:
+  find eip,#890F#					//Found 'MOV DWORD PTR DS:[EDI],ECX'
+  mov addr,$RESULT
+  mov [addr],#8907#					//Replace to 'MOV DWORD PTR DS:[EDI],EAX'
+  find eip,#C20C00FFE0#					//Found 'jmp eax'
+  mov addr,$RESULT
+  add addr,3
+  bprm addr,FF
+  run
+
+lblsto:
+  bpmc
+  sto	
+
+lblask:
+  msgyn "FIX IAT(very slow)?"
+  cmp $RESULT,0
+  je lblend
+
+lblfixapi:
+  cmt eip,"Scaning,Please wait!"				//Fix IAT
+  find cbase,#FF25??????80#
+  cmp $RESULT,0
+  jne lbljmp
+  find cbase,#FF15??????80#
+  cmp $RESULT,0
+  jne lbljmp1
+  jmp lblend
+
+lbljmp:
+  mov addr,$RESULT
+  repl addr,#FF25??????80#,#FF25??????00#,6
+
+lblsub1:
+  find addr,#FF25??????80#
+  cmp $RESULT,0
+  je lblend
+  mov addr,$RESULT
+  repl addr,#FF25??????80#,#FF25??????00#,6
+  jmp lbljmp
+
+lbljmp1:
+  mov addr,$RESULT
+  repl addr,#FF15??????80#,#FF15??????00#,6
+
+lblsub2:
+  find addr,#FF15??????80#
+  cmp $RESULT,0
+  je lblend
+  mov addr,$RESULT
+  repl addr,#FF15??????80#,#FF15??????00#,6
+  jmp lbljmp1
+ 
+lblend:
+  cmt eip,"OEP,Please dumped it,Enjoy!"
+  msg "Script by loveboom[DFCG],[FCG],Thank you for using my Scripts!"
+  jmp end
+
+lblabort:
+  msg "Error!Script aborted,Maybe target is not protect by DBPE or you forgot Ignore all Exceptions."
+
+end:
+  ret

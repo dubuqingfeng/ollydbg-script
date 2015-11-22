@@ -1,0 +1,124 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//  
+//  Undetector 1.2 OEP finder and detach processes
+//  Coded by: LCF-AT
+//  Special greetz to: gRn and SnD
+//  Data: 06.07.2007
+//  Test: WinXP SP1, OllyDbg V1.10, ODbgScript V1.48
+// 
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+
+var OEP
+var OEP_2
+var OEP_3
+var OEP_4
+
+gpa "WriteProcessMemory", "kernel32.dll"
+bp $RESULT
+esto
+rtu
+esto
+bc $RESULT
+rtu
+STO
+STO
+STO
+STO
+mov OEP, eax
+log OEP
+
+gpa "ResumeThread", "kernel32.dll"
+bp $RESULT
+esto
+bc $RESULT
+MSG "Now use Pupe to change the OEP bytes for the second process into EBFE"
+MSG "Look in to the Log window for the OEP"
+MSG "After changing the bytes you can resume the Script"
+pause
+rtu
+MSG "Now you can dump the second process with the right LordPE option큦 and then change the bytes to the original bytes and you are done with file 1"
+MSG "After this resume the script for the next process"
+pause
+
+gpa "WriteProcessMemory", "kernel32.dll"
+bp $RESULT
+esto
+rtu
+esto
+bc $RESULT
+rtu
+STO
+STO
+STO
+STO
+mov OEP_2, eax
+log OEP_2
+
+gpa "ResumeThread", "kernel32.dll"
+bp $RESULT
+esto
+bc $RESULT
+MSG "Now use Pupe to change the OEP bytes for the next process into EBFE"
+MSG "Look in to the Log window for the OEP_2"
+MSG "After changing the bytes you can resume the Script"
+pause
+rtu
+MSG "Now you can dump the second process with the right LordPE option큦 and then change the bytes to the original bytes and you are done with file 2"
+MSG "After this resume the script for the next process"
+pause
+
+gpa "WriteProcessMemory", "kernel32.dll"
+bp $RESULT
+esto
+rtu
+esto
+bc $RESULT
+rtu
+STO
+STO
+STO
+STO
+mov OEP_3, eax
+log OEP_3
+
+gpa "ResumeThread", "kernel32.dll"
+bp $RESULT
+esto
+bc $RESULT
+MSG "Now use Pupe to change the OEP bytes for the next process into EBFE"
+MSG "Look in to the Log window for the OEP_3"
+MSG "After changing the bytes you can resume the Script"
+pause
+rtu
+MSG "Now you can dump the second process with the right LordPE option큦 and then change the bytes to the original bytes and you are done with file 3"
+MSG "After this resume the script for the next process"
+pause
+
+gpa "WriteProcessMemory", "kernel32.dll"
+bp $RESULT
+esto
+rtu
+esto
+bc $RESULT
+rtu
+STO
+STO
+STO
+STO
+mov OEP_4, eax
+log OEP_4
+
+gpa "ResumeThread", "kernel32.dll"
+bp $RESULT
+esto
+bc $RESULT
+MSG "Now use Pupe to change the OEP bytes for the next process into EBFE"
+MSG "Look in to the Log window for the OEP_3"
+MSG "After changing the bytes you can resume the Script"
+pause
+rtu
+MSG "Now you can dump the second process with the right LordPE option큦 and then change the bytes to the original bytes and you are done with file 4"
+MSG "After this resume the script for the next process"
+pause
+ret

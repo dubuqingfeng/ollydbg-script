@@ -1,0 +1,87 @@
+//////////////////////////////////////////////////////////
+//		          AoRE TEAM
+//               script by TallfaZ  31/03/2007
+//   This script unjunks stolen code by DotFix_NiceProtect_2.2
+//
+//////////////////////////////////////////////////////////
+
+
+
+
+
+var pushecx
+var popecx
+var subst
+var  tmp1
+var tmp2
+var tmp3
+var tmp4
+var begin
+
+
+ask "Enter the address where you've found the pattern!"
+
+cmp $RESULT, 0
+je cancel_pressed
+
+mov begin,$RESULT
+mov tmp1, $RESULT
+mov tmp2, $RESULT
+
+/////////////////////////////////////////////////
+re:
+find tmp1, #51f91b#
+cmp $RESULT,0
+je nextJunk_1
+mov pushecx, $RESULT
+find tmp1, #59eb#
+cmp $RESULT,0
+je nextJunk_1
+mov popecx, $RESULT
+
+mov subst, popecx
+sub subst, pushecx
+add subst, 4
+
+fill pushecx, subst, 90
+mov tmp1, popecx
+jmp re
+
+
+/////////////////////////////////////////////////
+nextJunk_1:
+find tmp2, #EB01??#
+cmp $RESULT,0
+je nextJunk_2
+fill $RESULT, 3, 90
+jmp nextJunk_1
+
+
+/////////////////////////////////////////////////
+nextJunk_2:
+findop tmp2, #EB??#
+cmp $RESULT,0
+je GoodBoy
+mov tmp3, $RESULT
+inc $RESULT
+mov subst, [$RESULT]
+and subst, 0ff
+add subst, 2
+fill tmp3, subst, 90
+jmp nextJunk_2
+
+
+cancel_pressed:
+msg "Canceled"
+ret
+
+GoodBoy:
+log begin
+an begin
+eval "The beginning of your stolen code is {begin}"
+msg $RESULT
+ret
+
+BadBoy:
+msg "Something wrong was happened! sorry"
+ret

@@ -1,0 +1,44 @@
+/* 
+//////////////////////////////////////////////////// 
+// exe32pack 1.43 OEP Finder & Unpacker// Author: DarK_m00n / Very Minor Modifications To Support 1.43 By Teddy Rogers
+// Email : x5.man@caramail.com 
+// Site : www.CiM.ht.st 
+//////////////////////////////////////////////////// 
+*/ 
+
+
+
+var a
+eob Break
+findop eip,#5B#
+bphws $RESULT,"x"
+run
+Break:
+bphwc $RESULT
+dbh
+eob Break2
+findop eip,#BFFFE0#
+mov a,$RESULT
+inc a
+bphws a,"x"
+run
+Break2:
+bphwc a
+dbs
+sto
+sto
+sto
+an eip
+cmt eip,"OEP found by DarK_m00n | CiM"
+MSGYN "Do u wanna to Unpack it ?"
+cmp $RESULT,0
+je he_refuze
+mov a,"c:\D_file_unpacked.exe"
+dpe a,eip
+MSG a
+he_refuze:
+ret
+
+
+
+// [BACK] 

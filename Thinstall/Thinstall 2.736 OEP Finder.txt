@@ -1,0 +1,44 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Thinstall 2.736 OEP Finder
+//  Coded by: Pavka
+//  
+//////////////////////////////////////////////////////////////////////////////////////////
+
+Var iat_Rep
+var oep
+
+
+gpa "SetEnvironmentVariableA","kernel32.dll"
+bp $RESULT
+run 
+bc $RESULT
+rtu
+mov oep,eip
+add oep,6F
+bp oep
+run
+bc oep
+sti
+find eip,#0F85D70000008B8D40FEFFFF51#
+cmp $RESULT,0
+je quit
+mov iat_rep,$RESULT
+mov [iat_rep],#90E9#
+find eip,#8B854CFFFFFF508B8550FFFFFFFFE0#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT
+add oep,D
+bp oep
+
+run
+bc oep
+sti
+cmt eip,"OEP"
+
+msg "Oep faund IAt fixed"
+ret
+
+quit
+"not Thinstall 2.736"

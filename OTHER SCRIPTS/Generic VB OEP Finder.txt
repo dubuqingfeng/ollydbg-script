@@ -1,0 +1,39 @@
+/*
+///////////////////////////////////////////////////////////////////////
+/                                                                     /
+/   Script para encontrar el OEP en todos los progrmas VB            /
+/           Independientemente del compresor usado                    /
+/                                                                     /
+///////////////////////////////////////////////////////////////////////
+
+   ****  Modo de uso Attach el programa deseado con Olly ****
+           ****  y luego aplicar el Script *****
+                
+                *** by Lisa&&Alquimista ***
+
+*/
+
+var modu_base
+var dir_oep
+
+mov modu_base,00401000
+
+find modu_base,#68????????E8F0FFFFFF#
+mov dir_oep,$RESULT
+cmp dir_oep,0
+   jne final_bueno
+
+find modu_base,#68????????E8EEFFFFFF#
+mov dir_oep,$RESULT
+cmp dir_oep,0
+   jne final_bueno
+
+jmp final__malo:
+final__malo:
+msg "No parece ser un VB"
+ret
+
+final_bueno:
+eval "El OEP del programa es {dir_oep}"
+msg  $RESULT
+ret

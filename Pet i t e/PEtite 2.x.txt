@@ -1,0 +1,34 @@
+/*
+////////////////////////////////////////////////// 
+Author: ~Hellsp@wN~
+Email : alt-fox@mail.ru
+OS    : OllyDbg 1.10 with 
+OllyScript plugin v0.92
+Date  : 03.10.2004
+
+Support with:
+PEtite 2.x -> Ian Luck
+////////////////////////////////////////////////// 
+*/ 
+
+var t
+
+mov t,esp
+sub t,4
+
+EOB M1
+bphws t, "r"
+esto
+
+M1:
+EOB M2
+bphwc t
+bphws t, "r"
+esto
+
+M2:
+bphwc t
+sto
+sto
+cmt eip, "This is the entry point (OEP)"
+ret

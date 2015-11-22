@@ -1,0 +1,22 @@
+//////////////////////////////////////////////////////////////////////////////
+//  OEP Find Script for SimplePack 1.21
+//  Coded by: PiONEER {RES}
+//  Team RESURRECTiON
+//  Greetz to: {RES},ICU,ARTeam,SnD,B@S,CiM,AS.MS
+//  Data: 00:01 26.03.2007
+//  Environment :  WinXP SP1,OllyDbg V1.10,ODbgScript V1.48
+//  Contact: http://www.appzclub.tk - or - admin@appzclub.tk
+//////////////////////////////////////////////////////////////////////////////
+
+start:
+find eip, #60#
+sto
+bphws esp,"r"
+run
+bphwc esp
+sto
+sto
+msg "OEP found! - Now dump and fix the IAT!"
+cmt eip, "<-- OEP found by PiO - TEAM {RES}!"
+ret
+end:

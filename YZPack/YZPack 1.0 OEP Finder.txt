@@ -1,0 +1,11 @@
+// YZPack v1.0 OEP Finder Script by LaFarge/ICU
+
+var blah
+sto   
+mov blah,esp 
+bphws blah,"r"
+run
+sto
+sto
+bphwc blah
+cmt eip,"OEP Reached! Dump from here!"

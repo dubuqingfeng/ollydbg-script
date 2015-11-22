@@ -1,0 +1,161 @@
+var gmh
+var codebase
+var szcode
+var iat_st
+var dll_n
+var i_sz
+var chk_dl
+var cnt
+var pntwr
+var path
+var i_wr
+var pntchk
+var imbase
+var load
+var chk_oep
+var counter
+var oep
+var chek_data
+var endiat_pg
+mov counter,0
+ask "Введите адрес секции .data или .rdata или .idata.(Enter the address of section .data or .rdata or .idata.)"
+cmp $RESULT, 0
+je quit
+mov intd,$RESULT
+and intd,FF0000
+
+GMI eip, MODULEBASE
+mov imbase,$RESULT
+GMI eip, CODEBASE
+mov codebase,$RESULT
+
+GMEMI codebase, MEMORYSIZE
+mov szcode,$RESULT
+mov espval,esp-4
+gpa "GetModuleHandleA","kernel32.dll"
+mov gmh,$RESULT
+
+
+bpwm codebase, szcode
+erun
+bpmc
+bp gmh
+chek_pl:
+erun
+mov chek_data,ebx
+and chek_data,FF0000
+cmp chek_data,intd
+jne chek_pl
+
+mov dll_n,eax
+rtu
+mov chk_dl,eax
+mov pntchk,eip
+mov load,pntchk
+add load,B
+bc gmh
+find eip,#C3#
+cmp $RESULT,0
+je quit
+bp $RESULT
+erun
+bc eip
+rtu
+
+sti
+mov pntwr,eip
+find eip,#89048FEB01#
+cmp $RESULT,0
+je quit
+fill $RESULT,3,90
+find eip,#668946FE#
+cmp $RESULT,0
+je quit
+fill $RESULT,4,90
+find eip,#89048A33C0#
+cmp $RESULT,0
+je quit
+mov path,$RESULT+8
+fill $RESULT,3,90
+fill path,2,90
+
+
+bp pntchk
+mov iat_st,ebx
+find ebx,#0000000000000000#
+cmp $RESULT,0
+je quit
+mov endiat_pg,$RESULT-4
+lwr:
+
+fill ebx,14,00
+mov i_wr,ebx
+mov [i_wr],edx-imbase
+add i_wr,c
+mov [i_wr],dll_n-imbase
+add i_wr,4
+sti
+mov [i_wr],edi
+
+loop:
+
+erun
+bphws espval,"r"
+cmp eip,pntchk
+jne go_oep
+cmp eax,0
+je noload
+cmp eax,chk_dl,
+je loop
+
+lWr1:
+mov dll_n,ebx
+mov chk_dl,eax
+
+bp pntwr
+erun
+bc pntwr
+jmp lwr
+
+noload:
+
+go load
+jmp lWr1
+go_oep:
+
+f:
+mov chk_oep,eip
+add codebase,szcode
+cmp chk_oep,codebase
+ja find
+cmp imbase,chk_oep
+ja find
+
+//---------check iat--------
+sub endiat_pg,i_wr
+cmp endiat_pg,14
+je fill_z
+final:
+mov oep,eip
+sub oep,imbase
+sub iat_st,imbase
+mov counter,imbase
+add counter,3C
+mov counter,[counter]
+add counter,imbase
+add counter,28
+mov [counter],oep
+add counter,58
+mov [counter],iat_st
+DPE "dump.exe",eip
+msg "The file is completely unpacked! Dump it on a disk. Do not use ImpREC, import is already restored! "
+ret
+find:
+erun
+jmp f
+quit:
+msg "Not PCGUARD"
+ret
+fill_z:
+fill i_wr+4,14,00
+jmp final

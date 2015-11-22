@@ -1,0 +1,45 @@
+var temp 
+var l 
+var wr_addr 
+
+mov l, eip 
+shr l, 8 
+shl l,8 
+eoe lab1 
+eob lab1 
+esto 
+
+lab1: 
+cmp [eip], FFFFFFFF 
+log [eip] 
+je lab2 
+esto 
+
+lab2: 
+mov wr_addr, l 
+add wr_addr, 99a 
+mov [wr_addr], #807FFF007413807FFFE975E766C747FFFF258957018902EB03890290595FC3# 
+mov wr_addr, l 
+add wr_addr, 0f69 
+mov [wr_addr], #9090909090# 
+find l, #041FEBFB7C8304240CC3E861# // signature of "start Stolen code " 
+mov l, $RESULT 
+add l, 0c 
+log l 
+bp l 
+eob lab3 
+eoe lab3 
+esto 
+
+lab3: 
+mov temp, eip 
+sub temp,4 
+mov temp, [temp] 
+cmp temp, 61e8c30c 
+je loc_end 
+esto 
+
+loc_end: 
+bc l 
+msg "Stolen bytes here and you may set EP here ;)" 
+ret 

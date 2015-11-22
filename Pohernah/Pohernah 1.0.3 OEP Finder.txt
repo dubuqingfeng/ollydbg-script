@@ -1,0 +1,11 @@
+// Pohernah v1.0.3.b OEP Finder Script by LaFarge/ICU
+var blah
+sti
+mov blah, esp
+bphws blah,"r"
+run
+bphwc blah
+sti
+cmt eip, "This is OEP"
+msg "OEP reached, dump here and fix imports!"
+ret

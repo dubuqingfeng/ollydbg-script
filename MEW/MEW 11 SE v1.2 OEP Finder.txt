@@ -1,0 +1,20 @@
+/*
+//////////////////////////////////////////////////////////
+// MEW 11 v.1.2 SE OEP Finder                      
+// Author: Max_Zero                                 
+// Email : max_zero130@yahoo.de           
+// Website: www.max_zero.6x.to              
+/////////////////////////////////////////////////////////
+*/
+
+sto
+findop eip, #c3#
+go $RESULT
+sto
+msg "Script finished! You are on the OEP! "
+msg "Dump it and rebuild the IAT "
+msg "Have fun! Generic OEP Finder {MEW 11 v.1.2 SE} by Max_Zero "
+
+
+
+

@@ -1,0 +1,52 @@
+/*
+===============================================================
+          SafeCast 2.xx-3.xx - REG import decryptor
+===============================================================
+Instructions:
+
+This script was used as help for manually fixing imports
+of register type.
+
+-haggar-
+===============================================================
+*/
+
+
+var addr 
+var import    //For import.
+var iat       //Pointer to new IAT.
+
+mov addr,12ec1000
+mov import,77F16A3B           //Import (change it).
+
+LABEL_01:                     //Find MOV REG,DWORD[POINTER]
+ find addr,#8B??2860EF12#
+ cmp $RESULT,0
+je END_01
+ mov addr,$RESULT
+ add addr,2
+
+   //==================      //Now, find that import in new IAT.
+     mov iat,12f1f000        //Hardcoded pointer to new IAT.
+     LABEL_02:
+      cmp iat,12f1f2c8       //End of new IAT.
+     je MISSING:
+      cmp [iat],import
+      add iat,4
+     jne LABEL_02
+      sub iat,4
+   //==================
+ mov [addr],iat              //Redirect pointer
+
+jmp LABEL_01
+END_01:
+
+ret                          //End of script.
+
+MISSING:
+ msg "It seams that one import is missing ?!?"
+ ret
+
+
+
+

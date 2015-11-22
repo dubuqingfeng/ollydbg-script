@@ -1,0 +1,49 @@
+var counter
+var ImageBase
+
+var OEP
+var iat_start
+
+
+mov counter,0
+gmi eip,MODULEBASE
+mov ImageBase,$RESULT
+find eip,#33C0BF????????F3ABC3#
+cmp $RESULT,0
+je quit
+mov OEP,$RESULT+9
+mov iat_start, $RESULT+49
+bp iat_start
+bp OEP
+run
+bc iat_start
+mov iat_start,esi
+mov [eip+4E],#90E9#
+run
+sti
+bc OEP
+mov OEP,eip
+cmt eip, "This is the entry point"
+
+sub OEP,ImageBase
+sub iat_start,ImageBase
+mov counter,ImageBase
+add counter,3C
+mov counter,[counter]
+add counter,ImageBase
+add counter,28
+mov [counter],OEP
+add counter,58
+mov [counter],iat_start
+
+DPE "dump.exe",eip
+msg "The file is unpacked! Name ->Dump.exe Remove  section Xiao in Dump"
+ret
+
+
+
+quit:
+MSG "Not 12311134"
+ret
+
+ 

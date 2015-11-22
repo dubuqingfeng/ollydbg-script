@@ -1,0 +1,59 @@
+var iat_st
+var iat_end
+var pnf
+var chk_esi
+var ckpushad
+var otlimp
+var oep
+mov iat_st,00460818// <- for unpakme ,edit for  others apps
+mov iat_end,00460F24// <- for unpakme ,edit for  others apps
+
+mov oep,eip
+msg "To make suspend all thread except for the main"
+
+l1:
+mov eip,[iat_st] 
+mov ckpushad,[iat_st]
+mov ckpushad,[ckpushad]
+and ckpushad,FF
+cmp ckpushad,60
+je potom
+rtr
+sti
+sti
+sti
+find eip,#FFD?#
+bp $RESULT
+erun
+bc eip
+sti
+find eip,#33?0EB06#
+mov pnf,$RESULT+2
+bp pnf
+loop:
+
+erun
+mov chk_esi,esi
+and chk_esi,FF000000
+cmp chk_esi,0
+je emul
+mov [iat_st],esi
+emul:
+add iat_st,4
+cmp iat_st,iat_end
+ja ostatki
+cmp [iat_st],0
+je emul
+mov eip,[iat_st]
+jmp loop
+potom:
+mov otlimp,iat_st
+add iat_st,4
+jmp l1
+ostatki:
+mov eip,[otlimp]
+erun
+mov [otlimp],esi
+quit:
+mov eip,oep
+ret

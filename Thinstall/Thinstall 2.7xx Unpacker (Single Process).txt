@@ -1,0 +1,286 @@
+/////////////////////////////////////////////////////////////
+// FileName    :  Thinstall V2.7X.oSc
+// Comment     :  Thinstall.V2.717/V2.718.Single.Main.eXe.UnPacK
+// Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+// Author      :  fly
+// WebSite     :  http://www.unpack.cn
+// Date        :  2006-05-30 18:30
+/////////////////////////////////////////////////////////////
+#log
+dbh
+
+
+var Map
+var Temp
+var CloseHandle
+var MapViewOfFile
+var GetEnvironmentVariableA
+var MagicOccasion
+var FindOEP
+var ImageBase
+var PE_Signature
+var SizeOfImage
+var NumberOfSections
+var GetNumberOfSections
+
+MSGYN "Plz Clear All BreakPoints  +  Set Debugging Option Ignore All Excepions Options  +  Set Events Make first pause at Entry Point !"
+cmp $RESULT, 0
+je TryAgain
+
+
+//ImageBase______________________________________
+
+mov Temp,eax
+exec
+		push 0
+		call GetModuleHandleA
+ende
+mov ImageBase,eax
+mov eax,Temp
+mov Temp,ImageBase
+add Temp,3C
+mov Temp,[Temp]
+add Temp,ImageBase
+mov PE_Signature,Temp
+log PE_Signature
+
+mov Temp,PE_Signature
+add Temp,50
+mov SizeOfImage,[Temp]
+log SizeOfImage
+
+
+//CloseHandle______________________________________
+
+gpa "CloseHandle", "KERNEL32.dll"
+mov CloseHandle,$RESULT
+bp CloseHandle
+
+eob CloseHandle
+esto
+GoOn0:
+esto
+
+CloseHandle:
+cmp eip,CloseHandle
+jne GoOn0
+bc CloseHandle
+
+
+//MapViewOfFile______________________________________
+
+gpa "MapViewOfFile", "KERNEL32.dll"
+find $RESULT, #5DC21400#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,1
+mov MapViewOfFile,$RESULT
+bp MapViewOfFile
+
+eob MapViewOfFile
+esto
+GoOn1:
+esto
+
+MapViewOfFile:
+cmp eip,MapViewOfFile
+jne GoOn1
+cmp eax,0
+je GoOn1
+mov Map,eax
+bc MapViewOfFile
+
+
+//GetEnvironmentVariableA______________________________________
+
+/*
+0012FD3C    00D5243C  /CALL µ½ GetEnvironmentVariableA À´×Ô 00D52436
+0012FD40    00DFB9B0  |VarName = "THNOCMDLN"
+0012FD44    0012FD8C  |Buffer = 0012FD8C
+0012FD48    00000002  \BufSize = 2
+*/
+
+gpa "GetEnvironmentVariableA", "KERNEL32.dll"
+mov GetEnvironmentVariableA,$RESULT
+bp GetEnvironmentVariableA
+
+eob GetEnvironmentVariableA
+esto
+GoOn2:
+esto
+
+GetEnvironmentVariableA:
+cmp eip,GetEnvironmentVariableA
+jne GoOn2
+mov Temp,esp
+add Temp,4
+mov Temp,[Temp]
+log Temp
+cmp [Temp],4F4E4854
+jne GoOn2
+bc GetEnvironmentVariableA
+
+
+//CreateProcessA______________________________________
+
+find Map,#A1????????250000000285C00F84#
+cmp $RESULT,0
+je NoFind
+add $RESULT,0A
+mov [$RESULT],#33C0#
+
+
+//FixSizeOfImage______________________________________
+
+/*
+00D411A0     55                 push ebp
+00D411A1     8BEC               mov ebp,esp
+00D411A3     53                 push ebx
+00D411A4     56                 push esi
+00D411A5     57                 push edi
+00D411A6     A1 1084E000        mov eax,dword ptr ds:[E08410]
+00D411AB     25 00000001        and eax,1000000
+00D411B0     85C0               test eax,eax
+00D411B2     74 35              je short 00D411E9
+00D411B4     64:A1 30000000     mov eax,dword ptr fs:[30]
+00D411BA     85C0               test eax,eax
+00D411BC     78 0F              js short 00D411CD
+00D411BE     8B40 0C            mov eax,dword ptr ds:[eax+C]
+00D411C1     8B40 0C            mov eax,dword ptr ds:[eax+C]
+00D411C4     8140 20 00200000   add dword ptr ds:[eax+20],2000
+//Modify SizeOfImage
+00D411CB     EB 1C              jmp short 00D411E9
+00D411CD     6A 00              push 0
+00D411CF     FF15 B012DF00      call dword ptr ds:[DF12B0]; kernel32.GetModuleHandleA
+*/
+
+find Map,#250000000185C0743564A130000000#
+cmp $RESULT,0
+je NoFind
+add $RESULT,05
+mov [$RESULT],#85C0EB35#
+
+
+//NumberOfSections______________________________________
+
+/*
+00D489A3     F3:A5              rep movs dword ptr es:[edi],dword ptr ds:[esi]
+00D489A5     8BB5 8CFEFFFF      mov esi,dword ptr ss:[ebp-174]
+00D489AB     B9 38000000        mov ecx,38
+00D489B0     8B7D EC            mov edi,dword ptr ss:[ebp-14]
+00D489B3     F3:A5              rep movs dword ptr es:[edi],dword ptr ds:[esi]
+00D489B5     E9 A6010000        jmp 00D48B60
+*/
+
+find Map,#B9380000008B7DECF3A5E9#
+cmp $RESULT,0
+je NoFind
+add $RESULT,0A
+mov GetNumberOfSections,$RESULT
+bp GetNumberOfSections
+
+eob GetNumberOfSections
+esto
+GoOn3:
+esto
+
+GetNumberOfSections:
+cmp eip,GetNumberOfSections
+jne GoOn3
+bc GetNumberOfSections
+mov Temp,PE_Signature
+add Temp,6
+mov NumberOfSections,[Temp]
+log NumberOfSections
+
+
+//MagicOccasion______________________________________
+
+/*
+00D46F84     6A 01              push 1
+00D46F86     E8 25D0FFFF        call 00D43FB0
+00D46F8B     83C4 04            add esp,4
+00D46F8E     5F                 pop edi
+00D46F8F     5E                 pop esi
+00D46F90     8BE5               mov esp,ebp
+00D46F92     5D                 pop ebp
+00D46F93     C3                 retn
+*/
+
+find Map,#6A01E825D0FFFF83C4045F5E8BE55D#
+cmp $RESULT,0
+je NoFind
+add $RESULT,0F
+mov MagicOccasion,$RESULT
+bp MagicOccasion
+
+eob MagicOccasion
+esto
+GoOn4:
+esto
+
+MagicOccasion:
+cmp eip,MagicOccasion
+jne GoOn4
+bc MagicOccasion
+
+
+//FixPE______________________________________
+
+mov Temp,PE_Signature
+add Temp,6
+mov [Temp],NumberOfSections
+
+add Temp,0CA
+mov [Temp],#00000000000000000000000000000000#
+//Clear Bound Import Table and Import Address Table's Address And Size.
+
+
+MSG "Plz Set  LordPE->Option->Task View ->Select  " Full Dump: force RAW mode "  Only  !    "
+Dump:
+MSGYN  "  OK ,  plz dump it now !  Dump file will be fixed !  Don't click " Y " before dump . "
+cmp $RESULT, 0
+je Dump
+
+
+//FindOEP______________________________________
+
+/*
+00D41C31     83C4 08            add esp,8
+00D41C34     FF95 50FFFFFF      call dword ptr ss:[ebp-B0]
+00D41C3A     6A 00              push 0
+*/
+
+find Map,#83C408FF9550FFFFFF6A00#
+cmp $RESULT,0
+je NoFind
+add $RESULT,03
+mov FindOEP,$RESULT
+bp FindOEP
+
+eob FindOEP
+esto
+GoOn5:
+esto
+
+FindOEP:
+cmp eip,FindOEP
+jne GoOn5
+bc FindOEP
+esti
+
+
+//GameOver______________________________________ 
+
+log eip
+cmt eip, "This is the OEP!  Found By: fly "                                                                           
+MSG "Just : OEP !  Your dump file already fiXed .    Good Luck     "
+ret                       
+
+NoFind:
+MSG "Error! Don't find.     "
+ret
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret

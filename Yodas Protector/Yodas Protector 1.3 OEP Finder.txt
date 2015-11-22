@@ -1,0 +1,48 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//  OEP Find Script for yoda's Protector 1.3 -> Ashkbiz Danehkar
+//  Coded by: PiONEER {RES}
+//  Greetz to: {RES},ICU,ARTeam,SnD,CiM,RLD,AGN,trainer-paradies.de,XeonByte,Anorganix
+//  starzboy,Till.CH,oxy87,Orthodox,ALiEN,cyclops,l0calh0st/ICU,sEby,zyzygy,dR.oLLe 
+//  Data: 13:19 30.03.2007
+//  Environment :  WinXP SP1,OllyDbg V1.10,ODbgScript V1.48
+//  Contact: http://www.appzclub.tk - or - admin@appzclub.tk
+//////////////////////////////////////////////////////////////////////////////////////////
+
+start:
+#log
+var csize
+var cbase
+
+find eip, #558B#
+cmp $RESULT,0
+je _error
+sto
+sto
+sto
+sto
+sto
+sto
+bphws esp, "r"
+run
+bphwc esp
+sto
+sto
+sto
+sto
+sto
+gmi eip,CODEBASE
+mov cbase,$RESULT
+log cbase
+gmi eip,CODESIZE
+mov csize,$RESULT
+log csize
+bprm cbase,csize 
+run
+cmt eip, "This is the OEP! Found by PiONEER/TEAM {RES}"
+msg "Dumped and fix IAT now! Thanx for using my Script...!"
+ret
+
+_error:
+msg "ERRORR!!!"
+ret
+end:

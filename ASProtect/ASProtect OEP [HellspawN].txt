@@ -1,0 +1,49 @@
+/*
+////////////////////////////////////////////////// 
+Author : ~Hellsp@wN~
+Email  : alt-fox@mail.ru
+OS     : OllyDbg 1.10 with OllyScript plugin v0.7
+Date   : 24.07.2004
+Version: 1.2
+
+1) Find OEP 
+2) Find Stolen Bytes
+
+Support with:
+ASProtect 1.22 - 1.23 Beta 21
+////////////////////////////////////////////////// 
+*/ 
+
+var cbase 
+gmi eip, CODEBASE 
+mov cbase, $RESULT 
+log cbase 
+var csize 
+gmi eip, CODESIZE 
+mov csize, $RESULT 
+log csize 
+
+var k 
+var l 
+eoe lab1 
+eob lab1 
+run 
+
+lab1: 
+mov k,esp 
+add k,1c 
+mov l,[k] 
+cmp l,400000 
+je lab2 
+esto 
+
+lab2: 
+bprm cbase, csize 
+eob end 
+eoe end 
+esto 
+
+end: 
+cmt eip,"tempOEP" 
+bpmc 
+ret 

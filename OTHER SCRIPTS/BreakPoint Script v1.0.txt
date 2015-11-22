@@ -1,0 +1,60 @@
+//////////////////////////////////////////////////////
+/// BreakPoint Script v1.0
+//  Coded by: PiONEER {RES} & Fixed by: sEby {RES}
+//  Date: 21:37 18.03.2007
+//////////////////////////////////////////////////////
+
+start:
+gpa "MessageBoxA","user32.dll"
+CMP $RESULT,0
+JE not found
+bp $RESULT
+MSG "BreakPoint on MessageBoxA well done!"
+
+gpa "GetDlgItemTextA","user32.dll"
+CMP $RESULT,0
+JE not found
+bp $RESULT
+MSG  "BreakPoint on GetDlgItemTextA well done!"
+
+gpa "lstrcmpA","Kernel32.dll"
+CMP $RESULT,0
+JE not found
+bp $RESULT
+MSG   "BreakPoint on lstrcmpA well done!"
+
+gpa "GetWindowTextA","user32.dll"
+CMP $RESULT,0
+JE not found
+bp $RESULT
+MSG  "BreakPoint on GetWindowTextA well done!"
+
+gpa "GetPrivateProfileStringA","kernel32.dll"
+CMP $RESULT,0
+JE not found
+bp $RESULT
+MSG  "BreakPoint on GetPrivateProfileStringA well done!"
+
+gpa "GetPrivateProfileIntA","kernel32.dll"
+CMP $RESULT,0
+JE not found
+bp $RESULT
+MSG  "BreakPoint on GetPrivateProfileIntA well done!"
+
+gpa "RegQueryValueExA","advapi32.dll"
+CMP $RESULT,0
+JE not found
+bp $RESULT
+MSG  "BreakPoint on RegQueryValueExA well done!"
+
+gpa "SetDlgItemTextA","user32.dll"
+CMP $RESULT,0
+JE not found
+bp $RESULT
+MSG "BreakPoint on SetDlgItemTextA well done!"
+ret
+
+not found
+MSG "BreakPoint not done!"
+ret
+end:

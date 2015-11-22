@@ -1,0 +1,16 @@
+// Created by tar4
+
+// Electra
+var last 
+mov last,003e2d19 // адрес последнего исключения 
+eob L1 
+eoe L1 
+run // до первого исключения 
+L1: 
+cmp eip, last 
+je L2 
+esto 
+jmp L1 
+L2: 
+cmt eip,"Last Exception" 
+ret 

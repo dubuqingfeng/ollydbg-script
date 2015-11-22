@@ -1,0 +1,14 @@
+var command_ 
+
+find eip,#FF35????#
+mov command_,$RESULT
+cmp command_,0
+je fin
+add command_,6
+bphws command_,"x"
+run
+esti
+cmt eip,"This is the OEP"
+fin:
+msg "Done"
+ret

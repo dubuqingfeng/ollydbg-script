@@ -1,0 +1,55 @@
+var iat_start
+var oep
+var counter
+
+mov counter,0
+gmi eip,MODULEBASE
+mov ImageBase,$RESULT
+
+
+
+find eip,#FFE6#
+cmp $RESULT,0
+je quit
+bp $RESULT
+run
+bc eip
+sti
+find eip,#8B068B7E1003BB76010000#
+cmp $RESULT,0
+je quit
+bp  $RESULT
+run
+bc eip
+mov iat_start,esi
+find eip,#89075E5A5B83C60483C704833E0075B5#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT+2A
+fill $RESULT,2,90
+bp oep
+run
+sti
+sti
+mov oep,eip
+cmt eip,"OEP"
+
+sub oep,ImageBase
+sub iat_start,ImageBase
+mov counter,ImageBase
+add counter,3C
+mov counter,[counter]
+add counter,ImageBase
+add counter,28
+mov [counter],oep
+add counter,58
+mov [counter],iat_start
+dpe "dump.exe", eip
+
+msg "File Unpacked!"
+ret
+
+quit:
+MSG " Not mkfpack!"
+ret
+

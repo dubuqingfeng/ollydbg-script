@@ -1,0 +1,113 @@
+var iat
+var len
+var patch
+var x
+var y
+var lastbp
+var check
+var espval
+var espval2
+
+
+mov espval,esp
+mov espval2,esp
+sub espval2,4
+sub espval,1C
+gmi eip,CODEBASE
+mov x,$RESULT
+ask "Введите размер секции code.(Enter the size of section code)"
+cmp $RESULT, 0
+je quit
+mov y,$RESULT
+
+
+ask "Введите адрес секции .idata для делфи, .rdata - для C++(Enter the address of section .idata , .rdata - for C ++) ."
+cmp $RESULT, 0
+je quit
+mov iat,$RESULT
+ask "Введите размер секции.(Enter the size of section)"
+cmp $RESULT, 0
+je quit
+mov len,$RESULT
+bprm iat,len
+run
+bpmc
+mov patch,eip
+add patch,27A
+bp patch
+run
+bc patch
+rtr
+sti
+mov check,[eip]               
+cmp check,03E9                      
+je stolen
+cmp check,06E9
+je pro
+find eip,#EBE16161E8#
+cmp $RESULT,0
+je nost
+mov lastbp,$RESULT
+add lastbp,2
+bp lastbp
+run
+bc eip
+rtr
+sti
+nost:
+bprm x,y
+run
+bpmc
+cmt eip, "This is  OEP"
+MSG " OEP faund "
+ret
+stolen:
+l1: 
+find eip,#0F85????FFFF# 
+add $RESULT,6 
+bp $RESULT 
+esto 
+bc eip 
+find eip,#6061568F05????????FF35????????89??2489??2489??24# 
+cmp $RESULT,0 
+je S2 
+
+mov oep,$RESULT
+add oep,1
+bp oep
+run
+bc eip
+cmt eip,"This is the stolen OEP"
+MSG "OEP faund dump it"
+ret
+
+pro:
+bphws espval,"r"
+run
+run
+run
+bphwc espval
+cmt eip, "This is stolen OEP"
+MSG "Stolen OEP faund"
+ret
+
+S2:
+find eip,#61FF35????????8B2C248F05????????5089142457BF????????8BD7# 
+cmp $RESULT,0
+je l1
+mov oep,$RESULT
+bp oep
+run
+bc eip
+sti
+cmt eip,"This is the stolen OEP"
+MSG "OEP faund dump it"
+ret
+
+
+quit:
+ret
+
+
+
+

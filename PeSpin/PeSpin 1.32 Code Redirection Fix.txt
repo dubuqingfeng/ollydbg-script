@@ -1,0 +1,109 @@
+//
+// metr0/SnD - PeSpin 1.32 Code Redirection Fix - March 2008
+//
+// The script is - in my eyes, at least - well commented. Just try to understand what
+// it does, then the Code Redirection feature should be no problem anymore.
+//
+// I know the code is messy and not optimized, but I thought that it's in its most
+// understandable state, it's easy to trace what it does.
+//
+// If you got any questions, do not hesitate to contact me (via PM on tuts4you or in
+// #seekndestroy (EfNet).
+//
+
+var begin
+var end
+var tmp
+var dest
+var code
+var dest2
+var count
+
+mov begin, 400000 // lowest possible jmp/call destination 
+mov end, 40a000 // highest possible jmp/call destination 
+mov start, 401000 // start here to search for jmps/calls
+
+__jmpstart:
+mov count, 0 // clear safety counter
+mov tmp, start // set starting point
+
+__findjmp:
+findop tmp, #e9# // find first jmp
+mov tmp, $RESULT
+cmp tmp, 0
+je __goon // if script couldn't find it, go on
+
+inc tmp // get the destination of the jmp
+mov dest, [tmp]
+add dest, tmp
+add dest, 4
+
+cmp dest, begin // check if destination is in range
+jbe __findjmp
+cmp dest, end
+jae __findjmp
+
+findop dest, #e9# // check if destination has syntax
+sub $RESULT, dest // ?? ?? ?? ?? ?? e9 ?? ?? ?? ?? (5 bytes stolen and jmp back)
+cmp $RESULT, 5 // saying, distance to next jmp must be 5
+jne __findjmp // if not go on searching
+
+dec tmp // copy first stolen byte
+mov al, [dest]
+mov [tmp], al
+
+inc tmp
+inc dest
+
+mov code, [dest] // copy last 4 stolen bytes, as dword
+mov [tmp], code
+
+inc count // increment safety counter (counts restored jmps)
+jmp __findjmp // let the search go on
+
+__goon:
+cmp count, 0 // continue searching jmps as long as the counter is not 0
+jne __jmpstart // (make sure all have been resolved, necessary!)
+
+mov tmp, start // reset starting point
+
+__findcall:
+findop tmp, #e8# // search calls
+mov tmp, $RESULT
+cmp tmp, 0
+je __end
+
+inc tmp
+mov dest, [tmp]
+add dest, tmp
+add dest, 4
+
+cmp dest, begin // check range of destination
+jbe __findcall
+cmp dest, end
+jae __findcall
+
+findop dest, #e9# // check if call points to a jmp, else it's no stolen code
+cmp dest, $RESULT
+jne __findcall
+
+inc dest 
+mov dest2, dest
+mov dest2, [dest2] // save destination of jmp in dest2
+add dest2, dest // subtract the offset from jmp
+add dest2, 4
+
+sub dest2, tmp // calculate offset from call
+sub dest2, 4
+
+dec tmp
+mov [tmp], #e8# // let there be a call
+
+inc tmp
+mov [tmp], dest2 // save new offset to destination
+add tmp, 4
+
+jmp __findcall // the search goes on :)
+
+__end:
+ret // finished

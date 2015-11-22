@@ -1,0 +1,228 @@
+/*
+Script written by  ~icy~学习班
+Script            : Themida & WinLicen 辅助脚本
+Date              : 2007-05-01
+Test Environment  : OllyDbg 1.1, ODBGScript 1.52, Winxp Win2003
+*/
+
+var modulebase
+var codebase
+var codesize
+var TZ1
+var TZ2
+var gjd1
+var gjd2
+
+BPHWCALL
+
+gmi eip,MODULEBASE
+mov modulebase,$RESULT
+gmi eip,CODEBASE
+mov codebase,$RESULT
+gmi eip,CODESIZE
+mov codesize,$RESULT
+
+bpwm codebase,codesize
+ESTO
+
+REP:
+ESTO
+ESTO
+find eip,#F3A4C685??????????68????????#
+cmp $RESULT,0
+je REP
+STI
+STO
+ESTO
+
+LODS:
+find eip,#8908ADC746??????????#
+cmp $RESULT,0
+je TZ1
+
+ask "请输入关键点1地址范围=当前EIP-888"
+cmp $RESULT,0
+je Over
+mov gjd1,$RESULT
+repl gjd1, #0F850A000000#, #EB0E90909090#,FF
+ask "请输入关键点2地址范围=当前EIP-777"
+cmp $RESULT,0
+je Over
+mov gjd2,$RESULT
+repl gjd2, #0F8439000000#, #EB2890909090#,FF
+bpmc
+Over:
+eval "请在此处修改补丁代码！见本脚本后面注释部分参考代码！"
+msg $RESULT
+ret
+
+TZ1:
+ESTO
+find eip,#8908ADC746??????????#
+cmp $RESULT,0
+jmp LODS
+
+
+
+=================================================================================================
+
+参考代码:
+
+=================================================================================================
+004F52E1     8908             MOV DWORD PTR DS:[EAX],ECX          《=========脚本执行完毕后地址
+004F52E3     AD               LODS DWORD PTR DS:[ESI]
+004F52E4     C746 FC 0000000>MOV DWORD PTR DS:[ESI-4],0    
+004F52EB     89B5 6D301B07    MOV DWORD PTR SS:[EBP+71B306D],ESI
+004F52F1     83F8 FF          CMP EAX,-1
+004F52F4     0F85 20000000    JNZ 无敌外挂.004F531A
+004F52FA     813E DDDDDDDD    CMP DWORD PTR DS:[ESI],DDDDDDDD
+004F5300     0F85 14000000    JNZ 无敌外挂.004F531A
+=================================================================================================
+004F4A8D    |0F85 0A000000    JNZ 无敌外挂.004F4A9D               《=========关键点1地址
+004F4A93    |C785 410C1B07 0> MOV DWORD PTR SS:[EBP+71B0C41],1
+004F4A9D    \61               POPAD
+=================================================================================================
+004F4BCC     0F84 39000000    JE 无敌外挂.004F4C0B                《=========关键点2地址
+004F4BD2     3B8D 29081B07    CMP ECX,DWORD PTR SS:[EBP+71B0829]
+004F4BD8     0F84 2D000000    JE 无敌外挂.004F4C0B
+004F4BDE     3B8D 1D171B07    CMP ECX,DWORD PTR SS:[EBP+71B171D]
+004F4BE4     0F84 21000000    JE 无敌外挂.004F4C0B
+004F4BEA     3B8D 552A1B07    CMP ECX,DWORD PTR SS:[EBP+71B2A55]
+004F4BF0     0F84 15000000    JE 无敌外挂.004F4C0B
+004F4BF6     8D9D E2FD2107    LEA EBX,DWORD PTR SS:[EBP+721FDE2]
+004F4BFC     FFD3             CALL EBX
+004F4BFE     8BF8             MOV EDI,EAX
+004F4C00     8985 1D2F1B07    MOV DWORD PTR SS:[EBP+71B2F1D],EAX
+004F4C06     E9 B4060000      JMP 无敌外挂.004F52BF
+004F4C0B     8D9D E2FD2107    LEA EBX,DWORD PTR SS:[EBP+721FDE2]
+004F4C11     FFD3             CALL EBX
+=================================================================================================
+脚本已自动改好上面2处了，返回中断处，用HideOD申请一段内存地址（我的是2A30000）
+
+004F52E1     8908             MOV DWORD PTR DS:[EAX],ECX          《=========改成 JMP 2A30000
+004F52E3     AD               LODS DWORD PTR DS:[ESI]
+004F52E4     C746 FC 0000000>MOV DWORD PTR DS:[ESI-4],0    
+004F52EB     89B5 6D301B07    MOV DWORD PTR SS:[EBP+71B306D],ESI  《=========地址A,记下来
+004F52F1     83F8 FF          CMP EAX,-1
+004F52F4     0F85 20000000    JNZ 无敌外挂.004F531A
+004F52FA     813E DDDDDDDD    CMP DWORD PTR DS:[ESI],DDDDDDDD
+004F5300     0F85 14000000    JNZ 无敌外挂.004F531A
+004F5306     C706 00000000    MOV DWORD PTR DS:[ESI],0
+004F530C     83C6 04          ADD ESI,4
+004F530F     89B5 6D301B07    MOV DWORD PTR SS:[EBP+71B306D],ESI
+004F5315   ^ E9 E6F6FFFF      JMP 无敌外挂.004F4A00
+004F531A     C1C0 03          ROL EAX,3
+004F531D     0385 11171B07    ADD EAX,DWORD PTR SS:[EBP+71B1711]
+004F5323     83BD 99221B07 0>CMP DWORD PTR SS:[EBP+71B2299],1
+004F532A     0F84 9D000000    JE 无敌外挂.004F53CD
+004F5330     813E AAAAAAAA    CMP DWORD PTR DS:[ESI],AAAAAAAA
+004F5336     0F85 12000000    JNZ 无敌外挂.004F534E
+004F533C     83C6 04          ADD ESI,4
+004F533F     C746 FC 0000000>MOV DWORD PTR DS:[ESI-4],0
+004F5346     97               XCHG EAX,EDI
+004F5347     B0 E9            MOV AL,0E9
+004F5349     E9 03000000      JMP 无敌外挂.004F5351
+004F534E     97               XCHG EAX,EDI
+004F534F     B0 E8            MOV AL,0E8
+004F5351     50               PUSH EAX
+004F5352     83BD 31011B07 0>CMP DWORD PTR SS:[EBP+71B0131],1
+004F5359     0F84 3E000000    JE 无敌外挂.004F539D
+004F535F     B8 00010000      MOV EAX,100
+004F5364     83BD C7E82107 0>CMP DWORD PTR SS:[EBP+721E8C7],0
+004F536B     0F84 08000000    JE 无敌外挂.004F5379
+004F5371     8D9D 61712107    LEA EBX,DWORD PTR SS:[EBP+7217161]
+004F5377     FFD3             CALL EBX
+004F5379     803F 90          CMP BYTE PTR DS:[EDI],90
+004F537C     0F84 08000000    JE 无敌外挂.004F538A
+004F5382     83C7 05          ADD EDI,5
+004F5385     E9 43000000      JMP 无敌外挂.004F53CD
+004F538A     83F8 50          CMP EAX,50
+004F538D     0F82 0A000000    JB 无敌外挂.004F539D
+004F5393     B0 90            MOV AL,90
+004F5395     AA               STOS BYTE PTR ES:[EDI]
+004F5396     58               POP EAX
+004F5397     AA               STOS BYTE PTR ES:[EDI]
+004F5398     E9 24000000      JMP 无敌外挂.004F53C1               《=========改成 JMP 2A30014
+004F539D     58               POP EAX
+004F539E     AA               STOS BYTE PTR ES:[EDI]
+004F539F     807F FF E9       CMP BYTE PTR DS:[EDI-1],0E9
+004F53A3     0F85 18000000    JNZ 无敌外挂.004F53C1               《=========改成 JMP 2A30036
+004F53A9     83BD C7E82107 0>CMP DWORD PTR SS:[EBP+721E8C7],0     《=========地址C,记下来
+004F53B0     0F84 08000000    JE 无敌外挂.004F53BE
+004F53B6     8D9D 31712107    LEA EBX,DWORD PTR SS:[EBP+7217131]
+004F53BC     FFD3             CALL EBX
+004F53BE     8847 04          MOV BYTE PTR DS:[EDI+4],AL          《=========这里NOP掉
+004F53C1     8B85 1D2F1B07    MOV EAX,DWORD PTR SS:[EBP+71B2F1D]  《=========地址B,记下来
+004F53C7     2BC7             SUB EAX,EDI
+004F53C9     83E8 04          SUB EAX,4
+004F53CC     AB               STOS DWORD PTR ES:[EDI]             《=========这里NOP掉
+004F53CD     AD               LODS DWORD PTR DS:[ESI]
+004F53CE     C746 FC 0000000>MOV DWORD PTR DS:[ESI-4],0
+004F53D5   ^ E9 11FFFFFF      JMP 无敌外挂.004F52EB               《=========改成 JMP 2A3005F
+004F53DA     89B5 6D301B07    MOV DWORD PTR SS:[EBP+71B306D],ESI
+004F53E0     52               PUSH EDX
+004F53E1     68 00800000      PUSH 8000
+004F53E6     6A 00            PUSH 0
+004F53E8     FFB5 F5211B07    PUSH DWORD PTR SS:[EBP+71B21F5]
+004F53EE     FF95 49131B07    CALL DWORD PTR SS:[EBP+71B1349]
+004F53F4     5A               POP EDX
+004F53F5     8B8D 9D121B07    MOV ECX,DWORD PTR SS:[EBP+71B129D]
+004F53FB     C701 00000000    MOV DWORD PTR DS:[ECX],0
+004F5401     83C1 04          ADD ECX,4
+004F5404     898D 9D121B07    MOV DWORD PTR SS:[EBP+71B129D],ECX
+004F540A   ^ E9 10F5FFFF      JMP 无敌外挂.004F491F
+004F540F     E9 A4060000      JMP 无敌外挂.004F5AB8               《=========这里F2下个断点
+004F5414     60               PUSHAD
+004F5415     8B8D 9D121B07    MOV ECX,DWORD PTR SS:[EBP+71B129D]
+004F541B     8B09             MOV ECX,DWORD PTR DS:[ECX]
+004F541D     898D C3E82107    MOV DWORD PTR SS:[EBP+721E8C3],ECX
+004F5423     8138 4E54444C    CMP DWORD PTR DS:[EAX],4C44544E
+=================================================================================================
+
+CTRL+G 来到2A30000处，写如下代码：
+
+02A30000     A3 0004A302      MOV DWORD PTR DS:[2A30400],EAX      《=========注意是申请的地址
+02A30005     8908             MOV DWORD PTR DS:[EAX],ECX
+02A30007     AD               LODS DWORD PTR DS:[ESI]
+02A30008     C746 FC 0000000>MOV DWORD PTR DS:[ESI-4],0
+02A3000F   - E9 D752ACFD      JMP 无敌外挂.004F52EB               《=========地址A
+02A30014     50               PUSH EAX
+02A30015     A1 0004A302      MOV EAX,DWORD PTR DS:[2A30400]      《=========注意是申请的地址
+02A3001A     8907             MOV DWORD PTR DS:[EDI],EAX
+02A3001C     807F FF E8       CMP BYTE PTR DS:[EDI-1],0E8
+02A30020     75 08            JNZ SHORT 02A3002A
+02A30022     66:C747 FE FF15 MOV WORD PTR DS:[EDI-2],15FF
+02A30028     EB 06            JMP SHORT 02A30030
+02A3002A     66:C747 FE FF25 MOV WORD PTR DS:[EDI-2],25FF
+02A30030     58               POP EAX
+02A30031   - E9 8B53ACFD      JMP 无敌外挂.004F53C1               《=========地址B
+02A30036     50               PUSH EAX
+02A30037     A1 0004A302      MOV EAX,DWORD PTR DS:[2A30400]      《=========注意是申请的地址
+02A3003C     8947 01          MOV DWORD PTR DS:[EDI+1],EAX
+02A3003F     807F FF E8       CMP BYTE PTR DS:[EDI-1],0E8
+02A30043     75 08            JNZ SHORT 02A3004D
+02A30045     66:C747 FF FF15 MOV WORD PTR DS:[EDI-1],15FF
+02A3004B     EB 06            JMP SHORT 02A30053
+02A3004D     66:C747 FF FF25 MOV WORD PTR DS:[EDI-1],25FF
+02A30053     58               POP EAX
+02A30054   - 0F85 6753ACFD    JNZ 无敌外挂.004F53C1               《=========地址B
+02A3005A   - E9 4A53ACFD      JMP 无敌外挂.004F53A9               《=========地址C
+02A3005F     83C7 04          ADD EDI,4
+02A30062   - E9 8452ACFD      JMP 无敌外挂.004F52EB               《=========地址A
+02A30067     90               NOP
+
+（二进制代码）
+
+A3 00 04 A3 02 89 08 AD C7 46 FC 00 00 00 00 E9 D7 52 AC FD 50 A1 00 04 A3 02 89 07 80 7F FF E8
+75 08 66 C7 47 FE FF 15 EB 06 66 C7 47 FE FF 25 58 E9 8B 53 AC FD 50 A1 00 04 A3 02 89 47 01 80
+7F FF E8 75 08 66 C7 47 FF FF 15 EB 06 66 C7 47 FF FF 25 58 0F 85 67 53 AC FD E9 4A 53 AC FD 83
+C7 04 E9 84 52 AC FD 90
+=================================================================================================
+
+写好代码后,删除先前在代码段下的内存写入断点,shift+F9,中断在004F540F,到这里已经获得了IAT,现在
+
+找OEP.，在这里我采用世面上流传的找THEMIDA OEP方法：
+
+取消004F540F处断点,ALT+M打开内存察看窗口，直接在代码段F2下断点。Shift+F9就中断在OEP处了
+
+=================================================================================================

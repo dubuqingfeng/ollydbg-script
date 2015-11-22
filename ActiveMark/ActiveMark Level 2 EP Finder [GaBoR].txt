@@ -1,0 +1,31 @@
+/*
+ActiveMark level 2 entry point finder
+Made by: GaBoR {RES}
+Thanks to CONDZERO for the good tuts on Activemark!
+Instructions:
+-use RE-Pair 0.6 & HideDebugger 1.2.3f to hide OllyDbg;
+-make sure you tick 'Break on new module(DLL)' in 'Options->Debugging Options->Events before running script';
+-run the script after you arrive at program entry point;
+*/
+var v
+gpa "CreateThread","kernel32.dll"
+mov v,$RESULT
+bphws v,"x"
+run
+msg "Script will pause, press F9 until Olly breaks at CreateThread,press F9 3 times then resume script!"
+pause
+bphwc v
+gpa "GetVersion","kernel32.dll"
+mov v,$RESULT
+bphws v,"x"
+run
+bphwc v
+rtu
+mov v,eip
+sub v,5B
+find v,#558BEC6AFF#
+bphws $RESULT,"x"
+cmt $RESULT,"Dump here & fix IAT"
+msg "Restart the program, dump at breakpoint & fix IAT!"
+ret
+

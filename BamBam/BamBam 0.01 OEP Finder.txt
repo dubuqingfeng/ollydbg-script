@@ -1,0 +1,18 @@
+find eip,#558BEC#
+bp $RESULT
+run
+bc $RESULT
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sti
+cmt eip,"OEP found"
+msg "Dump & fix the IAT"
+ret
+
+

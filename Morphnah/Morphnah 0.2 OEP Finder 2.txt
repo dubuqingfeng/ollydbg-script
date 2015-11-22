@@ -1,0 +1,12 @@
+// Morphnah 0.2 OEP Finder Script by LaFarge / Team ICU
+
+  find eip, #6168????????C3#
+  bp $RESULT
+  run
+  bc eip
+  sti
+  sti
+  sti
+  cmt eip, "This is OEP"
+  msg "This is OEP! Dump and fix imports now!"
+  ret

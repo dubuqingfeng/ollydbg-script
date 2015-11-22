@@ -1,0 +1,645 @@
+﻿/////////////////////////////////////////
+/// by fxyang ///
+/// version 0.7 ///
+/// 感谢 fly 的建议，海风月影 测试 ///
+/////////////////////////////////////////
+
+
+/*
++ 添加对windows2K的支持 <--感谢Hexer
++ 修正密码表过短跑飞 <--感谢shoooo
++ 对delphi OEP VM 的修复 <--感谢a__p测试
+· 修正恢复IAT可能存在的错误
+*/
+
+
+data:
+var cbase
+var csize
+var dllimg
+var dllsize
+var mem
+var getprocadd
+var gatprocadd_2
+var tmp
+var temp
+
+cmp $VERSION, "1.52"
+jb odbgver
+
+bphwcall
+bpmc
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+gmemi eip,MEMORYBASE //壳段的基地址
+mov dllimg,$RESULT
+log dllimg
+gmemi eip,MEMORYSIZE //壳段的长度
+mov dllsize,$RESULT
+log dllsize
+
+findapibase:
+gpa "GetProcAddress", "kernel32.dll"
+mov getprocadd,$RESULT //取GetProcAddress函数地址，用于定位加密表
+cmp getprocadd,0
+gpa "_lclose","kernel32.dll" //同上 
+mov getprocadd_2,$RESULT
+gpa "GetLocalTime", "kernel32.dll" //下面代码取自okdodo 感谢 okdodo
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+gpa "VirtualAlloc", "kernel32.dll"
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+mov apibase,eax
+log apibase
+gpa "LoadLibraryA", "kernel32.dll"
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+
+
+bphwc tmpbp
+rtu
+findVirtualAlloc:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE8090000005DC21000# //查找被虚拟的VirtualAlloc函数
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je win2003
+bphws tmpbp ,"x"
+jmp tmploop
+
+win2003:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE878FFFFFF5DC21000#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je nextva
+bphws tmpbp ,"x"
+jmp tmploop
+
+nextva:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE81B0000005DC21000#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+
+tmploop: 
+//下面代码重新改写
+esto 
+cmp eax,getprocadd //定位加密表出现时机
+je iatbegin
+cmp eax,getprocadd_2
+je iatbegin
+jne tmploop
+
+iatbegin:
+esto
+esto
+
+bphwcall
+rtr
+sti
+sti
+find eip, #8BB5??????09#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+jne next1
+find eip, #8BB5??????06#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je findnext_1
+next1:
+bphws tmpbp ,"x"
+esto
+
+sti
+var iatcalltop //加密表的首地址
+var iatcallend
+mov iatcalltop,esi
+find iatcalltop,#00000000#
+mov iatcallend,$RESULT
+log iatcallend
+var iatfn
+var iattop
+var codeadd
+var antiadd
+bphwcall
+jmp codebegin
+
+findnext_1:
+sti
+find dllimg, #FFFFFFFFDDDDDDDD#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je notlb
+
+var iatcalltop //加密表的首地址
+var iatcallend
+mov iatcalltop,$RESULT
+sub iatcalltop,10
+log iatcalltop
+find iatcalltop,#00000000#
+mov iatcallend,$RESULT
+log iatcallend
+var iatfn
+var iattop
+var codeadd
+var antiadd
+mov tmp,eax
+mov eax,iatcalltop
+mov eax,[eax]
+shr eax,10
+cmp ax,0
+jne iatbegin_2
+add iatcalltop,04
+iatbegin_2:
+mov eax,tmp
+
+codebegin:
+bphws iatcalltop,"r"
+esto
+
+bphwcall
+find eip,#83BD????????01#
+bphws $RESULT ,"x"
+mov tmp,$RESULT
+sub tmp,02
+mov antiadd,tmp
+esto
+
+sti
+bphwcall
+mov temp,eip
+mov [temp],#909090909090#
+mov tmp,0
+loop1:
+find eip,#3B8D????????0F84#,100
+bphws $RESULT ,"x"
+esto
+
+bphwcall
+mov iatfn,eax //获得函数，并修改magic jump
+log iatfn
+sti
+mov temp,eip
+mov [temp],#909090909090#
+inc tmp
+cmp tmp,03
+je next_1
+jmp loop1
+
+next_1:
+add iatcalltop,04
+bphws iatcalltop,"r"
+esto
+
+bphwcall
+findiataddpro: //iataddress
+find eip,#0385????????#,100
+bphws $RESULT,"x"
+esto
+
+sti
+bphwcall
+mov iattop,eax //此时EAX是iat表中函数写入地址，然后判断这个值最小时就是iat基地址
+log iattop
+mov iatcalltop,esi
+bphws antiadd,"r"
+esto
+
+find eip,#3985??????0?0F84#,
+mov temp, $RESULT
+bphws temp,"x"
+cmp temp,0
+je oepbegin
+esto
+
+bphwcall
+sti
+mov temp,eip
+mov [temp],#90E9# //处理效验
+log temp
+sub iatcallend,04
+cmp iatcallend,0
+je oepbegin
+bphws iatcallend,"w"
+esto
+
+oepbegin:
+sti
+sti
+mov tmp,cbase
+add tmp,csize
+
+loopoep:
+bprm cbase,csize
+esto
+bpmc
+
+cmp tmp,eip
+ja findoep
+jmp loopoep
+
+findoep:
+//pause
+mov temp,eax
+cmp temp,cbase
+ja nextcmp
+jmp findoepbegin
+nextcmp:
+cmp temp,tmp
+jb finddelphi
+jmp findoepbegin
+
+finddelphi:
+msgyn "可能是Delphi程序，我将尝试运行到oep并修复代码,你也可以选择[否]自己修复。"
+cmp $RESULT,0
+je findoepbegin
+
+msg "开始在这里dump程序，然后用下面修复的oep代码修改，因为这时初始化还没有完成，这个文件保存在c:\"
+dpe "c:\Fdump.exe", eip
+var woep
+var add1
+var add2
+var add3
+var add4
+var add5
+var call1
+var call2
+var call3
+var call4
+var call5
+var tmpoep
+var tmp2
+var codeend
+mov call1,eip
+mov woep,[esp]
+mov add1,eax
+find eip,#5BC3#
+bp $RESULT
+esto
+
+bc eip
+sti
+sti
+sti
+
+loopfindoep_2:
+bprm cbase,csize
+esto
+bpmc
+
+cmp tmp,eip
+ja findoep_2
+jmp loopfindoep_2
+
+findoep_2:
+//pause
+mov call2,eip
+find eip,#0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+log $RESULT
+mov codeend,$RESULT
+mov eax,[eip]
+cmp al,53
+mov eax,temp
+jne patchbegin
+
+find eip,#5BC3#
+bp $RESULT
+esto
+
+bc eip
+sti
+sti
+sti
+bprm cbase,csize
+esto
+bpmc
+
+mov add2,edx
+log add2
+cmp tmp,eip
+ja findoep_3
+
+loopfindoep_3:
+bprm cbase,csize
+esto
+bpmc
+
+cmp tmp,eip
+ja findoep_3
+jmp loopfindoep_3
+
+findoep_3:
+mov call3,eip
+mov add3,edx
+mov temp,eax
+mov eax,[eip]
+cmp al,55
+mov eax,temp
+jne patchbegin
+find eip,#5DC3#
+bp $RESULT
+esto
+
+bc eip
+sti
+sti
+sti
+bprm cbase,csize
+esto
+bpmc
+
+mov add4,edx
+cmp tmp,eip
+ja findoep_4
+loopfindoep_4:
+bprm cbase,csize
+esto
+bpmc
+
+cmp tmp,eip
+ja findoep_4
+jmp loopfindoep_4
+
+findoep_4:
+//pause
+mov add5,edx
+find eip,add5
+log $RESULT
+mov add5,$RESULT
+mov tmpoep,eip
+mov temp,eip
+mov call4,eip
+mov temp,eax
+mov eax,[eip]
+cmp al,55
+mov eax,temp
+jne patchbegin
+find eip,#5DC3#
+bp $RESULT
+esto
+
+bc eip
+sti
+sti
+sti
+loopfindoep_5:
+bprm cbase,csize
+esto
+bpmc
+
+cmp tmp,eip
+ja findoep_5
+jmp loopfindoep_5
+
+findoep_5:
+mov call5,eip
+mov temp,eax
+mov eax,[eip]
+cmp al,55
+mov eax,temp
+jne patchbegin
+mov temp,[esp]
+msg "这个软件的入口代码全部被VM了，要修复请先关闭这个消息再关闭软件!我会帮你修复代码的！"
+bphws temp,"x"
+esto
+
+sti
+
+loopfindoep_6:
+bprm cbase,csize
+esto
+bpmc
+
+cmp tmp,eip
+ja findoep_6
+jmp loopfindoep_6
+
+findoep_6:
+
+bphwcall
+mov call6,eip
+
+
+patchbegin:
+mov tmp,eip
+mov tmp2,eip
+sub codeend,80
+mov eip,codeend
+//pause
+find eip,#0000000000#
+log $RESULT
+mov codeend,$RESULT
+add codeend,09
+mov eip,codeend
+mov temp,codeend
+mov [eip],#558BEC83C4F0B8#
+add temp,07
+mov [temp],add1
+add temp,04
+eval "call {call1}"
+asm temp,$RESULT
+add temp,05
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#A1#
+inc temp
+mov [temp],add2
+add temp,04
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#8B00#
+add temp,02
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+eval "call {call2}"
+asm temp,$RESULT
+add temp,05
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#A1#
+inc temp
+mov [temp],add2
+add temp,04
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#8B00#
+add temp,02
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#BA#
+inc temp
+mov [temp],add3
+add temp,04
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+eval "call {call3}"
+asm temp,$RESULT
+add temp,05
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#8B0D#
+add temp,02
+mov [temp],add4
+add temp,04
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#A1#
+inc temp
+mov [temp],add2
+add temp,04
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#8B00#
+add temp,02
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#8B15#
+add temp,02
+mov [temp],add5
+add temp,04
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+eval "call {call4}"
+asm temp,$RESULT
+add temp,05
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#A1#
+inc temp
+mov [temp],add2
+add temp,04
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+mov [temp],#8B00#
+add temp,02
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+eval "call {call5}"
+asm temp,$RESULT
+add temp,05
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+eval "call {call6}"
+asm temp,$RESULT
+add temp,05
+sub tmp,temp
+cmp tmp,0
+mov tmp,tmp2
+je patchover
+
+
+
+patchover:
+msg "OEP代码修复完成，现在停在真正的OEp，按[C]查看，如果不正确，再运行脚本并选择[否]手工修复！"
+eval "VM入口在:{woep} ,程序现在的初始化已完成，你还要在{woep}入口时dump代码一次"
+msg $RESULT
+findoepbegin:
+exec
+pushad
+pushfd
+ende
+
+mov ecx,cbase
+add csize,cbase
+mov edx,csize
+var iatadd
+mov iatadd,iattop
+loopiatadd:
+sub iatadd,04
+cmp [iatadd],0
+je iataddbase
+jmp loopiatadd
+iataddbase:
+mov iattop,iatadd
+sub iattop,04
+cmp [iattop],0
+je findiatbase
+jmp loopiatadd
+findiatbase:
+
+add iatadd,04
+mov ebx,iatadd
+log iatadd
+mov [iatcalltop],#8A013CE89074273CE97423668B01663DFF15747F663DFF257479833900907503419090413BCA0F8F94000000EBD28B690103E983C5058BF3AD83F8007506833E009074DF3BE87402EBEE908079FF9075218079FEC3741C8039E9750866C741FFFF25EB0666C741FFFF1583EE04897101EB21908039E9750866C701FF2590EB0566C701FF159083EE04897102909083C104EB908B690203E983C5068BF3AD83F800750A833E00900F8476FFFFFF3BE87402EBEA9089710283C104E964FFFFFF909090#
+mov tmp,eip
+log tmp
+mov eip,iatcalltop
+sti
+mov temp,iatcalltop
+add temp,0c1
+bphws temp,"x"
+esto
+
+bphwcall
+mov eip,tmp
+bp eip
+
+exec
+popfd
+popad
+ende
+bc eip
+
+msg "脚本执行完成，iat表修复完成！"
+eval "IAT基地址在:{iatadd}"
+msg $RESULT
+ret
+
+notlb:
+msg "没有加密表，可能是以前版本！"
+pause
+
+stop:
+
+msg "可能是旧版本"
+pause
+
+err:
+pause

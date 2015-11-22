@@ -1,0 +1,30 @@
+/*
+//////////////////////////////////////////////////
+Назначение скрипта Thinstall 2.5
+/////////////////////////////////////////////////
+*/
+var oep
+gpa  "SetEnvironmentVariableA","kernel32.dll"
+bp $RESULT
+run 
+bc $RESULT
+rtu
+find eip,#736EA1????????8B40048945B48B45E08B4DB48B0481#
+cmp $RESULT,0
+je quit
+mov [$RESULT],#EB#
+find eip,#5959FF9548FCFFFF6A00E8#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT
+add oep,2
+BPHWS oep,"x"
+run
+sti
+msg "Oep Faund"
+DPE "dump.exe",eip
+ret
+quit:
+msg "not Thinstall 2.5"
+ret
+

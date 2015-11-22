@@ -1,0 +1,53 @@
+/*
+Script written by KuNgBiM
+Script   : DotFix NiceProtect Auxiliary Script
+Date     : January 02, 2008
+Test Environment : OllyDbg 1.10, ODBGScript 1.65, WinXP
+Debugging options: Tick all items in OllyDbg's Debugging Options-Exceptions
+Tools  : OllyDbg, ODBGScript 1.65
+*/
+
+#log
+
+var tmp
+
+// 相当于“bp FindWindowA”不过插件不能直接支持这样的下断命令
+
+gpa "FindWindowA","user32.dll"
+cmp $RESULT,0
+je error
+
+// 寻找“retn 8”特征准备返回
+
+find $RESULT,#C20800#
+cmp $RESULT,0
+je error
+bp $RESULT
+esto
+bc eip
+
+// 按5次F7
+
+sti
+sti
+sti
+sti
+sti
+
+// ESP定律(两次)
+
+mov tmp,esp
+bphws tmp,"r"
+esto
+esto
+bphwc tmp
+
+msg "请用Alt+M打开内存镜像，在PE header段设置访问断点,Shift+F9运行中断后,再次在CODE区段设置访问断点,Shift+F9运行后即可到达程序内部，当然这时的IAT也是没加密的了。"
+
+msg "提示: 修补StolenCode及VM code由你自己去完成! ^_^"
+
+ret
+
+error:
+msg "脚本错误!"
+ret

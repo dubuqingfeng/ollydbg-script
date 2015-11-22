@@ -1,0 +1,110 @@
+/*
+ OllyDbg & Phantom 
+*/
+
+var j
+var nt
+var fn
+var srh
+var seax
+var jw
+var ftn
+var pbase
+var oep
+var gmh
+var iatrva
+var iatb
+var iatsz
+var iallocib
+var espval
+var counter
+var ImageBase
+
+mov counter,0
+gmi eip,MODULEBASE
+mov ImageBase,$RESULT
+
+gpa "GetModuleHandleA","kernel32.dll"
+mov  gmh,$RESULT
+bphws gmh,"x"
+sti
+mov espval,esp+8
+erun
+erun
+mov iatrva,esi
+GMEMI iatrva,MEMORYBASE
+mov iatb,$RESULT
+GMEMI iatb,MEMORYSIZE
+mov iatsz,$RESULT
+alloc iatsz
+mov iallocib,$RESULT
+MEMCPY iallocib,iatb,iatsz
+bphwc gmh
+bphws espval,"r"
+erun
+bphwc espval
+find eip,#FFE0#
+cmp $RESULT,0
+je quit
+bp $RESULT
+erun
+bc eip
+sti
+mov oep,eip
+GMI eip,ENTRY
+mov pbase,$RESULT
+GMEMI pbase, MEMORYBASE
+mov pbase,$RESULT
+find pbase,#53515256E8000000005B81EB??????0081C3??????008BC833D283C8FFBE0400#
+cmp $RESULT,0
+je quit
+mov fn,$RESULT
+find pbase,#????????????4?80????????????4?80????????????4?80????????????4?80#
+cmp $RESULT,0
+je quit
+mov nt,$RESULT
+
+mov srh,401000
+
+loop:
+find srh,#CC90??600C45# //#FF2556FE4700#
+cmp $RESULT,0
+je goep
+mov srh,$RESULT
+mov j,$RESULT
+mov jw,$RESULT+2
+mov eip,fn
+
+mov eax,j-400000
+
+rtr
+mov seax,eax
+buf seax
+find nt,seax
+mov ftn,$RESULT+4
+mov ftn,[ftn]
+and ftn,0FFFFFF 
+mov [j],#FF25#
+mov [jw],ftn
+jmp loop
+goep:
+mov eip,oep
+MEMCPY iatb,iallocib,iatsz
+sub oep,ImageBase
+sub iatrva,ImageBase
+mov counter,ImageBase
+add counter,3C
+mov counter,[counter]
+add counter,ImageBase
+add counter,28
+mov [counter],oep
+add counter,58
+mov [counter],iatrva
+dpe "dump.exe", eip
+eval "The file is completely unpacked!"
+msg $RESULT
+ret
+
+quit:
+ret
+ 

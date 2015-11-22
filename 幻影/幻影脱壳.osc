@@ -1,0 +1,415 @@
+//for dbpe
+//code by skylly
+gpa "WriteFile","kernel32.dll"
+cmp $RESULT,0
+je err
+log $RESULT
+mov [$RESULT],#EBFE#  //以防驱动加载 很恶心的方法
+
+mov [49D6F5],7C809AE4
+mov [49D6F9],7C809A51
+mov [49D6FD],7C812ADE
+mov [49D701],7C801D77
+mov [49D705],7C80ADA0
+mov [49D709],7C81CDDA
+
+#log
+find eip,#6A0056FF95#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+
+//第一次解码
+
+find eip,#EB43#
+cmp $RESULT,0
+je err
+log $RESULT
+bp $RESULT
+esto
+bc $RESULT
+
+sti
+//获取sleep地址
+
+find eip,#56FF95#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+//GetVersionExA
+sto
+sto
+//mov [esi+10],1   //我是98我怕谁
+
+find eip,#6A016A00FF95#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+sto
+sto
+sto
+mov eax,0         //关键,假装驱动已经装载
+
+find eip,#50FFB5????????FF95????????FFB5#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+mov eax,1        //再假装一下,假装驱动加载成功
+//进入forgot的part3
+
+find eip,#83F8000F85#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+//判断mutex是否有
+
+finddelta:
+find eip,#E8000000005E#  //取delta
+cmp $RESULT,0
+je somemodify
+bp $RESULT
+esto
+bc $RESULT
+var key
+mov key,al
+log key
+jmp findloop
+
+somemodify:
+var espvar
+mov espvar,esp
+sub espvar,4
+bphws espvar,"r"
+esto
+esto
+bphwc espvar
+
+jmp finddelta
+
+findloop:
+find eip,#83F90075#    //循环解码
+cmp $RESULT,0
+je find2
+add $RESULT,5
+go $RESULT
+jmp startdeccode
+
+find2:
+find eip,#83F9000F85??FFFFFF#
+cmp $RESULT,0
+je err
+add $RESULT,9
+//msg $RESULT
+go $RESULT
+
+//我来解码
+startdeccode:
+find eip,#CCE9E???????3D#  //定位
+cmp $RESULT,0
+je iatproc
+bp $RESULT
+esto
+bc $RESULT
+var nexting
+mov nexting,[eip+2]
+mov [$RESULT],#909090909090#     //int3解码
+
+var nextcode
+mov nextcode,$RESULT
+add nextcode,nexting
+add nextcode,6
+
+find eip,#83F90075#
+cmp $RESULT,0
+je err
+add $RESULT,5
+bp $RESULT
+esto
+bc $RESULT
+mov eip,nextcode
+
+var alvar
+mov alvar,al
+dec alvar
+mov al,alvar
+//循环查找
+jmp startdeccode
+
+iatproc:
+log "开始处理输入表"
+find eip,#83F9000F85#
+cmp $RESULT,0
+je err
+add $RESULT,9
+go $RESULT
+
+find eip,#663D0000#   //此时壳需要得输入表加载完毕
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+
+find eip,#F3A4#  //又是解码  要解一部分loader代码到内存
+cmp $RESULT,0
+je err
+add $RESULT,2
+go $RESULT
+
+find eax,#8BC5E8000000005D#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+
+var virtual
+mov virtual,eip
+log virtual
+
+find eip,#CC#
+cmp $RESULT,0
+je err
+log $RESULT
+mov [$RESULT],#90#     //改中断
+go $RESULT
+
+find eip,#CC#
+cmp $RESULT,0
+je err
+mov [$RESULT],#90# //似乎是通过向量反跟踪
+go $RESULT
+
+find eip,#CC#
+cmp $RESULT,0
+je err
+var ccadr
+mov ccadr,$RESULT
+mov [ccadr],#90#
+log ccadr
+
+find ccadr,#8?BD????????01#
+cmp $RESULT,0
+je err
+log $RESULT
+add $RESULT,6
+mov [$RESULT],#02#
+
+gpa "SetTimer","user32.dll"
+cmp $RESULT,0
+je err
+mov [$RESULT],#C21000#   //反跟踪定时器
+
+find virtual,#C7402000100000#
+cmp $RESULT,0
+je err
+mov [$RESULT],#90909090909090#      //anti dump
+
+find virtual,#6A0056FF95#  //createfilea
+cmp $RESULT,0
+je err
+
+find $RESULT,#0F85??F?FFFF#   //CreateFileA检测驱动循环
+cmp $RESULT,0
+je err
+add $RESULT,6
+
+find $RESULT,#8?BD????????00#  //是否要注册
+cmp $RESULT,0
+je err
+
+find $RESULT,#0F84#
+cmp $RESULT,0
+je err
+mov [$RESULT],#90E9#
+
+gpa "GetCurrentProcessId","kernel32.dll"
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+var temp
+mov temp,[esp]
+bp temp
+esto
+bc temp
+
+//下面开始处理输入表
+find eip,#8B9D#
+cmp $RESULT,0
+je err
+add $RESULT,6
+bp $RESULT
+esto
+bc $RESULT
+
+var iid
+mov iid,ebx
+log iid
+
+find $RESULT,#8703#
+cmp $RESULT,0
+je err
+mov [$RESULT],#8B03#    //OriginalFirstThunk
+
+find $RESULT,#874310#
+cmp $RESULT,0
+je err
+mov [$RESULT],#8B4310#  //FirstThunk
+
+find $RESULT,#668706#
+cmp $RESULT,0
+je err
+mov [$RESULT],#668B06#
+
+find $RESULT,#8706#
+cmp $RESULT,0
+je err
+mov [$RESULT],#8B06#
+
+find $RESULT,#80BD????????01#  //magic jmp
+cmp $RESULT,0
+je err
+add $RESULT,6
+mov [$RESULT],#02#
+
+find eip,#83F800#
+cmp $RESULT,0
+je err
+find $RESULT,#0F84????0000#
+cmp $RESULT,0
+je err
+var iatallok
+mov iatallok,$RESULT
+mov iatallok,[iatallok+2]
+add iatallok,6
+add iatallok,$RESULT
+bp iatallok
+esto
+bc iatallok
+//输入表处理结束
+
+//下面处理调用表
+find virtual,#F266AF#
+cmp $RESULT,0
+je err
+add $RESULT,3
+
+var outcall
+mov outcall,$RESULT
+sub outcall,200
+
+//处理ff15型
+find $RESULT,#8B1B#
+cmp $RESULT,0
+je err
+mov [$RESULT],#9090#
+
+find $RESULT,#891E#
+cmp $RESULT,0
+je err
+mov [$RESULT],#8BF3#
+
+//处理ff25型
+find $RESULT,#8B1B#
+cmp $RESULT,0
+je err
+mov [$RESULT],#9090#
+
+find $RESULT,#891E#
+cmp $RESULT,0
+je err
+mov [$RESULT],#8BF3#
+
+
+find outcall,#0F84#
+cmp $RESULT,0
+je err
+var tmp
+mov tmp,[$RESULT+2]
+add tmp,6
+add tmp,$RESULT
+bp tmp
+esto
+bc tmp
+
+find tmp,#CC72037301# //最后一个int3
+cmp $RESULT,0
+je err
+mov [$RESULT],#90#
+log "finally cc"
+
+decode2:
+find $RESULT,#80BD????????010F85#
+//防止nt释放驱动时异常(因为驱动根本没加载~~~)
+cmp $RESULT,0
+je againfind
+add $RESULT,6
+mov [$RESULT],#02#
+log $RESULT
+jmp atlast
+
+againfind:
+mov $RESULT,eip
+jmp decode2
+
+atlast:
+find eip,#0F92C3# //setb bl
+cmp $RESULT,0
+je decode2
+log $RESULT
+
+find eip,#5B595A5E5F5D#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+jmp finaljmp
+
+decodeoep:
+find eip,#33DBD1F8#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+
+find $RESULT,#03C3#  //解码OEP
+cmp $RESULT,0
+je err
+add $RESULT,2
+
+bp $RESULT
+esto
+bc $RESULT
+var oep
+mov oep,eax
+log oep
+
+finaljmp:
+find eip,#C20C00FFE0#   //jmp oep
+cmp $RESULT,0
+je err
+add $RESULT,3
+bp $RESULT
+esto
+bc $RESULT
+sti
+log "OEP,dump now!"
+
+ret
+err:
+msg "error"
+ret

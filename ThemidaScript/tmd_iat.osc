@@ -1,0 +1,238 @@
+//themida & wl iat repair by nooby
+//update 2009.5.9: support up to 2.0.8.0 and various "Hide from PE scanners" options
+//bi shi kan xue, guan li hun yong, bai se kong bu.
+
+var imgbase
+var imgend
+var codebase
+var codesize
+var codeend
+var tmdbase
+var tmp
+var mjcount
+var depth
+var kernel32base
+var advaip32base
+var user32base
+
+mov mjcount, 3
+mov depth, 8
+
+MSGYN "tmdbase 在最后1个区段吗?"
+cmp $RESULT, 1
+je start
+ask "tmdbase 的地址?"
+cmp $RESULT, 0
+je end
+mov tmdbase, $RESULT
+jmp go
+
+start:
+mov tmdbase, eip
+
+go:
+gpa "ExitProcess","kernel32.dll"
+gmi $RESULT, MODULEBASE
+mov kernel32base, $RESULT
+
+
+gmi eip, MODULEBASE
+mov imgbase, $RESULT
+mov imgend, imgbase
+gmi eip, MODULESIZE
+add imgend, $RESULT
+mov codebase, imgbase
+gmemi imgbase, MEMORYSIZE
+add codebase, $RESULT
+mov codeend, codebase
+gmemi codebase, MEMORYSIZE
+mov codesize, $RESULT
+add codeend, codesize
+
+
+bphwcall
+bpmc
+bc
+bprm codebase, codesize
+jmp findbase
+
+skip1:
+bpmc
+find eip, #648F0500000000#
+bp $RESULT
+esto
+bc eip
+bprm codebase, codesize
+jmp findbase
+
+skip2:
+bpmc
+find eip, #61C20800#
+bp $RESULT
+esto
+bc eip
+bprm codebase, codesize
+jmp findbase
+
+findbase:
+esto
+find eip, #6681384D5A#, 5
+cmp $RESULT, 0
+jne skip1
+find eip, #8A16#, 2
+cmp $RESULT, 0
+jne skip2
+find eip, #F3A4#, 2
+cmp $RESULT, 0
+je findbase
+bpmc
+mov tmp, tmdbase
+
+findaddr:
+find tmp,kernel32base
+cmp $RESULT, 0
+je findmagic
+mov tmp, $RESULT
+bphws tmp, "r"
+inc tmp
+jmp findaddr
+
+findmagic:
+esto
+mov tmp, depth
+
+findmagic1:
+sub eip, 6
+find eip, #3B8D????????0F84#, 8
+cmp $RESULT, 0
+jne prepatch
+add eip, 6
+
+findmagic2:
+find eip, #2BD90F84#, 4
+cmp $RESULT, 0
+jne prepatch1
+dec tmp
+esti
+cmp tmp, 0
+jne findmagic2
+jmp findmagic
+
+prepatch:
+bphwcall
+bphws eip, "r"
+jmp patch
+
+prepatch1:
+bphwcall
+bphws eip, "r"
+jmp patch1
+
+nextmagic:
+find eip, #3B8D#, 2
+cmp $RESULT, 0
+jne patch
+find eip, #2BD90F84#, 4
+cmp $RESULT, 0
+jne patch1
+esti
+jmp nextmagic
+
+patch:
+fill eip, 4, 90
+add eip, 4
+
+patch1:
+fill eip, 8, 90
+add eip, 8
+dec mjcount
+cmp mjcount, 0
+jne nextmagic
+
+bprm codebase, codesize
+mov tmp, tmdbase
+hookvm:
+find tmp, #3BC89CE9#
+cmp $RESULT, 0
+je starthook
+mov tmp, $RESULT
+add tmp, 3
+bp tmp
+jmp hookvm
+
+starthook:
+gpa "MessageBoxA", "user32.dll"
+gmi $RESULT, MODULEBASE
+mov user32base, $RESULT
+gpa "RegQueryInfoKeyA","advapi32.dll"
+gmi $RESULT, MODULEBASE
+mov advaip32base, $RESULT
+nexthook:
+esto
+
+process:
+cmp [esi], 90909090
+je patchcrc
+cmp eax, kernel32base
+je fix
+cmp eax, advaip32base
+je fix
+cmp eax, user32base
+je fix
+cmp codeend, eip
+ja done
+jmp nexthook
+
+fix:
+mov [esp], 287
+jmp nexthook
+
+patchcrc:
+esti
+find eip, #75#, 1
+cmp $RESULT, 0
+jne skipcrc1
+find eip, #4A0F85#, 3
+cmp $RESULT, 0
+jne skipcrc2
+jmp patchcrc
+
+skipcrc1:
+mov tmp, $RESULT
+add tmp, 2
+bphwcall
+bphws tmp, "x"
+esto
+bphwcall
+jmp patchcrc2
+
+skipcrc2:
+mov tmp, $RESULT
+add tmp, 7
+bphwcall
+bphws tmp, "x"
+esto
+bphwcall
+jmp patchcrc2
+
+patchcrc2:
+esti
+find eip, #3985#, 2 
+cmp $RESULT, 0
+je patchcrc2
+
+patchcrc3:
+esti
+find eip, #0F84#, 2
+cmp $RESULT, 0
+je patchcrc3
+fill eip, 1, 90
+fill eip+1, 1, e9
+jmp nexthook
+
+done:
+bpmc
+bc
+
+end:
+ret

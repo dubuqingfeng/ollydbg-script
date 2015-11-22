@@ -1,0 +1,30 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//  OEP Find Script for ACProtect_2.0_Standard_mit_AntiDebug+AntiLoader+IntegrityCheck
+//  Coded by: PiONEER {RES}
+//  Greetz to: {RES},ICU,ARTeam,SnD,CiM,RLD,AGN,trainer-paradies.de,XeonByte,Anorganix
+//  starzboy,Till.CH,oxy87,Orthodox,ALiEN,cyclops,l0calh0st/ICU,sEby,zyzygy,dR.oLLe 
+//  Data: 12:50 30.03.2007
+//  Environment :  WinXP SP1,OllyDbg V1.10,ODbgScript V1.48
+//  Contact: http://www.appzclub.tk - or - admin@appzclub.tk
+//////////////////////////////////////////////////////////////////////////////////////////
+
+start:
+#log
+sto
+sto
+sto
+sto
+sto
+bphws esp, "r"
+run
+run
+run
+run
+run
+bphwc esp
+sto
+sto
+cmt eip, "<-- OEP found by PiO - TEAM {RES}!"
+msg "OEP found! - Now dump and fix the IAT!"
+ret
+end:

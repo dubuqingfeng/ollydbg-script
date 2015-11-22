@@ -1,0 +1,90 @@
+cmp $VERSION,"1.41"
+jae go
+msg "Wrong Version"
+ret
+go:
+gmi eip,CODEBASE
+mov codeb,$RESULT
+gmi eip,CODESIZE
+mov codes,$RESULT
+mov codet,codes
+add codet,codeb
+eoe chk
+eob chk
+mov fl,0
+esto
+
+chk:
+mov eax1,eax
+mov eax,ebp
+cmp al,78
+je flg
+cmp al,90
+je flg
+mov eax,eax1
+cnt:
+esto
+
+flg:
+
+cmp fl,0
+jne found
+mov start,esp
+add start,14
+
+loop:
+add start,4
+cmp start, ebp
+je err
+cmp [start],0
+jne  loop
+
+nxt:
+add start,4
+cmp [start],0
+je nxt
+mov fl,start
+jmp cnt
+
+found:
+mov start,[fl-4]
+sub start,8
+cmp [start],2
+jne err
+mov old,fl
+sub old,4
+mov new,[old]
+
+here:
+eob here
+eoe  here
+cmp [old],new
+jne end
+
+rr:
+esto
+jmp here
+
+end:
+eob finshed
+eoe rr
+bprm codeb,codes
+esto
+ret
+
+err:
+msg "Sorry , script isn't working"
+ret
+
+finshed:
+bpmc
+ret
+
+                                                   Create on 1/1/2006 by britedream
+
+
+
+
+
+
+

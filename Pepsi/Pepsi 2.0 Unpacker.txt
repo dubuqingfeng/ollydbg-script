@@ -1,0 +1,47 @@
+var ImageBase
+var OEP
+var iat_start
+
+var counter
+var alb
+var sb
+var pd
+gmi eip,MODULEBASE
+mov ImageBase,$RESULT
+GPA "VirtualAlloc","kernel32.dll"
+bp $RESULT
+erun
+bc eip
+rtu
+mov alb,eax
+mov [eip+135],#8A#
+
+mov pd,eip+BC
+bp pd
+go eip+2E
+mov sb,alb
+mov sb,[sb]
+mov counter,alb
+add counter,3C
+mov counter,[counter]
+add counter,alb
+add counter,28
+mov OEP,[counter]
+add counter,58
+mov iat_start,[counter]
+erun
+bc eip
+mov [ImageBase],sb
+mov counter,ImageBase
+add counter,3C
+mov counter,[counter]
+add counter,ImageBase
+add counter,28
+mov [counter],OEP
+add counter,58
+mov [counter],iat_start
+mov eip,OEP+ImageBase
+DPE "dump.exe",eip
+
+msg "The file is unpacked!"
+ret

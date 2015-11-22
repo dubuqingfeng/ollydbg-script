@@ -1,0 +1,83 @@
+////////////////////////////////////////////////////////////////////////////////
+//                                                                 ////////////
+//  FileName    :  Armadillo v6.xx Finger-Print-Patcher V0.1       ///////////
+//  Features    :                                                  //////////
+//                 This script can store the new HWID information  /////////
+//                 permanently on your system.Unpacking of HWID    ////////
+//                 targets is not more required.                   ///////
+//                                                                 //////
+//  Environment :  WinXP,ODBYdyk V1.10,OllyScript V1.65            /////
+//  Support     :  Armadillo V6.00/V6.04/V6.22...                  ////
+//                 Standard/Enhanced hardware locking              ///
+//  Thanks to   :  Pediy,UpackCN,Chinapyg                          //
+//  Author      :  Playboysen                                      /
+//  Date        :  2008-12-10                                     /
+///////////////////////////////////////////////////////////////////  
+
+var OldID
+var NewID
+
+bphwc
+
+msg "Make sure you've hided your OD and ignored all exceptions!\r\nPress OK to continue~~"
+gpa "OpenMutexA","kernel32.dll"
+bp $RESULT
+esto
+exec
+pushad
+pushfd
+push edx
+xor eax,eax
+push eax
+push eax
+call kernel32.CreateMutexA
+popfd
+popad
+jmp kernel32.OpenMutexA
+ende
+bc eip
+
+gpa "GetDlgItem","user32.dll"
+bphws $RESULT,"x"
+esto
+esto
+bphwc
+RTU
+find eip,#E8????????8985??FFFFFF8B8D??FFFFFF81E1FFFF000051#
+go $RESULT
+sti
+find eip,#E8????????3345F48BE55D#
+go $RESULT
+sti
+find eip,#8B4DD48B1189028B45D483C00489#
+go $RESULT
+find eip,#33048A8945FC#
+go $RESULT
+sto
+bphws eip,"x"
+
+ask "Enter your machine ID like FFFFFFFF(without "-"):"
+cmp $RESULT, 0
+je exit
+mov OldID,$RESULT
+ask "Enter usable machine ID like FFFFFFFF(without "-"):"
+cmp $RESULT, 0
+je exit
+mov NewID, $RESULT
+
+patch:
+cmp eax,OldID
+jne loop 
+mov eax,NewID
+loop:
+sto
+sto
+sto
+sto
+esto
+COB
+jmp patch
+
+exit:
+retn
+

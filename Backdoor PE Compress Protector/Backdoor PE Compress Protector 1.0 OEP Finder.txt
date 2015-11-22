@@ -1,0 +1,20 @@
+var oep
+var mb
+
+GMI eip, MODULEBASE
+mov mb,$RESULT
+GMEMI eip, MEMORYBASE
+find $RESULT,#0?00000024000000#
+cmp $RESULT,0
+je quit
+mov oep,[$RESULT+10]
+add oep,mb
+eval " oep =={oep} Go,Wait "
+cmt eip,$RESULT
+bphws oep,"x"
+erun
+bphwc
+msg "OEP Found!"
+ret
+quit:
+ret

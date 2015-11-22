@@ -1,0 +1,60 @@
+/*
+Avant d'utiliser ce script, vous devez aller dans les options de olly, 
+dans -> debugging options et cocher toutes les erreurs!
+
+
+
+*/
+
+
+
+/*
+	============================
+	                
+	      Author: Goldocrack 30 mars 2006
+	      Packer: JD pack/Protector * 
+	      Script for: JD pack/Protector (h) *
+	      Level: Easy
+	      Date: jeudi 11 mai 2006
+
+            http://reverseengineering.online.fr
+            http://www.forumcrack.new.fr/
+            http://s141422204.onlinehome.fr/forum/
+            Merci à tous 
+	 ============================
+						*/
+
+
+msgyn "English(oui) ou Francais(non)?"
+cmp $RESULT,1
+je lang1
+msg "Quand vous aurez une fenetre qui dit: "protect by jdprotector/jdpack.... cliquer sur ok"
+
+
+
+
+ 
+sto 
+bphws esp,"r"
+run
+sto
+sto   
+an eip
+cmt eip, " Tu es a l'entry point  !"
+msg "N'oublie pas les imports avec imprec pour que le dump soit fonctionnel!           Goldocrack 2006!"
+ret 
+
+
+
+ 
+lang1:
+msg "When you have a window saying: "protect by jdprotector/jdpack.... click on ok"
+sto 
+bphws esp,"r"
+run
+sto
+sto    
+an eip
+cmt eip, " You are at entry point  !"
+msg "Don't forget to use imprec for imports and iat!          Goldocrack 2006!"
+ret

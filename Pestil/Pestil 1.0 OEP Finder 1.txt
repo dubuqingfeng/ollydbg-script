@@ -1,0 +1,23 @@
+var rgn
+var sz
+var va
+GPA "CreateProcessA","kernel32.dll"
+mov va,$RESULT
+BP va
+run
+BC va
+rtu
+mov va,eip
+add va,76
+bp va
+run
+bc va
+sti
+mov rgn,eax
+mov va,eip
+add va,16
+go va
+mov sz,eax
+eval " damp partial in LordPe select IntelDump address:{rgn} , size:{sz}"
+msg $RESULT
+ret

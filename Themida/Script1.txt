@@ -1,0 +1,108 @@
+var CODE
+var SIZECODE
+var IAT
+var x
+var y
+var z
+var THEMIDA
+var SIZETHEMIDA
+var ZAP
+var _RET
+var STEK
+var ZAPIAT
+var TABLJMP
+mov TABLJMP,01017700	// Адрес таблицы прыжков (в секции импорта прота места много)
+mov CODE,01001000	// VA секции кода
+mov SIZECODE,00013000	// размер секции кода			
+mov THEMIDA,01018000	// VA секции прота
+mov SIZETHEMIDA,00218000	//размер секции прота
+N:
+eob LABEL
+bpwm CODE,SIZECODE
+esto
+LABEL:
+mov x,[eip]
+and x,00ffffff
+cmp x,00AD0889
+je DAL
+bpmc
+cob
+and x,0000ffff
+cmp x,A4F3
+jne BB
+#inc "CD01.txt"
+BB:
+sto
+jmp N
+DAL:
+bpmc
+cob
+mov ZAPIAT,eip
+bphws ZAPIAT, "x"
+mov IAT,eax
+findop eip,#AB#
+mov ZAP,$RESULT
+bphws ZAP, "x"
+findop eip,#C3#
+mov _RET,$RESULT
+bphws _RET, "x"
+eob LABEL3
+#inc "CD01.txt"
+esto
+D1:
+cmp z,IAT
+jne D1_1
+sub TABLJMP,6
+D1_1:
+mov x,edi
+mov y,TABLJMP
+sub y,4
+sub y,x
+repl TABLJMP,#0000#,#FF25#,2
+add TABLJMP,2
+mov [TABLJMP],IAT
+mov z,IAT
+mov eax,y
+add TABLJMP,4
+mov x,esi
+add x,10
+cmp [x],0
+je END
+esto
+D3:
+mov IAT,eax
+esto
+D4:
+cmp STEK,0
+je D2
+mov [IAT],STEK
+D2:
+mov STEK,eax
+esto
+LABEL3:
+cmp eip,ZAP
+je D1
+cmp eip,ZAPIAT
+je D3
+cmp eip,_RET
+je D4
+esto
+END:
+mov [IAT],STEK
+bphwc _RET
+bphwc ZAP
+bphwc ZAPIAT
+cob
+sti
+mov x,eip
+P1:
+findop x,#FFD0#
+mov x,$RESULT
+add x,2
+cmp [x],00800068
+jne P1
+bphws x, "x"
+esto
+bphwc x
+MSG "Восстановление переходов и IAT завершено."
+ret

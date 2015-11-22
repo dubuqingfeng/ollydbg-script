@@ -1,0 +1,694 @@
+/////////////////////////////////////////////////////////////////
+//
+//		           AoRE TEAM
+//                 script by TallfaZ  31/03/2007
+//            This script unpacks DotFix_NiceProtect_2.2
+//         Tested OK on : WINXPSP2, OLLY1.1, ODbgScript 1.51
+//WORKS WELL WITH C/C++, VB app when all protections are turned on
+//
+/////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+var tmp1
+var vm_first_operand
+var vm_second_operand
+var tmp3
+var patternAdd02
+var address_of_mov_const
+var currentPos
+var stolCodEnd
+var tmp4
+var SIZE
+var VB
+
+
+MSGYN "Is it a VB application?"
+mov VB, $RESULT
+
+
+gmemi eip, MEMORYBASE
+cmp $RESULT, 0
+je exit
+
+mov tmp1, $RESULT
+dec tmp1
+// -------------------------------------------------
+
+gmemi tmp1, MEMORYSIZE
+mov SIZE, $RESULT
+
+gmemi tmp1, MEMORYBASE
+mov BASE, $RESULT
+mov tmp1, $RESULT
+bphws tmp1, "x"
+esto 
+bphwc tmp1
+msg "Answer YES to next message and wait till being prompted (8 or 9 secondes)"
+an eip
+key 20
+mov currentPos, eip
+
+
+//------------------------------------------------------------------------------------------------------------
+find currentPos, #EB01??90#
+cmp $RESULT,0
+je exit
+
+mov currentPos, $RESULT
+mov tmp1, currentPos
+mov tmp2, currentPos
+
+
+//------------------------------------------------------------------------------------------------------------
+loop_1:
+find tmp1, #51f91b#
+cmp $RESULT,0
+je loop_2
+
+mov pushecx, $RESULT
+find tmp1, #59eb#
+cmp $RESULT,0
+je loop_2
+
+mov popecx, $RESULT
+mov subst, popecx
+sub subst, pushecx
+add subst, 4
+fill pushecx, subst, 90
+mov tmp1, popecx
+log tmp1
+jmp loop_1
+
+
+//------------------------------------------------------------------------------------------------------------
+loop_2:
+find tmp2, #EB01??#
+cmp $RESULT,0
+je loop_3
+
+fill $RESULT, 3, 90
+
+jmp loop_2
+
+
+//------------------------------------------------------------------------------------------------------------
+loop_3:
+findop tmp2, #EB??#
+mov tmp4, $RESULT
+cmp $RESULT,0
+je All_is_OK
+
+mov tmp3, $RESULT
+log tmp3
+inc $RESULT
+mov subst, [$RESULT]
+and subst, 0ff
+add subst, 2
+fill tmp3, subst, 90
+
+jmp loop_3
+
+
+All_is_OK:
+bp currentPos
+run
+bc currentPos
+msg "Re - answer YES to next message & wait, YOUR OS CAN FREEZES FOR 8 TO 9 SEC."
+an eip
+
+//---------------------------------------------------------------------
+
+IS_IT_VB:
+cmp VB, 0
+je ISNOT_VB
+
+LAST_RET:
+find currentPos, #6068????????C3#
+cmp $RESULT, 0
+je exit
+mov stolCodEnd, $RESULT
+mov stolCodEnd, $RESULT
+mov tmp1, stolCodEnd
+mov currentPos, eip
+
+mov FAKEOEP, stolCodEnd  
+add FAKEOEP, 2
+mov FAKEOEP, [FAKEOEP]
+
+add SIZE, BASE
+sub SIZE, stolCodEnd
+sub SIZE, 10
+fill stolCodEnd, SIZE, 90
+jmp next13
+
+
+ISNOT_VB:
+find eip, #9d6068????????c3#
+cmp $RESULT,0
+je exit
+mov stolCodEnd, $RESULT
+mov tmp1, stolCodEnd
+mov currentPos, eip
+
+mov FAKEOEP, stolCodEnd  
+add FAKEOEP, 3
+mov FAKEOEP, [FAKEOEP]
+
+add SIZE, BASE
+sub SIZE, stolCodEnd
+sub SIZE, 10
+fill stolCodEnd, SIZE, 90
+
+
+RE_SEARCH_VM_MOV_RR:
+findop currentPos, #E8????????#
+cmp $RESULT,0
+je next_1_6
+
+mov currentPos, $RESULT
+mov add_VM_RR, $RESULT
+
+mov tmp1, $RESULT
+inc tmp1
+mov tmp1, [tmp1]
+add tmp1, 5
+//
+find add_VM_RR, #01????00#
+cmp $RESULT,0
+je next_1_6
+mov patternAdd01, $RESULT
+mov tmp4, $RESULT
+
+sub tmp4, add_VM_RR
+cmp tmp4, tmp1
+jb Search_1
+
+add currentPos, tmp1
+cmp stolCodEnd, currentPos
+jb next_1_6
+jmp RE_SEARCH_VM_MOV_RR
+
+
+Search_1:
+mov VM_FirstOperand, [patternAdd01]
+and VM_FirstOperand, FF00
+shr VM_FirstOperand, 8
+
+mov VM_SecOperand, [patternAdd01]
+and VM_SecOperand, FF0000
+shr VM_SecOperand, 10
+
+
+cmp VM_FirstOperand, 4
+jne next_1_1
+mov VM_FirstOperand, "EAX"
+jmp loop_1_1
+
+next_1_1:
+cmp VM_FirstOperand, 8
+jne next_1_2
+mov VM_FirstOperand, "EBX"
+jmp loop_1_1
+
+next_1_2:
+cmp VM_FirstOperand, c
+jne next_1_3
+mov VM_FirstOperand, "ECX"
+jmp loop_1_1
+
+next_1_3:
+cmp VM_FirstOperand, 10
+jne next_1_4
+mov VM_FirstOperand, "EDX"
+jmp loop_1_1
+
+next_1_4:
+cmp VM_FirstOperand, 12
+jne next_1_5
+mov VM_FirstOperand, "ESI"
+jmp loop_1_1
+
+next_1_5:
+cmp VM_FirstOperand, 14
+jne next_1_12
+mov VM_FirstOperand, "EDI"
+jmp loop_1_1
+
+
+
+loop_1_1:
+cmp VM_SecOperand, 4
+jne next_1_7
+mov VM_SecOperand, "EAX"
+jmp Write_MRR
+
+next_1_7:
+cmp VM_SecOperand, 8
+jne next_1_8
+mov VM_SecOperand, "EBX"
+jmp Write_MRR
+
+next_1_8:
+cmp VM_SecOperand, c
+jne next_1_9
+mov VM_SecOperand, "ECX"
+jmp Write_MRR
+
+next_1_9:
+cmp VM_SecOperand, 10
+jne next_1_10
+mov VM_SecOperand, "EDX"
+jmp Write_MRR
+
+next_1_10:
+cmp VM_SecOperand, 12
+jne next_1_11
+mov VM_SecOperand, "ESI"
+jmp Write_MRR
+
+next_1_11:
+cmp VM_SecOperand, 14
+jne next_1_12
+mov VM_SecOperand, "EDI"
+jmp Write_MRR
+
+next_1_12:
+add currentPos, tmp1
+cmp stolCodEnd, currentPos
+jb next_1_6
+jmp RE_SEARCH_VM_MOV_RR
+
+
+Write_MRR:
+cmt add_VM_RR, "VM --> MOV REG, REG"
+add tmp1, 11
+fill add_VM_RR, tmp1, 90
+eval "MOV {VM_FirstOperand}, {VM_SecOperand}"
+asm  add_VM_RR, $RESULT
+add currentPos, tmp1
+cmp stolCodEnd, currentPos
+jb next_1_6
+jmp RE_SEARCH_VM_MOV_RR
+
+next_1_6:
+mov currentPos, eip
+
+re_search_vm_mov_reg_const:
+findop currentPos, #e8????????#
+cmp $RESULT,0
+je next_search
+
+mov currentPos, $RESULT
+mov address_of_mov_const, $RESULT
+
+mov tmp1, $RESULT
+inc tmp1
+mov tmp1, [tmp1]
+add tmp1, 5
+
+find address_of_mov_const, #02??????????00#
+cmp $RESULT,0
+je next_search
+mov patternAdd02, $RESULT
+mov tmp4, $RESULT
+
+sub tmp4, address_of_mov_const
+cmp tmp4, tmp1
+jb go_vm_mrr
+
+add currentPos, tmp1
+cmp stolCodEnd, currentPos
+jb next_search
+jmp re_search_vm_mov_reg_const
+
+
+go_vm_mrr:
+mov vm_first_operand, [patternAdd02]
+and vm_first_operand, ff00
+shr vm_first_operand, 8
+
+mov tmp4, patternAdd02
+add tmp4, 2
+mov vm_second_operand, [tmp4]
+
+
+cmp vm_first_operand, 4
+jne next1
+mov vm_first_operand, "eax"
+jmp loop
+
+next1:
+cmp vm_first_operand, 8
+jne next2
+mov vm_first_operand, "ebx"
+jmp loop
+
+next2:
+cmp vm_first_operand, c
+jne next3
+mov vm_first_operand, "ecx"
+jmp loop
+
+next3:
+cmp vm_first_operand, 10
+jne next4
+mov vm_first_operand, "edx"
+jmp loop
+
+next4:
+cmp vm_first_operand, 12
+jne next5
+mov vm_first_operand, "ESI"
+jmp loop
+
+next5:
+cmp vm_first_operand, 14
+jne next_search
+mov vm_first_operand, "EDI"
+jmp loop
+
+
+
+loop:
+add tmp1, 11
+fill address_of_mov_const, tmp1, 90
+eval "mov {vm_first_operand}, {vm_second_operand}"
+asm address_of_mov_const, $RESULT
+cmt address_of_mov_const, "VM --> MOV REG, CONST"
+add currentPos, tmp1
+cmp stolCodEnd, currentPos
+jb next_search
+jmp re_search_vm_mov_reg_const
+
+exit:
+msg "SOME THING WENT WRONG! SORRY"
+ret
+
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+
+next_search:
+mov currentPos, eip
+
+research_mov_reg_dword_reg:
+findop currentPos, #e8????????#
+cmp $RESULT,0
+je ALL_IS_OK_2
+
+mov currentPos, $RESULT
+mov add_VM_MRDR, $RESULT
+
+mov tmp1, $RESULT
+inc tmp1
+mov tmp1, [tmp1]
+add tmp1, 5
+
+find add_VM_MRDR, #03????00#
+cmp $RESULT,0
+je ALL_IS_OK_2
+mov patternAdd03, $RESULT
+mov tmp4, $RESULT
+sub tmp4, add_VM_MRDR
+cmp tmp4, tmp1
+jb go_vm_mrdr
+
+add currentPos, tmp1
+cmp stolCodEnd, currentPos
+jb ALL_IS_OK_2
+jmp research_mov_reg_dword_reg
+
+go_vm_mrdr:
+mov vm_first_operand, [patternAdd03]
+and vm_first_operand, ff00
+shr vm_first_operand, 8
+
+mov vm_second_operand, [patternAdd03]
+and vm_second_operand,  ff0000
+shr vm_second_operand, 10
+
+
+cmp vm_first_operand, 4
+jne next__1
+mov vm_first_operand, "eax"
+jmp loop____2
+
+next__1:
+cmp vm_first_operand, 8
+jne next__2
+mov vm_first_operand, "ebx"
+jmp loop____2
+
+next__2:
+cmp vm_first_operand, c
+jne next__3
+mov vm_first_operand, "ecx"
+jmp loop____2
+
+next__3:
+cmp vm_first_operand, 10
+jne next__4
+mov vm_first_operand, "edx"
+jmp loop____2
+
+next__4:
+cmp vm_first_operand, 12
+jne next__5
+mov vm_first_operand, "ESI"
+jmp loop____2
+
+next__5:
+cmp vm_first_operand, 14
+jne no_mov_reg_dowrd_reg
+mov vm_first_operand, "EDI"
+jmp loop____2
+
+no_mov_reg_dowrd_reg:
+add currentPos, tmp1
+cmp stolCodEnd, currentPos
+jb ALL_IS_OK_2
+jmp research_mov_reg_dword_reg
+
+
+loop____2:
+cmp vm_second_operand, 4
+jne next__11
+mov vm_second_operand, "eax"
+jmp write_mrdr
+
+next__11:
+cmp vm_second_operand, 8
+jne next__12
+mov vm_second_operand, "ebx"
+jmp write_mrdr
+
+next__12:
+cmp vm_second_operand, c
+jne next__13
+mov vm_second_operand, "ecx"
+jmp write_mrdr
+
+next__13:
+cmp vm_second_operand, 10
+jne next__14
+mov vm_second_operand, "edx"
+jmp write_mrdr
+
+next__14:
+cmp vm_second_operand, 12
+jne next__15
+mov vm_second_operand, "ESI"
+jmp write_mrdr
+
+next__15:
+cmp vm_second_operand, 14
+jne no_mov_reg_dowrd_reg
+mov vm_second_operand, "EDI"
+jmp write_mrdr
+
+write_mrdr:
+add tmp1, 11
+fill add_VM_MRDR, tmp1, 90
+eval "mov {vm_first_operand}, dword ptr ds:[{vm_second_operand}]"
+asm add_VM_MRDR, $RESULT
+cmt add_VM_MRDR, "VM --> MOV REG, [REG]"
+add currentPos, tmp1
+cmp stolCodEnd, currentPos
+jb ALL_IS_OK_2
+jmp research_mov_reg_dword_reg
+
+ALL_IS_OK_2:
+mov currentPos, eip
+
+SEARCH_META_PUSHES_REG:
+find currentPos, #89??24FC83EC04#
+CMP $RESULT, 0
+JE next13
+mov currentPos, $RESULT
+cmt currentPos, "META --> PUSH REG"
+mov tmp1, [currentPos]
+shr tmp1, 8
+and tmp1, ff
+//--------------------------
+cmp tmp1, 44
+je eax_
+cmp tmp1, 5c
+je ebx_
+cmp tmp1, 4c
+je ecx_
+cmp tmp1, 54
+je edx_
+cmp tmp1, 74
+je esi_
+cmp tmp1, 7c
+je edi_
+cmp tmp1, 64
+je esp_
+cmp tmp1, 6c
+je ebp_
+
+
+jmp next13
+
+eax_:
+fill currentPos, 8, 90
+asm currentPos, "PUSH EAX"
+jmp CONTINUE_META_REG
+
+ebx_:
+fill currentPos, 8, 90
+asm currentPos, "PUSH EBX"
+jmp CONTINUE_META_REG
+
+ecx_:
+fill currentPos, 8, 90
+asm currentPos, "PUSH ECX"
+jmp CONTINUE_META_REG
+
+edx_:
+fill currentPos, 8, 90
+asm currentPos, "PUSH EDX"
+jmp CONTINUE_META_REG
+
+esi_:
+fill currentPos, 8, 90
+asm currentPos, "PUSH ESI"
+jmp CONTINUE_META_REG
+
+edi_:
+fill currentPos, 8, 90
+asm currentPos, "PUSH EDI"
+jmp CONTINUE_META_REG
+
+esp_:
+fill currentPos, 8, 90
+asm currentPos, "PUSH ESP"
+jmp CONTINUE_META_REG
+
+ebp_:
+fill currentPos, 8, 90
+asm currentPos, "PUSH EBP"
+
+CONTINUE_META_REG:
+inc currentPos
+cmp stolCodEnd, currentPos
+jb next13
+jmp SEARCH_META_PUSHES_REG
+
+
+
+next13:
+mov currentPos, eip
+
+SEARCH_META_PUSHES_CONST:
+find currentPos, #C7??24FC??????????????83EC04#
+CMP $RESULT, 0
+JE next14
+mov currentPos, $RESULT
+mov tmp1, $RESULT
+cmt currentPos, "META --> PUSH CONST"
+add tmp1, 4
+mov tmp1, [tmp1]
+eval "PUSH {tmp1}"
+fill currentPos, 10, 90
+asm currentPos, $RESULT
+inc currentPos
+cmp stolCodEnd, currentPos
+jb next14
+jmp SEARCH_META_PUSHES_CONST
+
+
+next14:
+mov currentPos, eip
+
+SEARCH_META_CALLS:
+find currentPos, #68??????????????C3#
+CMP $RESULT, 0
+JE LAST_CLEAN
+mov currentPos, $RESULT
+cmt currentPos, "META --> CALL"
+mov tmp1, currentPos
+mov tmp2, currentPos
+add tmp1, 1
+mov tmp1, [tmp1]
+sub tmp2, 9
+fill tmp2, 14, 90
+eval "CALL {tmp1}"
+asm currentPos, $RESULT
+inc currentPos
+cmp stolCodEnd, currentPos
+jb LAST_CLEAN
+jmp SEARCH_META_CALLS
+
+LAST_CLEAN:
+find eip, #9c9090909090#
+cmp $RESULT,0
+je GOODBOY
+fill $RESULT, 1,90
+jmp LAST_CLEAN
+
+
+GOODBOY:
+mov currentPos, eip
+mov tmp2, 0
+
+NEXT_BYTE_:
+inc currentPos
+cmp currentPos, stolCodEnd
+jae CORRECT_THE_OEP
+
+REDOIT:
+mov tmp1, [currentPos]
+and tmp1, ff
+cmp tmp1, 90
+je NEXT_BYTE_
+
+opcode currentPos
+wrta "BinCode.txt", $RESULT
+wrta "Mnemo.txt", $RESULT_1
+add currentPos, 40
+add tmp2, $RESULT_2
+
+cmp currentPos, stolCodEnd
+jb REDOIT
+
+
+CORRECT_THE_OEP:
+sub FAKEOEP, tmp2
+inc FAKEOEP
+mov OEP,FAKEOEP
+
+YASALLAM_ALIK_AORE:
+eval "Open the txt file named BinCod.txt->concat all bytes->remove ':'-> bin copy -> bin paste at {OEP} : OEP"
+mov eip, OEP
+msg $RESULT
+msg "Don't forget to fix calls and jums to fixed adresses. Use 'Mnemo.txt' to do that. Enjoy"
+log FAKEOEP
+ret

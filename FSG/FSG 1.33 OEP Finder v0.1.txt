@@ -1,0 +1,21 @@
+// FSG 1.33 OEP Finder v0.1 !maybe unstable!
+// by FEUERRADER [AHTeam]
+// http://ahteam.org
+
+var s
+var k
+
+eob Break 
+findop eip, #FE0E0F84#
+mov s, $RESULT
+add s, 04
+mov k, [s]
+add s, 04
+add s, k
+bphws s, "x"
+run
+
+Break:
+bphwc s
+cmt eip, "OEP"
+ret

@@ -1,0 +1,63 @@
+code:
+   msgyn "设置:按ALT+O打开异常项，除倒数第一和第三项外，其它全部打钩,这个脚本只对forgot/hexer的修改版telock有用,要继续吗?"
+   cmp $RESULT,0
+   je lblret
+
+var addr
+var cbase
+var csize
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+
+start:
+   run
+
+lbl1:
+   gpa "GetModuleHandleA","kernel32.dll"
+   bp $RESULT
+   esto
+
+lbl2:
+   bc $RESULT
+   rtu
+   find eip,#85FF74??FF95#
+   cmp $RESULT,0
+   je lblabort
+   mov addr,$RESULT
+   bphws addr,"x"
+   
+lbl3:
+   eob lbl4
+   run
+   esto
+   esto
+   esto
+
+lbl4:
+   bphwc addr
+   mov edi,0
+   find eip,#61C685#
+   cmp $RESULT,0
+   je lblabort
+   mov addr,$RESULT
+   add addr,8
+   mov [addr],#EB#
+lbl5:
+   run
+lbl6:
+   bprm cbase,csize
+   esto
+
+end:
+   bpmc
+   cmt eip,"OEP!"
+   msg "Script by loveboom[DFCG][FCG],Thank you for using my script!"
+   
+lblret:
+   ret
+
+lblabort:
+   msg "出错，脚本将会结束，可能目标程序不是forgot/hexer的变形telock加的壳:(!"
+   ret

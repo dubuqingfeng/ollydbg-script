@@ -1,0 +1,146 @@
+////////////////////////////////////////////////////////////
+// FileName : yoda's Protector V1.03.X.osc
+// Comment : yoda's Protector V1.03.1/V1.03.2 UnPacK
+// Environment : WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+// Author : fly
+// WebSite : http://fly2004.163.cn.com
+// Date : 2005-10-05 23:00
+////////////////////////////////////////////////////////////
+#log
+
+dbh
+var T0
+var T1
+var T2
+var T3
+var T4
+
+//————————————————————————————————
+gpa "GetVersion", "KERNEL32.dll"
+eob GetVersion
+bp $RESULT
+esto
+GoOn0:
+esto
+
+GetVersion:
+cmp eip,$RESULT
+jne GoOn0
+bc $RESULT
+rtu
+mov eax,4
+
+//————————————————————————————————
+gpa "GetWindowLongA", "User32.dll"
+eob GetWindowLongA
+bp $RESULT
+esto
+GoOn1:
+esto
+
+GetWindowLongA:
+cmp eip,$RESULT
+jne GoOn1
+bc $RESULT
+rtu
+mov T0,eax
+
+//Lock Shell_TrayWnd
+gpa "SetWindowLongA", "User32.dll"
+eob SetWindowLongA
+bp $RESULT
+esto
+GoOn2:
+esto
+
+SetWindowLongA:
+cmp eip,$RESULT
+jne GoOn2
+bc $RESULT
+mov T1,esp
+add T1,C
+mov [T1],T0
+rtu
+
+//————————————————————————————————
+gpa "IsDebuggerPresent", "KERNEL32.dll"
+eob IsDebuggerPresent
+bp $RESULT
+esto
+GoOn3:
+esto
+
+IsDebuggerPresent:
+cmp eip,$RESULT
+jne GoOn3
+bc $RESULT
+rtu
+
+find eip, #C1CB07#
+cmp $RESULT, 0
+je NoFind
+mov T2,$RESULT
+eob Ror7
+bp T2
+log T2
+esto
+GoOn4:
+esto
+
+Ror7:
+cmp eip,T2
+jne GoOn4
+bc T2
+mov T3,ebx
+log ebx
+
+//————————————————————————————————
+find eip, #89322BC683E805#
+cmp $RESULT, 0
+log $RESULT
+je NoFind
+
+mov T4,$RESULT
+mov [T4],C62B9090
+//Fixed Importing Function
+
+find eip, #740261C3#
+cmp $RESULT, 0
+je NoFind
+
+eob Popad
+bp $RESULT
+
+esto
+GoOn5:
+esto
+
+Popad:
+cmp eip,$RESULT
+jne GoOn5
+bc $RESULT
+mov [T4],C62B3289
+//Revert Code
+
+//————————————————————————————————
+eob MyOEP
+bp T3
+
+esto
+GoOn6:
+esto
+
+MyOEP:
+cmp eip,T3
+jne GoOn6
+bc T3
+
+//————————————————————————————————
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP ! Dump and Fix IAT. Good Luck "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not yoda's Protector V1.03.1/V1.03.2 ! "
+ret

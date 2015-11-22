@@ -1,0 +1,83 @@
+/*
+Avant d'utiliser ce script, vous devez aller dans les options de olly, 
+dans -> debugging options et cocher toutes les erreurs!
+
+puis utiliser le plugin "hidedbg" et cliquer sur "hide all"
+
+*/
+
+
+
+/*
+	============================
+	                
+	      Author: Goldocrack 30 mars 2006
+	      Packer: Escargot 0.1 de ++Meat
+	      Script for: Escargot 0.1
+	      Level: Easy
+	      Date: lundi 8 mai 2006
+
+            http://reverseengineering.online.fr
+            http://www.forumcrack.new.fr/
+            http://s141422204.onlinehome.fr/forum/
+            Merci à tous 
+	 ============================
+						*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sto 
+sto 
+bphws esp,"r"
+run
+sto 
+sto   
+an eip
+cmt eip, " Tu es a l'entry point  !"
+msg "Dump ton fichier et il sera fonctionnel!"
+ret 
+
+
+ 

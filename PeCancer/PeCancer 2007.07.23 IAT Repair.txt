@@ -1,0 +1,48 @@
+var iat_start
+var iat_end
+var func
+var chek
+var chj
+var oep
+var jf
+var pf
+mov pf,007EC435
+
+mov oep,eip
+ask "Enter start IAT"
+cmp $RESULT,0
+je quit
+mov iat_start,$RESULT
+ask "Enter end IAT"
+cmp $RESULT,0
+je quit
+mov iat_end,$RESULT
+loop:
+cmp iat_end,iat_start
+je quit
+cmp iat_start,1001110
+je nextf
+cmp [iat_start],0
+je nextf
+mov chj,[iat_start]
+and chj,F0000000
+cmp chj,70000000
+je nextf
+mov eip,[iat_start]
+bp pf
+erun
+bc pf
+mov [iat_start],eax
+add iat_start,4
+jmp loop
+
+nextf:
+
+add iat_start,4
+jmp loop
+
+
+
+quit:
+mov eip,oep
+ret

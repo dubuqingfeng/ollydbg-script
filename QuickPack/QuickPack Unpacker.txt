@@ -1,0 +1,44 @@
+var counter
+var ImageBase
+var OEP
+var iat_start
+var p
+mov counter,0
+
+
+gpa "GetProcAddress","kernel32.dll"
+bp $RESULT
+run
+bc eip
+rtu
+gmi eip,MODULEBASE
+mov ImageBase,$RESULT
+gmi eip,CODEBASE
+mov iat_start,esi
+mov p,eip
+add p,6
+fill p,2,90
+findop eip,#FFE0#
+cmp $RESULT,0
+je quit
+bp $RESULT
+run
+sti
+cmt eip,"OEP"
+mov OEP,eip
+sub OEP,ImageBase
+sub iat_start,ImageBase
+mov counter,ImageBase
+add counter,3C
+mov counter,[counter]
+add counter,ImageBase
+add counter,28
+mov [counter],OEP
+add counter,58
+mov [counter],iat_start
+dpe "dump.exe",eip
+msg "File Unpacked"
+ret
+quit:
+msg "No QuickPack"
+ret

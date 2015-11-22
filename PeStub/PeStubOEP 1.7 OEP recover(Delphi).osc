@@ -1,0 +1,23 @@
+//PeStubOEP 1.7 OEP recover(Delphi) by Flashback/Team-X
+//Site: www.team-x.ru
+//Email: Flashback@mail15.com
+//Description: try script on modify OEP
+MSGYN "This modify OEP?"
+CMP $RESULT, 0
+je exmes0
+MOV X, eip
+FILL X, 1, 55
+ADD X, 1
+FILL X, 1, 8B
+ADD X, 1
+FILL X, 1, EC
+ADD X, 1
+FILL X, 1, 83
+ADD X, 1
+FILL X, 1, C4
+ADD X, 1
+FILL X, 1, F0
+MSG "Delphi OEP recovered!"
+ret
+exmes0:
+ret

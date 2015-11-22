@@ -1,0 +1,44 @@
+/////////////////////////////////////////////////////////////
+//  FileName    :  Packman V0.0.0.1-V1.0.osc
+//  Comment     :  OEP Find For Packman V.0.0.0.1-V1.0
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://www.unpack.cn
+//  Date        :  2005-10-03 19:00
+/////////////////////////////////////////////////////////////
+#log
+
+
+var EP
+
+MSGYN "Plz Clear All BreakPoints  +  Set Debugging Option Ignore All Excepions Options  +  Set Events Make first pause at Entry Point !"
+cmp $RESULT, 0
+je TryAgain
+
+//Start______________________________________________________
+
+mov EP,eip
+eob Break
+bphws EP, "x"
+
+esto
+GoOn:
+esto
+
+Break:
+cmp eip,EP  
+jne GoOn
+bphwc EP
+sto
+
+
+//GameOver___________________________________________________
+
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT.  Good Luck  "
+ret                
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret

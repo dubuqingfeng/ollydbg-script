@@ -1,0 +1,59 @@
+/*
+//////////////////////////////////////////////////////////////////
+★	FSG1.33 OEP Finder v1.0					★
+★	Author: loveboom[DFCG]					★
+★	Email :	bmd2chen@tom.com				★
+★	Date  :	2004-2-17					★
+★	Note  : 这个脚本只能停在最后指向OEP处你必须手工 G addr	★
+★	如果不能脱的话，请把不能脱的东东发到我信箱。谢谢!	★
+★	 							★
+//////////////////////////////////////////////////////////////////
+*/
+var baddr
+var aeip
+
+eob lbl1				//相当于he GetModuleHandleA
+gpa "GetModuleHandleA","kernel32.dll"
+bphws $RESULT,"x"
+run
+
+lbl1:
+eob lbl2
+bphwc $RESULT				//相当于ALT+F9
+rtu
+
+lbl2:
+eob lbl3
+gpa "GetProcAddress","kernel32.dll"	//相当于he GetProcAddress
+bphws $RESULT,"x"
+run
+
+lbl3:
+eob lbl4
+bphwc $RESULT				//ALT+F9
+rtu
+
+lbl4:
+eob lbl5
+mov baddr,eip
+sub baddr, B
+bphws baddr,"x"				
+run
+
+lbl5:
+sto
+eob lbl6
+
+lbl6:
+mov aeip,eip
+sub aeip, 6
+cmp aeip,baddr
+je lbl7
+bphwc baddr
+cmt eip,"OEP,please dumped it."
+ret
+
+lbl7:
+run
+jmp lbl5
+//脚本结束

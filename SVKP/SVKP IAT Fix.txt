@@ -1,0 +1,48 @@
+var addr 
+var espval //esp 
+var espval1 
+var esptmp 
+var cbase 
+var csize 
+
+lblcheck: 
+find eip,#813B706586B1EB03C7848B0F84# //fix API function "GetModuleHandleA" 
+mov addr,$RESULT 
+cmp addr,0 
+jne lblfix0 
+find eip,#813BC5B1662DEB03C784E80F84# //Fix API function "GetCommandLineA" 
+mov addr,$RESULT 
+cmp addr,0 
+jne lblfix0 
+find eip,#813BCC971025EB03C784E90F84# //Fix API function "ExitProcess" 
+mov addr,$RESULT 
+cmp addr,0 
+jne lblfix0 
+find eip,#813BA41A86D0EB03C7849A0F84# //Fix API function "GetCurrentProcess 
+mov addr,$RESULT 
+cmp addr,0 
+jne lblfix0 
+find eip,#813B4A7687DFEB02CD200F84# //Fix API function "GetVersionExA" 
+mov addr,$RESULT 
+cmp addr,0 
+jne lblfix1 
+find eip,#813B0F1ACF4CEB02CD200F84# //Fix API function "GetVersion" 
+mov addr,$RESULT 
+cmp addr,0 
+jne lblfix1 
+jmp ok
+
+
+lblfix0: 
+add addr,B 
+mov [addr],#EB04# 
+jmp lblcheck 
+
+lblfix1: 
+mov addr,$RESULT 
+add addr,A 
+mov [addr],#EB04# 
+jmp lblcheck 
+
+ok:
+ret

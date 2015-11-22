@@ -1,0 +1,20 @@
+/////////////////////////////////////////////
+//	PE Pack 1.0 -> ANAKiN OEP  查找脚本
+//	Written: loveboom
+//	DATE: 2004-2-15
+//	NOTE:这个脚本是根据dOsKey的ASPack改的
+////////////////////////////////////////////
+
+sto
+sto
+eob Break		//遇中断就跳到Break处执行
+findop eip,#61#		//查找POPAD
+bphws $RESULT,"x"	//在找到的位置下硬件执行断点
+run			//F9运行
+
+Break:
+sto			//F8
+sto			//F8
+bphwc $RESULT		//取消中断
+msg "右键->Analysis->Remove Analysis就可以看到正常代码"
+ret			//执行完毕

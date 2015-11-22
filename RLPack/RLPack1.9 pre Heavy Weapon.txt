@@ -1,0 +1,282 @@
+/*
+//////////////////////////////////////////////////
+Назначение скрипта RLPack1.9 pre Heavy Weapon
+Author : Автор скрипта
+Email : Email автора скрипта
+OS : Системные требования XP Sp2  OLLYDBG сборка Shadow
+Олиадвансед плагин
+Date : 01.06.2007 8:16:07
+Note : Дополнительная информация
+/////////////////////////////////////////////////
+*/
+
+var id
+var ij
+var ad
+var ad2
+var iat
+var oep
+var Trh
+var zer
+var red
+var Adump
+var origoep
+
+
+gpa "CreateThread","kernel32.dll"
+mov [$RESULT],#C21800#
+
+mov oep,eip
+mov zer,oep
+add zer,43dB
+add oep,13EC
+mov id,eip
+mov red,id
+add red,1d2
+add id,1D7
+mov ij,id
+add ij,5
+mov ad,eip
+add  ad,B5
+mov ad2,eip
+add  ad2,2AC9
+BPHWS ad2,"x"
+BPHWS ad,"x"
+run
+BPHWC ad
+sti
+mov ad,eip
+add ad,8
+FILL ad,2,90
+add ad,15
+FILL ad,1,EB
+
+run
+BPHWC ad2
+mov ad2,ecx
+add ad2,D2C7
+BPHWS ad2,"x"
+run
+BPHWC ad2
+
+mov ad2,eip
+add ad2,8
+FILL ad2,2,90
+add ad2,15
+FILL ad2,1,EB
+BPHWS red,"x"
+run
+BPHWC red
+sti
+mov red,eip
+add red,7
+FILL red,1,EB
+add red,17
+FILL red,1,EB
+add red,17
+FILL red,1,EB
+add red,17
+FILL red,1,EB
+add red,17
+FILL red,1,EB
+add red,17
+FILL red,1,EB
+add red,17
+FILL red,1,EB
+add red,19
+FILL red,1,EB
+
+BPHWS id,"x"
+run
+BPHWC id
+mov Adump,eip
+add Adump,4A
+FILL Adump,4A,90
+add Adump,4A
+BPHWS Adump,"x"
+
+sti
+sti
+mov id,eip
+BPHWS id,"x"
+
+mov  [zer],#EB1C#
+add zer,10
+FILL zer,1,EB
+mov IAT,edi
+mov [IAT],eax
+BPHWS ij,"x"
+run
+BPHWC ij
+sti
+mov ij,eip
+add ij,BA
+BPHWS ij,"x"
+run
+sti
+mov [ebx],IAT
+
+
+
+loop:
+cmp eip,Adump
+je loep
+
+run
+cmp eip,Adump
+je loep
+cmp eip,id
+jne l3
+mov IAT,edi
+mov [IAT],eax
+run
+cmp eip,ij
+jne l3
+sti
+mov [ebx],IAT
+jmp loop
+
+
+l3:
+run
+jmp loop
+
+loep:
+BPHWC ij
+BPHWC id
+mov origoep,Adump
+add origoep,16
+CMT origoep, "Jmp stolen oep stub" 
+MSG "Jmp stolen oep stub"
+
+
+/*
+//////////////////////////////////////////////////
+0046A8A0     90                       nop
+0046A8A1     90                       nop
+0046A8A2     90                       nop
+0046A8A3     90                       nop
+0046A8A4     90                       nop
+место куда будем записывать востановленый стаб кол nop==количеству байтов
+0046A8F2     90                       nop
+0046A8F3     90                       nop
+0046A8F4     90                       nop
+0046A8F5     90                       nop
+0046A8F6     EB 0F                    jmp short Heavy_We.0046A907
+
+/////////////////////////////////////////////////
+*/
+BPHWS oep,"x"
+run
+BPHWC oep
+
+MSG "VM oep stub"
+/*
+//////////////////////////////////////////////////
+004CFD04     8B85 9D530000            mov eax,dword ptr ss:[ebp+539D]<--argument
+004CFD0A     8B9D A1530000            mov ebx,dword ptr ss:[ebp+53A1]Здесь и в регистрах
+004CFD10     8B8D A5530000            mov ecx,dword ptr ss:[ebp+53A5]берем аргументы для функций
+004CFD16     8B95 A9530000            mov edx,dword ptr ss:[ebp+53A9]схема восстановления стаба как 
+004CFD1C     8BB5 AD530000            mov esi,dword ptr ss:[ebp+53AD]в других протах только все гораздо проще
+004CFD22     8BBD B1530000            mov edi,dword ptr ss:[ebp+53B1]так как все под руками!
+004CFD28     8BA5 B9530000            mov esp,dword ptr ss:[ebp+53B9]Каждый проход келл принимает значение
+004CFD2E     89A5 C1530000            mov dword ptr ss:[ebp+53C1],espследующей функции из стаба! Внимательно
+004CFD34     8BAD B5530000            mov ebp,dword ptr ss:[ebp+53B5]следим за передаваемыми аргументами и 
+004CFD3A     E8 5924FFFF              call Heavy_We.004C2198 <--------- Funck
+004CFD3F     55                       push ebp                        регистрами и обязательно заходим в каждый
+004CFD40     BD 00104000              mov ebp,Heavy_We.00401000       кэлл ! 
+004CFD45     8985 9D530000            mov dword ptr ss:[ebp+539D],eax Все что получим записываем в stolen oep stub
+004CFD4B     899D A1530000            mov dword ptr ss:[ebp+53A1],ebx 
+004CFD51     898D A5530000            mov dword ptr ss:[ebp+53A5],ecx
+004CFD57     8995 A9530000            mov dword ptr ss:[ebp+53A9],edx
+004CFD5D     89B5 AD530000            mov dword ptr ss:[ebp+53AD],esi
+004CFD63     89BD B1530000            mov dword ptr ss:[ebp+53B1],edi
+
+/////////////////////////////////////////////////
+*/
+var F
+var F2
+var voz
+var Func
+var chk
+var j
+mov Func,46E56C
+/*
+//////////////////////////////////////////////////
+0046E564  77D3C64D  user32.InflateRect
+0046E568  77D38A58  user32.GetWindowThreadProcessId
+0046E56C  00000000<------------------ Func
+0046E570  00000000                    часть ф-ций не востановлена
+0046E574  00000000                    сюда мы запищем недостающие
+0046E578  00000000                    ф-ции
+0046E57C  00000000
+0046E580  00000000
+0046E584  00000000
+0046E588  00000000
+0046E58C  00000000
+0046E590  00000000
+0046E594  00000000
+0046E598  00000000
+0046E59C  00000000
+0046E5A0  00000000
+0046E5A4  00000000
+0046E5A8  00000000
+0046E5AC  00000000
+0046E5B0  77D6EF6E  user32.GetMenuStringA
+0046E5B4  77D5749F  user32.GetMenuState
+0046E5B8  77D438EC  user32.GetMenuItemInfoA
+/////////////////////////////////////////////////
+*/
+
+
+mov j,401000
+mov eip,j
+loop1:
+FIND  eip,#FF25??????01#
+cmp $RESULT, 0
+je quit
+
+mov F,$RESULT
+mov chk,F
+add chk,2
+mov chk,[chk]
+mov chk,[chk]
+and chk,FF00000
+cmp chk,1000000
+jne ls
+mov eip,F
+mov voz,eip
+add voz,6
+add F,2
+sti
+sti
+sti
+sti
+sti
+mov F2,eip
+add F2,33
+GO  F2
+cmp [Func],00000000
+jne zer
+mov [Func],eax
+mov [F],Func
+add Func,4
+mov eip,voz
+jmp loop1
+
+ls:
+add F,6
+jmp loop1
+
+zer:
+mov Func,46E758
+mov [Func],eax
+mov [F],Func
+add Func,4
+mov eip,voz
+jmp loop1
+
+quit:
+mov eip,oep
+MSG "IAT Fix dump it & use ImpRec"
+ret

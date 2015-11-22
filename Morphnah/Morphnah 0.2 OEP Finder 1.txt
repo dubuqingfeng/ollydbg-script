@@ -1,0 +1,30 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//  
+//  Morphnah v0.2 OEP Finder
+//  Coded by: 0x87k/ICU
+//  Special greetz fly out to: TEAM ICU,SnD,TSRh,{RES},ARTeam,REVENGE,my friends
+//  Data: 04.07.2007
+//  Test: WinXP SP2, OllyDbg V1.10, ODbgScript V1.64.3 or OllyScript v0.92, OllyDump
+//  Contact: oxy87k@gmail.com
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+
+//.c0de
+_start:
+	find eip, #61??????????C3#	// searches for Pushad+"OEP"+Retn
+	go $RESULT			// go over it	
+	cmp eip, $RESULT		// if it find it
+	je _continue			// continue, else...
+   	msg "Error, maybe target isn't packed with Morphnah v0.2!"
+   	ret				// exit
+
+_continue:
+	sto				// step over
+	sto				// step over
+	sto				// step over
+	log eip
+	an eip				// Analysis
+   	cmt eip, "This is the OEP! Found by 0x87k/ICU"
+   	msg "File was dumped and fixed! Regards!"
+	dpe "Unpacked.exe", eip
+   	ret

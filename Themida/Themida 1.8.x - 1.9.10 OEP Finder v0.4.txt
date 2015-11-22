@@ -1,0 +1,292 @@
+/////////////////////////////////////////
+/// by fxyang                         ///
+/// version  0.4                      ///
+/// 感谢 fly 的建议，海风月影 测试    ///
+/////////////////////////////////////////
+data:
+var cbase
+var csize
+var dllimg
+var dllsize
+var mem
+var getprocadd
+var gatprocadd_2
+var tmp
+var temp
+
+cmp $VERSION, "1.52"
+jb odbgver
+
+bphwcall
+bpmc
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+gmemi eip,MEMORYBASE      //壳段的基地址
+mov dllimg,$RESULT
+log dllimg
+gmemi eip,MEMORYSIZE      //壳段的长度
+mov dllsize,$RESULT
+log dllsize
+
+findapibase:
+gpa "GetProcAddress", "kernel32.dll"
+mov getprocadd,$RESULT                   //取GetProcAddress函数地址，用于定位加密表
+cmp getprocadd,0
+gpa "_lclose","kernel32.dll"             //同上  
+mov getprocadd_2,$RESULT
+gpa "GetLocalTime", "kernel32.dll"       //下面代码取自okdodo 感谢 okdodo
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+gpa "VirtualAlloc", "kernel32.dll"
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+mov apibase,eax
+log apibase
+gpa "LoadLibraryA", "kernel32.dll"
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+
+
+bphwc tmpbp
+rtu
+findVirtualAlloc:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE8090000005DC21000#     //查找被虚拟的VirtualAlloc函数
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je win2003
+bphws tmpbp ,"x"
+jmp tmploop
+
+win2003:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE878FFFFFF5DC21000#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+
+
+tmploop: 
+                               //下面代码重新改写
+esto 
+cmp eax,getprocadd                       //定位加密表出现时机
+je iatbegin
+cmp eax,getprocadd_2
+je iatbegin
+jne tmploop
+
+iatbegin:
+esto
+esto
+
+bphwcall
+rtr
+sti
+sti
+find eip, #8BB5??????09#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+jne next1
+find eip, #8BB5??????06#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je findnext_1
+next1:
+bphws tmpbp ,"x"
+esto
+
+sti
+var iatcalltop      //加密表的首地址
+var iatcallend
+mov iatcalltop,esi
+find iatcalltop,#00000000#
+mov iatcallend,$RESULT
+log iatcallend
+var iatfn
+var iattop
+var codeadd
+var antiadd
+bphwcall
+jmp codebegin
+
+findnext_1:
+sti
+find dllimg, #FFFFFFFFDDDDDDDD#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je notlb
+
+var iatcalltop      //加密表的首地址
+var iatcallend
+mov iatcalltop,$RESULT
+sub iatcalltop,10
+log iatcalltop
+find iatcalltop,#00000000#
+mov iatcallend,$RESULT
+log iatcallend
+var iatfn
+var iattop
+var codeadd
+var antiadd
+mov tmp,eax
+mov eax,iatcalltop
+mov eax,[eax]
+shr eax,10
+cmp ax,0
+jne iatbegin_2
+add iatcalltop,04
+iatbegin_2:
+mov eax,tmp
+
+codebegin:
+bphws iatcalltop,"r"
+esto
+
+bphwcall
+find eip,#83BD????????01#
+bphws $RESULT ,"x"
+mov antiadd,$RESULT
+esto
+
+sti
+bphwcall
+mov temp,eip
+mov [temp],#909090909090#
+mov tmp,0
+loop1:
+find eip,#3B8D????????0F84#,100
+bphws $RESULT ,"x"
+esto
+
+bphwcall
+mov iatfn,eax        //获得函数，并修改magic jump
+log iatfn
+sti
+mov temp,eip
+mov [temp],#909090909090#
+inc tmp
+cmp tmp,03
+je next_1
+jmp loop1
+
+next_1:
+add iatcalltop,04
+bphws iatcalltop,"r"
+esto
+
+bphwcall
+findiataddpro:               //iataddress
+find eip,#0385????????#,100
+bphws $RESULT,"x"
+esto
+
+sti
+bphwcall
+mov iattop,eax         //此时EAX是iat表中函数写入地址，然后判断这个值最小时就是iat基地址
+log iattop
+mov iatcalltop,esi
+bphws antiadd,"r"
+esto
+
+find eip,#3985??????0?0F84#,
+mov temp, $RESULT
+bphws temp,"x"
+esto
+
+bphwcall
+sti
+mov temp,eip
+mov [temp],#90E9#        //处理效验
+log temp
+sub iatcallend,04
+bphws iatcallend,"w"
+esto
+
+sti
+sti
+mov tmp,cbase
+add tmp,csize
+
+loopoep:
+bprm cbase,csize
+esto
+bpmc
+
+cmp tmp,eip
+ja findoep
+jmp loopoep
+
+findoep:
+exec
+pushad
+pushfd
+ende
+
+mov ecx,cbase
+add csize,cbase
+mov edx,csize
+var iatadd
+mov iatadd,iattop
+loopiatadd:
+sub iatadd,04
+cmp [iatadd],0
+je iataddbase
+jmp loopiatadd
+iataddbase:
+mov iattop,iatadd
+sub iattop,04
+cmp [iattop],0
+je findiatbase
+jmp loopiatadd
+findiatbase:
+
+add iatadd,04
+mov ebx,iatadd
+log iatadd
+mov [iatcalltop],#8A013CE89074273CE97423668B01663DFF157477663DFF257471833900907503419090413BCA0F8FDE000000EBD2909090909090909090909090909090909090909090909090909090908B690103E983C5058BF3AD83F800750A833E009074C3909090903BE87402EBEA8079FF9075218039E9750866C741FFFF25EB0666C741FFFF1583EE04897101EB2190EB269090908039E9750866C701FF2590EB0566C701FF159083EE04897102909083C104E96FFFFFFF908B690203E983C5068BF3AD83F800750A833E00900F8454FFFFFF3BE87402EBEA8079FF907521668139FF15750866C741FFFF15EB0866C741FFFF2583EE04897101EB0A0000000083EE0489710283C104E919FFFFFF909090#
+mov tmp,eip
+log tmp
+mov eip,iatcalltop
+sti
+mov temp,iatcalltop
+add temp,010c
+bphws temp,"x"
+esto
+
+bphwcall
+mov eip,tmp
+bp eip
+
+exec
+popfd
+popad
+ende
+bc eip
+
+msg "脚本执行完成，iat表修复完成，现在停在伪OEP，请修复代码！"
+eval "IAT基地址在:{iatadd}"
+msg $RESULT
+ret
+
+notlb:
+msg "没有加密表，可能是以前版本！"
+pause
+
+stop:
+
+msg "可能是旧版本"
+pause

@@ -1,0 +1,84 @@
+// Script for OllyScript plugin by CW2K - http://ollyscript.apsvans.com
+/*
+* =========================================================
+* ASProtect 2.0 OEP-finder script
+* Author: CW2K
+*
+* note: ignore all exceptions and clear all breakpoints
+* This script depends on API's:
+* -CreateFileA(\\SCSI) - ASPR calls to get HD-Identifikation
+* -VirtualQuery - ASPR calls to detect Memory Breakpoint on Range
+   VirtualQuery is only call if OEP-Protection is enabled
+* =========================================================
+*/
+log "Storing CODEBASE & CODESIZE for use in 'Memory Breakpoint on Range' later"
+	var cbase
+	gmi eip, CODEBASE
+	mov cbase, $RESULT
+
+	var csize
+	gmi eip, CODESIZE
+	mov csize, $RESULT
+
+//---------------------------------------------------------
+
+log "Set one-shot BPX on end(Ret 001c) of CreateFileA (used to get HD-serial)..."
+	gpa "CreateFileA","kernel32.dll"
+	find $RESULT,#C21C00#
+	log $RESULT
+	go $RESULT
+
+log "Setting Memory Breakpoint on Range"
+log cbase
+log csize
+	bprm cbase, csize
+
+
+log "Set one-shot BPX VirtualQuery..."
+	gpa "VirtualQuery","kernel32.dll"
+	go $RESULT
+
+// Check whether VirtualQuery or CreateFileA hit
+	var tmp
+	mov tmp,cbase
+	add tmp,csize
+	cmp eip,tmp
+	jb OEP-Found
+
+	// it's VirtualQuery...
+		log "BPX VirtualQuery Triggered! Temporary disabling bpmr to aviod detection..."	
+		bpmc
+		rtr	// = Run Till Return
+		sto	// exit VirtualQuery
+
+		rtr
+		sto	// exit ASPR bprm-detect
+
+		rtr	// exit ASPR pointer init call
+		sto
+
+	log "Restoring Memory Breakpoint on Range"
+		bprm cbase, csize
+		run
+		run	// for some strange reason the second run is necessary
+
+OEP-Found:
+	bpmc
+	cmt eip, "OEP found with CW2K's ASProtect 2.0 script"
+	
+	
+	
+	msgyn "Continue and rebuild redirected API's?"
+	cmp $RESULT,1
+	jne Norebuild
+	#inc "ASProtect 2.0 Rebuild.txt"
+	Norebuild:
+	
+	msgyn "Continue and decrypt ASPR-chunk's?"
+	cmp $RESULT,1
+	jne Nodecrypt
+	msg "Execute code manually till filecheck to init Decryptionkey - then resume script."
+	pause
+	#inc "ASProtect 2.0 decrypt.txt"
+	Nodecrypt:
+	ret

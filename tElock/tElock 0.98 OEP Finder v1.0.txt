@@ -1,0 +1,43 @@
+/*
+	tElock 0.98 OEP finder v1.0
+	---------------------------
+	Seems to work =)
+	Please make sure no exceptions are passed to program
+	i.e. uncheck all the boxes on the Exceptions tab 
+	in Debugging Options except the topmost one
+*/
+
+var count
+mov count, A
+eob lbl1
+eoe lbl1
+run
+
+lbl1:
+cmp count, 0
+je lbl2
+esto
+sub count, 1
+jmp lbl1
+
+lbl2:
+esti
+msg "Please set a memory breakpoint on the code section and then resume the script"
+pause
+eob end
+eoe end
+run
+
+end:
+log eip
+ret
+
+
+
+
+
+
+
+
+
+

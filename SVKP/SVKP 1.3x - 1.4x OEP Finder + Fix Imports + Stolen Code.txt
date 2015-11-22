@@ -1,0 +1,674 @@
+//code by loveboom
+//modify by skylly
+//for svkp 1.3x - 1.4x
+
+var x1
+var x2
+var x3
+var x4
+var x5
+var x6
+var x7
+var x8
+var x9
+
+var cb
+var cs
+gmi eip,CODEBASE
+cmp $RESULT,0
+je err
+mov cb,$RESULT
+gmi eip,CODESIZE
+cmp $RESULT,0
+je err
+mov cs,$RESULT
+
+gpa "GetModuleHandleA","kernel32.dll"
+cmp $RESULT,0
+je err
+add $RESULT,5
+var gma
+mov gma,$RESULT
+
+msg "忽略所有异常"
+var ep
+mov ep,eip
+
+
+var espval
+sto
+mov espval,esp
+
+bp gma
+lo:
+esto
+cmp eip,gma
+jne lo
+rtu
+cmp eip,70000000    //如果还是在系统dll中
+ja lo
+bc gma
+//判断是1.4x版本还是1.3x版本
+var temp
+mov temp,[eip]
+and temp,FF
+cmp temp,E8  //call
+je svk13     //1.3x
+cmp temp,5B //pop ebx
+jne err      //未知壳
+log "svkp 1.4x"
+los:
+//处理api加密
+
+/*
+//00B05775    2903            sub     dword ptr [ebx], eax
+//00B05777    58              pop     eax
+//00B05778    813B CC971025   cmp     dword ptr [ebx], 251097CC        //ExitProcess
+//00B0577E    0F84 41170000   je      00B06EC5                         
+//00B05784    813B C5B1662D   cmp     dword ptr [ebx], 2D66B1C5        //GetCommandLineA
+//00B0578A    0F84 62180000   je      00B06FF2                         
+//00B05790    813B 9404B2D9   cmp     dword ptr [ebx], D9B20494        //GetCommandLineW
+//00B05796    0F84 AA1C0000   je      00B07446
+//00B0579C    813B A41A86D0   cmp     dword ptr [ebx], D0861AA4        //GetCurrentProcess
+//00B057A2    0F84 58210000   je      00B07900
+//00B057A8    813B 706586B1   cmp     dword ptr [ebx], B1866570        //GetModuleHandleA
+//00B057AE    0F84 C1240000   je      00B07C75                         
+//00B057B4    813B 0E46769B   cmp     dword ptr [ebx], 9B76460E        //x1   SVKP_GetRegistrationInformation
+//00B057BA    0F84 36280000   je      00B07FF6
+//00B057C0    813B DB0793E6   cmp     dword ptr [ebx], E69307DB        //x2   SVKP_GetTrialDays
+//00B057C6    0F84 76280000   je      00B08042
+//00B057CC    813B 627B6CA5   cmp     dword ptr [ebx], A56C7B62        //x3   SVKP_GetTrialExecs  没进入过这个分支，不过估计是这个API
+//00B057D2    0F84 BA280000   je      00B08092
+//00B057D8    813B 664E96BB   cmp     dword ptr [ebx], BB964E66        //x4   SVKP_CheckTrial
+//00B057DE    0F84 00290000   je      00B080E4
+//00B057E4    813B 4506D75B   cmp     dword ptr [ebx], 5BD70645        //x5   SVKP_LockKeyboard
+//00B057EA    0F84 43290000   je      00B08133
+//00B057F0    813B 0DE0FC1D   cmp     dword ptr [ebx], 1DFCE00D        //x6   SVKP_UnLockKeyboard
+//00B057F6    0F84 83290000   je      00B0817F
+//00B057FC    813B 31DD0F00   cmp     dword ptr [ebx], 0FDD31          //x7   SVKP_KillDebugger
+//00B05802    0F84 C6290000   je      00B081CE
+//00B05808    813B 95B75126   cmp     dword ptr [ebx], 2651B795        //x8   SVKP_RebootComputer
+//00B0580E    0F84 132A0000   je      00B08227                          
+//00B05814    813B B482F64B   cmp     dword ptr [ebx], 4BF682B4        //x9   SVKP_GetHWInfo
+//00B0581A    0F84 582A0000   je      00B08278                         
+//00B05820    813B 0F1ACF4C   cmp     dword ptr [ebx], 4CCF1A0F        //GetVersion
+//00B05826    0F84 972A0000   je      00B082C3
+//00B0582C    813B 4A7687DF   cmp     dword ptr [ebx], DF87764A        //GetVersionExA
+//00B05832    0F84 FC2D0000   je      00B08634
+//00B05838    813B B8B8B2FB   cmp     dword ptr [ebx], FBB2B8B8        //????????      没进入过这个分支，一个相当奇怪的分支,代码超级简单
+//00B0583E    0F84 56320000   je      00B08A9A
+//00B05844    813B 8E5D2D57   cmp     dword ptr [ebx], 572D5D8E        //MessageBoxA
+//00B0584A    0F84 86320000   je      00B08AD6
+//00B05850    60              pushad
+
+*/
+
+var temp
+find eip,#813BCC971025#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//ExitProcess
+go temp
+mov [temp],#EB3490909090#       //PATCH 1
+cmt temp,"please wait while decrypt iat..."
+
+find eip,#813B0F1ACF4C#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//GetVersion
+mov [temp],#EB2890909090#       //PATCH 2
+
+var nextapi
+find eip,#8907618385#
+cmp $RESULT,0
+je err
+mov nextapi,$RESULT
+add nextapi,3
+
+
+
+var delta
+mov delta,esp
+add delta,C
+mov delta,[delta]
+//记录壳保存api的地址
+
+
+find eip,#813B0E46769B#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x1
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x1,addr
+bp x1
+
+find eip,#813BDB0793E6#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x2
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x2,addr
+bp x2
+
+find eip,#813B627B6CA5#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x3
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x3,addr
+bp x3
+
+find eip,#813B664E96BB#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x4
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x4,addr
+bp x4
+
+find eip,#813B4506D75B#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x5
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x5,addr
+bp x5
+
+find eip,#813B0DE0FC1D#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x6
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x6,addr
+bp x6
+
+find eip,#813B31DD0F00#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x7
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x7,addr
+bp x7
+
+find eip,#813B95B75126#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x8
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x8,addr
+bp x8
+
+find eip,#813BB482F64B#
+cmp $RESULT,0
+je err
+mov temp,$RESULT
+add temp,6    
+//x9
+
+var addr
+mov addr,temp
+add addr,2
+mov addr,[addr]
+add addr,temp
+add addr,6
+mov x9,addr
+bp x9
+
+
+hoho:
+find eip,#890761#   //mov     [edi], eax;popad
+cmp $RESULT,0
+je err
+mov [$RESULT],#618907#       //处理普通API函数
+
+
+//00B05B7A    33C0            xor     eax, eax
+//00B05B7C    64:8F00         pop     dword ptr fs:[eax]
+find eip,#33C0648F00#     //IAT处理完毕
+cmp $RESULT,0
+je err
+var iatok
+mov iatok,$RESULT
+bp iatok
+
+//为sdk函数作准备
+mov [ep],#33C040C20400C3#
+
+lpiat:
+esto
+x1:
+cmp eip,x1
+jne x2
+mov addr,edi
+log addr
+log "SVKP_GetRegistrationInformation"
+bp nextapi
+esto
+bc nextapi
+//mov [addr],ep     //空函数  这样补丁是不行滴,还是用那个dll来修复吧
+jmp continue
+
+x2:
+cmp eip,x2
+jne x3
+mov addr,edi
+log addr
+log "SVKP_GetTrialDays"
+jmp continue
+
+x3:
+cmp eip,x3
+jne x4
+mov addr,edi
+log addr
+log "SVKP_GetTrialExecs"
+jmp continue
+
+x4:
+cmp eip,x4
+jne x5
+mov addr,edi
+log addr
+log "SVKP_CheckTrial"
+jmp continue
+
+x5:
+cmp eip,x5
+jne x6
+mov addr,edi
+log addr
+log "SVKP_LockKeyboard"
+bp nextapi
+esto
+bc nextapi
+add ep,6
+mov [addr],ep     //空函数
+sub ep,6
+jmp continue
+
+x6:
+cmp eip,x6
+jne x7
+mov addr,edi
+log addr
+log "SVKP_UnLockKeyboard"
+bp nextapi
+esto
+bc nextapi
+add ep,6
+mov [addr],ep     //空函数
+sub ep,6
+jmp continue
+
+x7:
+cmp eip,x7
+jne x8
+mov addr,edi
+log addr
+log "SVKP_KillDebugger"
+bp nextapi
+esto
+bc nextapi
+add ep,6
+mov [addr],ep     //空函数
+sub ep,6
+jmp continue
+
+x8:
+cmp eip,x8
+jne x9
+mov addr,edi
+log addr
+log "SVKP_RebootComputer"
+bp nextapi
+esto
+bc nextapi
+add ep,6
+mov [addr],ep     //空函数
+sub ep,6
+jmp continue
+
+x9:
+cmp eip,x9
+jne okiat
+mov addr,edi
+log addr
+log "SVKP_GetHWInfo"
+bp nextapi
+esto
+bc nextapi
+add ep,3
+//mov [addr],ep     //空函数      //这样补丁是不行滴，还是用原版的special.dll中的API来修复吧
+sub ep,3
+
+
+continue:
+jmp lpiat
+
+okiat:
+bc x1
+bc x2
+bc x3
+bc x4
+bc x5
+bc x6
+bc x7
+bc x8
+bc x9
+bc iatok
+sti
+sti
+sti
+sti
+
+find eip,#81402000400000#     //add     dword ptr [eax+20], 4000    //add imagesize 4000
+cmp $RESULT,0
+je err
+mov [$RESULT],#EB05#  //anti anti-dump
+
+bphws espval,"r"
+esto
+esto
+esto
+bphwc espval
+find eip,#FFE0E8# //jmp eax;call
+cmp $RESULT,0
+je err
+go $RESULT
+sto
+cmt eip,"vm code start here,you must dump this section"
+//msg "如果想看到fake oep,就继续脚本"
+//pause
+msg "这里就是vm oep"
+bprm cb,cs
+ti
+bpmc
+var cool
+var cos
+mov cool,eip
+aoo:
+sub cool,1
+mov cos,[cool]
+and cos,FF
+cmp cos,90
+jne ens
+jmp aoo
+ens:
+add cool,1
+cmt cool,"real oep"
+eval "oep at:{cool},如果有sdk,自己查看日志窗口然后修复"
+msg $RESULT
+
+allok:
+cmt eip,"fake OEP"
+msg "如果有被exitprocess或messagebox替换的api,请继续脚本"
+an eip
+log delta
+pause
+//处理iat的替换加密
+//jmp [API]
+var adr
+mov adr,delta
+add adr,9343
+
+loop1:
+var addrcode
+mov addrcode,[adr]
+cmp addrcode,0
+je deltahalf
+var realcode
+mov realcode,adr
+sub realcode,4
+mov realcode,[realcode]
+mov [addrcode],realcode    //被exitprocess替代的API修复
+
+sub adr,8
+jmp loop1
+
+deltahalf:
+mov adr,delta
+add adr,2BD0E
+
+loop2:
+var addrcode
+mov addrcode,[adr]
+cmp addrcode,0
+je deltahalf2
+var realcode
+mov realcode,adr
+sub realcode,4
+mov realcode,[realcode]
+mov [addrcode],realcode    //被MessageBox替代的API修复
+
+sub adr,8
+jmp loop2
+
+deltahalf2:
+//mov register,api
+mov adr,delta
+add adr,A152
+
+loop3:
+var addrcode
+mov addrcode,[adr]
+cmp addrcode,0
+je deltahalf3
+
+var opcode
+mov opcode,adr
+sub opcode,5
+mov opcode,[opcode]
+and opcode,FF
+mul opcode,100
+xor opcode,8B   //mov register
+
+sub addrcode,2
+mov [addrcode],opcode     //放入mov register的opcode
+add addrcode,2
+
+var realcode
+mov realcode,adr
+sub realcode,4
+mov realcode,[realcode]
+mov [addrcode],realcode    //被exitprocess替代的API修复
+
+sub adr,9
+jmp loop3
+
+deltahalf3:
+mov adr,delta
+add adr,2CB1D
+
+loop4:
+var addrcode
+mov addrcode,[adr]
+cmp addrcode,0
+je deltaok
+
+var opcode
+mov opcode,adr
+sub opcode,5
+mov opcode,[opcode]
+and opcode,FF
+mul opcode,100
+xor opcode,8B   //mov register
+
+sub addrcode,2
+mov [addrcode],opcode     //放入mov register的opcode
+add addrcode,2
+
+var realcode
+mov realcode,adr
+sub realcode,4
+mov realcode,[realcode]
+mov [addrcode],realcode    //被MessageBox替代的API修复
+
+
+sub adr,9
+jmp loop4
+
+
+deltaok:
+an eip
+ret
+
+svk13:
+log "svk 1.3x"
+var eeip
+mov eeip,eip
+and eeip,FFFF0000
+
+
+  find eeip,#EB02CD2058EB020FE88907#                         //find iat magic jmp
+  mov addr,$RESULT
+  asm addr,"pop eax"
+  add addr,1
+  mov [addr],#8b44241C#                                      //replace to "mov eax,DS:[ESP+1C]" action:fix import functions
+
+var iatallok
+find addr,#558BEC81EC80000000#
+cmp $RESULT,0
+je err
+mov iatallok,$RESULT
+
+
+
+lblcheck:
+  find eeip,#813B706586B1EB03C7848B0F84#                      //fix API function "GetModuleHandleA"
+  mov addr,$RESULT
+  cmp addr,0
+  jne lblfix0
+  find eeip,#813BC5B1662DEB03C784E80F84#                     //Fix API function "GetCommandLineA"
+  mov addr,$RESULT
+  cmp addr,0
+  jne lblfix0
+  find eeip,#813BCC971025EB03C784E90F84#                       //Fix API function  "ExitProcess"
+  mov addr,$RESULT
+  cmp addr,0
+  jne lblfix0
+  find eeip,#813BA41A86D0EB03C7849A0F84#                     //Fix API function "GetCurrentProcess"
+  mov addr,$RESULT
+  cmp addr,0
+  jne lblfix0
+  find eeip,#813B4A7687DFEB02CD200F84#                    //Fix API function "GetVersionExA"
+  mov addr,$RESULT
+  cmp addr,0
+  jne lblfix1
+  find eeip,#813B0F1ACF4CEB02CD200F84#                  //Fix API function "GetVersion"
+  mov addr,$RESULT
+  cmp addr,0
+  jne lblfix1
+
+//到输入表处理结束
+go iatallok
+
+var temp
+mov temp,eeip
+sub temp,10000
+find temp,#81402000400000#
+//add     dword ptr [eax+20], 4000    //add imagesize 4000
+cmp $RESULT,0
+je err
+mov [$RESULT],#EB05#  //anti anti-dump
+
+cob
+  bphws espval,"r"
+  run
+  run 
+lbl3:
+  bphwc espval
+
+find eip,#C3E801000000# //retn;call
+cmp $RESULT,0
+je lblabort
+go $RESULT
+sto
+
+lblend:
+  cmt eip,"Script finished!"
+  msg "Script by loveboom[DFCG][FCG],Thank you for using my script!"
+  ret
+
+lblfix0:
+  add addr,B
+  mov [addr],#EB04#
+  jmp lblcheck
+
+lblfix1:
+  mov addr,$RESULT
+  add addr,A
+  mov [addr],#EB04#
+  jmp lblcheck
+
+lblabort:
+  msg "Error,script abort.Maybe target is not protect by SVKP1.3x or your forgot Ignore all exceptions."
+  ret
+

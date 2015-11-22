@@ -1,0 +1,59 @@
+/* 
+////////////////////////////////////////////////// 
+DBPE V2.X Unpack script v0.1 
+Author: loveboom 
+Email : bmd2chen@tom.com 
+OS : Win2kADV sp2,OllyDbg 1.1b,OllyScript v0.62 
+Date : 2004-3-21 
+Config: Ignore all exceptions 
+Note : If imports table like this "JMP DWORD PTR DS:[804EXXXX] or Call DWORD PTR DS:[804EXXXX]" then use winhex edit 
+target's memory,strat addr:IAT start address,find hex"4E80" Replace "4E00". 
+f you have one or more question, email me please,thank you! 
+Warning:If you want unpacking manual,you'd better use Winxp+IDT tool debug target 
+If your system is Win2k,Be careful in(SYSTEM CRASH,hoho!) 
+////////////////////////////////////////////////// 
+*/ 
+
+var csize 
+var cbase 
+var count 
+mov count,3 
+gmi eip,CODEBASE 
+mov cbase,$RESULT 
+gmi eip,CODESIZE 
+mov csize,$RESULT 
+
+lbl1: 
+eob lbl2 
+gpa "CloseHandle","kernel32.dll" 
+bphws $RESULT,"x" 
+run 
+
+lbl2: 
+sub count,1 
+cmp count,0 
+je lbl3 
+run 
+jmp lbl2 
+
+lbl3: 
+bphwc $RESULT 
+eob lbl4 
+bprm cbase,csize 
+run 
+
+lbl4: 
+bpmc 
+eob lbl5 
+findop eip,#FFE0# 
+bprm $RESULT,A 
+msg "Now Ctrl+B Find 89BD(like this '75 89 jnz addr <89BDxxxxxxxx>'),at the third time replace'nop(909090909090)' and then find 890F replace 8907,last time,resume script!" 
+pause 
+run 
+
+lbl5: 
+bpmc 
+sto 
+cmt eip,"OEP Found,please dumped it!" 
+msg "Script by loveboom[DFCG],Thank you for using my script!" 
+ret

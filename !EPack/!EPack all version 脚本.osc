@@ -1,0 +1,108 @@
+//for !EPack 1.4 beta2
+//code by skylly
+//msg "忽略所有异常"
+find eip,#7CF3#
+cmp $RESULT,0
+je notbeta2
+log "ver 1.4 beta2"
+#log
+gpa "GlobalFindAtomA", "kernel32.dll"
+cmp $RESULT,0
+je err
+var GlobalFindAtomA
+mov GlobalFindAtomA,$RESULT
+bp GlobalFindAtomA
+esto
+bc GlobalFindAtomA
+rtu
+mov ax,1
+
+find eip,#64A130000000#  //MOV EAX,DWORD PTR FS:[30]
+cmp $RESULT,0
+je jmpoep         //如果没有作小动作则直接跳OEP
+bp $RESULT
+esto
+bc $RESULT
+
+find eip,#8333FF#
+cmp $RESULT,0
+je err
+mov [$RESULT],#909090#     //patch sizeofimage
+
+find eip,#8939#
+cmp $RESULT,0
+je err
+mov [$RESULT],#9090#       //patch baseofaddress
+
+find eip,#7C49#
+cmp $RESULT,0
+je err
+mov [$RESULT],#EB#         //pe头写入垃圾
+
+jmpoep:
+find eip,#FFE0#       //jmp eax
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+sti
+//到第二层AHPack
+
+var temp
+mov temp,[eip]
+and temp,FF
+cmp temp,60   //是否pushad
+jne OEP
+
+AHPack:
+log "ver AHPack"
+sto
+var espvar
+mov espvar,esp
+bphws espvar,"r"
+esto
+bphwc espvar
+
+jmpedx:
+find eip,#FFE2#     //jmp edx
+cmp $RESULT,0
+je pushecx
+jmp allok
+
+pushecx:
+find eip,#51C3#     //push ecx; retn
+cmp $RESULT,0
+je allok
+go $RESULT
+sti
+sti
+sti
+jmp OEP
+
+allok:
+cmp $RESULT,0
+je OEP
+go $RESULT
+sti
+
+OEP:
+cmt eip,"OEP"
+ret
+
+notbeta2:
+log "not 1.4 beta 2 version"
+var temp
+mov temp,[eip]
+and temp,FF
+cmp temp,60   //是否pushad
+je AHPack
+
+maybe14f:
+log "may be 1.4 final version"
+jmp jmpoep
+
+ret
+err:
+msg "error"
+ret

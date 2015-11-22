@@ -1,0 +1,45 @@
+//////////////////////////////////////////////////////////////
+//UnPackMe_Hide & Protect 1.016
+//IAT Repair you need to enter info
+//By What
+//UnPackMe_Hide & Protect 1.016 (probably the best protector you never heard of)
+//Tested on Windows XP SP2, Odbgscript 1.64
+//Noted for info
+//////////////////////////////////////////////////////////////
+
+
+
+
+
+
+var oep					//Declares Variable
+var good
+var iatstart
+var address
+
+msg "Please edit this script first to the start of your api -4" // Simple messagebox telling you to edit this script
+mov oep, eip                             //Remembers the orginal entry point
+mov iatstart, 00460818                   //May needs to be changed to point to your iat start
+loop:					 //Start of main loop
+cmp eip, 00460f24			 //May need to be changed,Compares eip to the end of iat
+ja done					 //Jumps to end if Iat is at end
+add iatstart, 4				 //add 4 to eip to get to next find
+mov eip, iatstart			 //Mov eip to next address
+mov good, [eip]				 //Gets info from the eip address
+cmp good, 10000000       		 //Does it hold a valid api already?
+ja loop					 //Jmp if it does
+cmp good, 0				 //Is it equal to zero
+je loop					 //Jump if it is
+mov eip, good				 //Now go to the area to get good api
+loop2:					 //Start of loop 2
+sti					 //Step Into
+cmp eip, 10000000			 //Does step lead to good api
+jb loop2				 //Jump if it is not at beginning of api yet
+mov address, eip			 //Get good info
+mov eip, iatstart			 //Go back to address to fix iat
+mov [eip], address			 //Fix bad address with address of api
+jmp loop 				 //Keep jumping back tell we are finished
+
+done:					 //Done address
+mov eip, oep				 //Mov eip back to first position
+ret					 //End Script

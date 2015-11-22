@@ -1,0 +1,56 @@
+//for Morphine 2.7 by skylly
+var cb
+var cs
+gmi eip,CODEBASE
+cmp $RESULT,0
+je err
+mov cb,$RESULT
+gmi eip,CODESIZE
+cmp $RESULT,0
+je err
+mov cs,$RESULT
+add cb,cs
+
+gpa "VirtualAlloc", "kernel32.dll"
+cmp $RESULT,0
+je err
+var VA
+mov VA,$RESULT
+bp VA
+esto
+bc VA
+rtu
+find eip,#89C78B7508#
+cmp $RESULT,0
+je err
+var addr
+mov addr,$RESULT
+bp addr
+esto
+bc addr
+var data
+mov data,ebp
+add data,8
+mov data,[data]
+
+find eip,#8B55F42B55FC#
+cmp $RESULT,0
+je err
+mov addr,$RESULT
+bp addr 
+esto
+bc addr
+log data
+sub cb,data
+dm data, cb, "c:\dump.exe"
+
+find eip,#8B9D88FEFFFF#
+cmp $RESULT,0
+je err
+go $RESULT
+msg "loadpe dump. Task Viewer-> Full dump (paste header from disk)"
+
+ret
+err:
+msg "Error"
+ret

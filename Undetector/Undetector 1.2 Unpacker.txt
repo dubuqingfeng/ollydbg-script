@@ -1,0 +1,29 @@
+// code by sdy100
+// test : Ollydbg 1.10 Odbgscript 1.65.1 
+
+mov tmp,1
+
+loop:
+gpa "CreateProcessA", "Kernel32.dll"
+mov CreateProcessA, $RESULT
+gpa "WriteProcessMemory", "Kernel32.dll"
+mov WriteProcessMemory, $RESULT
+bp CreateProcessA
+erun
+bp WriteProcessMemory
+erun
+bc
+mov addr, [esp+c]
+mov size, [esp+10]
+eval "dump{tmp}.exe"
+mov name, $RESULT
+dm addr, size, name
+eval "dumped dump{tmp}.exe"
+msg $RESULT
+inc tmp
+MSGYN "1 more ?"
+cmp $RESULT, 1
+je loop
+
+end:
+ret

@@ -1,0 +1,68 @@
+//----------- ExeCryptor 2.2.4 IAT (ASM,Delphi,BorlandC++) - by haggar -----------
+var addr
+var oep
+var pointer
+var counter
+var esp_ref
+var temp
+
+mov addr,401000
+mov oep,eip
+
+LABEL_01:
+find addr,#ff25????4E00#
+cmp $RESULT,0
+je END_01
+mov addr,$RESULT
+add addr,2
+mov pointer,addr
+mov pointer,[pointer]
+mov pointer,[pointer]
+cmp pointer,10000000 //Check is import placed in thunk, or redirection.
+ja LABEL_01
+cmp pointer,0 //For delphi.
+je LABEL_01
+
+sub addr,2
+mov eip,addr
+add addr,2
+
+mov esp_ref,esp //Stack reference.
+mov counter,0
+LABEL_02: //Trace some code without purpose.
+sti
+add counter,1
+cmp counter,30
+jne LABEL_02
+
+mov temp,esp
+LABEL_03: //Find referenced stack value.
+add temp,4
+cmp temp,esp_ref
+jne LABEL_03
+sub temp,4
+
+mov temp,[temp] //Go to "Magic address".
+bp temp
+esto
+bc eip
+
+
+mov temp,[eip]
+and temp,0ffff
+cmp temp,025ff //SelfWriting import type? No need to fix it then.
+je LABEL_01
+
+cmp eax,10000000 //If EAX=!IMPORT, then it is a first type.
+jb LABEL_01
+
+mov temp,addr //In this case EAX=IMPORT.
+mov temp,[temp]
+mov [temp],eax
+
+jmp LABEL_01
+
+END_01:
+mov eip,oep
+ret
+//---------------------- end of script -------------------------------

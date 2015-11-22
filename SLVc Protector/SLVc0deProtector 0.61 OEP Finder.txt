@@ -1,0 +1,29 @@
+/*
+SLVc0deProtector 0.61 OEP Finder
+Made by: GaBoR {RES}
+*/
+gpa "OutputDebugStringA", "kernel32.dll" 
+bphws $RESULT,"x"
+run
+bphwc $RESULT
+rtu
+sto
+rtu
+find eip,#4F6C6C79#		//searching for string:"Olly"
+find $RESULT,#4F6C6C79#		//search again, because the first one was "Ollydbg.exe"
+fill $RESULT,4,47	//replace found string with "GGGG"
+findop eip,#F3A4#
+bphws $RESULT,"x"	//an intermediate breakpoint to let the protector decompress itself
+run
+bphwc $RESULT
+find eip,#5858FFE0#		//search for pop eax,pop eax,jmp eax(this will jump to the OEP)
+bphws $RESULT,"x"
+run
+bphwc $RESULT
+sto
+sto
+sto
+cmt eip,"OEP found by GaBoR {RES}"
+msg "Dump the process with Imprec,fix the IAT & fix header!"
+ret
+

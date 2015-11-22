@@ -1,0 +1,284 @@
+//////////////////////////////////////////////////
+//  FileName    :  tELock V0.80-V0.9X.osc
+//  Comment     :  tELock V0.80/V0.85f/V0.90/V0.92/V0.95/V0.96/V0.98/V0.99/XXX UnPacK Script
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://fly2004.163.cn.com
+//  Date        :  2005-10-06 17:40
+//////////////////////////////////////////////////
+#log
+
+dbh
+var T0
+var T1
+var T2
+var T3
+var T4
+var T5
+var CS
+var CB
+
+//！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+eob GetModuleHandleA
+gpa "GetModuleHandleA", "KERNEL32.dll"
+mov T0,$RESULT
+bprm T0,2
+
+esto
+GoOn0:
+esto
+
+GetModuleHandleA:
+log eip
+cmp eip,T0
+jne GoOn0
+
+bpmc
+rtu
+log eip
+
+
+//tELock XXX！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+find eip, #6A006A006A1150FFD761#
+cmp $RESULT, 0
+log $RESULT
+je GetClassNameA
+
+mov [$RESULT],#6A016A00#
+//Pass ZwSetInformationThread
+jmp Kill CRC
+
+
+//tELock V0.99！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+/*
+00423631    6A 20              push 20
+00423633    FF37               push dword ptr ds:[edi]
+00423635    FF75 08            push dword ptr ss:[ebp+8]
+00423638    FF57 0C            call near dword ptr ds:[edi+C]; user32.GetClassNameA
+0042363B    8B07               mov eax,dword ptr ds:[edi]
+0042363D    8138 4F4C4C59      cmp dword ptr ds:[eax],594C4C4F
+00423643    74 19              je short 0042365E
+00423645    8138 4F574C5F      cmp dword ptr ds:[eax],5F4C574F
+0042364B    74 11              je short 0042365E
+0042364D    8138 46696C65      cmp dword ptr ds:[eax],656C6946
+00423653    75 1C              jnz short 00423671
+00423655    8178 04 4D6F6E43   cmp dword ptr ds:[eax+4],436E6F4D
+0042365C    75 13              jnz short 00423671
+0042365E    6A 00              push 0
+00423660    6A 00              push 0
+00423662    6A 10              push 10
+00423664    FF75 08            push dword ptr ss:[ebp+8]
+00423667    FF57 08            call near dword ptr ds:[edi+8]; user32.SendMessageA
+0042366A    33C0               xor eax,eax
+0042366C    5F                 pop edi
+0042366D    C9                 leave
+0042366E    C2 0800            retn 8
+00423671    6A 01              push 1
+00423673    58                 pop eax
+00423674    5F                 pop edi
+00423675    C9                 leave
+00423676    C2 0800            retn 8
+
+00423C12    FF95 E9050000      call dword ptr ss:[ebp+5E9]; kernel32.ReadFile
+00423C18    FF95 E5050000      call dword ptr ss:[ebp+5E5]; kernel32.CloseHandle
+*/
+
+GetClassNameA:
+
+/*
+77D2F437    3E:8B4424 08    mov eax,dword ptr ds:[esp+8]
+77D2F43C    C700 00000000   mov dword ptr ds:[eax],0
+77D2F442    C2 0C00         retn 0C
+*/
+
+gpa "GetClassNameA", "user32.dll"
+mov [$RESULT],#3E8B442408C70000000000C20C00#
+//Pass GetClassNameA
+
+find eip, #0F85????????8B95????????0195#
+cmp $RESULT, 0
+log $RESULT
+jne Kill CRC
+
+
+gpa "ReadFile", "KERNEL32.dll"
+mov T5,$RESULT
+eob Break ReadFile
+bphws T5,"x"
+
+esto
+GoOn2:
+esto
+
+Break ReadFile:
+cmp eip,T5
+log eip
+jne GoOn2
+bphwc T5
+rtu
+
+
+//CRC！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+/*
+0040D241    FF95 D0D24000   call near dword ptr ss:[ebp+40D2D0] ; kernel32.GetModuleHandleA
+0040D247    85C0            test eax,eax
+0040D249    0F85 BA000000   jnz 0040D309
+0040D24F    53              push ebx
+0040D250    FF95 E4BA4000   call near dword ptr ss:[ebp+40BAE4] ; kernel32.LoadLibraryA
+0040D256    85C0            test eax,eax
+0040D258    0F85 AB000000   jnz 0040D309
+//Jmp 0040D309     Kill CRC
+0040D25E    8B95 62D34000   mov edx,dword ptr ss:[ebp+40D362]
+0040D264    0195 2AD34000   add dword ptr ss:[ebp+40D32A],edx
+0040D26A    0195 36D34000   add dword ptr ss:[ebp+40D336],edx
+0040D270    6A 30           push 30
+0040D272    53              push ebx
+0040D273    FFB5 36D34000   push dword ptr ss:[ebp+40D336]
+0040D279    EB 53           jmp short 0040D2CE
+0040D2CE    6A 00           push 0
+0040D2D0    FF95 D8D24000   call near dword ptr ss:[ebp+40D2D8]; user32.MessageBoxA
+0040D2D6    8B85 E8BA4000   mov eax,dword ptr ss:[ebp+40BAE8]
+0040D2DC    894424 FC       mov dword ptr ss:[esp-4],eax
+0040D2E0    61              popad
+0040D2E1    6A 00           push 0
+0040D2E3    FF5424 E0       call near dword ptr ss:[esp-20] ; kernel32.ExitProcess
+*/
+
+Kill CRC:
+find eip, #0F85????????8B95????????0195#
+cmp $RESULT, 0
+je NoFind
+
+mov T0,$RESULT
+log T0
+add T0,2
+mov T1, [T0]
+log T1
+inc T1
+sub T0,2
+mov [T0],E9
+inc T0
+mov [T0],T1
+//Kill CRC
+
+
+//Magic JMP！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+/*
+0040D32C    3A5408 FF          cmp dl,byte ptr ds:[eax+ecx-1]
+0040D330    74 E8              je short 0040D31A
+0040D332    3A5408 08          cmp dl,byte ptr ds:[eax+ecx+8]
+0040D336    74 E2              je short 0040D31A
+0040D338    3A5408 12          cmp dl,byte ptr ds:[eax+ecx+12]
+0040D33C    74 DC              je short 0040D31A
+0040D33E    3A5408 1D          cmp dl,byte ptr ds:[eax+ecx+1D]
+0040D342    74 D6              je short 0040D31A
+0040D344    EB D0              jmp short 0040D316 
+0040D346    0AF6               or dh,dh
+0040D348    895424 1C          mov dword ptr ss:[esp+1C],edx
+0040D34C    61                 popad
+0040D34D    C685 D7CC4000 00   mov byte ptr ss:[ebp+40CCD7],0
+0040D354    74 24              je short 0040D37A
+//tELock V0.98 Magic JMP
+0040D356    80EC 08            sub ah,8
+0040D359    B0 01              mov al,1
+0040D35B    FECC               dec ah
+0040D35D    74 04              je short 0040D363
+0040D35F    D0E0               shl al,1
+0040D361    EB F8              jmp short 0040D35B
+0040D363    8AA5 52CC4000      mov ah,byte ptr ss:[ebp+40CC52]
+0040D369    0885 52CC4000      or byte ptr ss:[ebp+40CC52],al
+0040D36F    84C4               test ah,al
+0040D371    75 07              jnz short 0040D37A
+0040D373    808D D7CC4000 01   or byte ptr ss:[ebp+40CCD7],1
+
+00435349    61                 popad
+0043534A    C685 F3CC4000 00   mov byte ptr ss:[ebp+40CCF3],0
+00435351    74 07              je short 0043535A
+//tELock V0.96 Magic JMP
+00435353    808D F3CC4000 01   or byte ptr ss:[ebp+40CCF3],1
+0043535A    33C0               xor eax,eax
+0043535C    8803               mov byte ptr ds:[ebx],al
+0043535E    43                 inc ebx
+0043535F    3803               cmp byte ptr ds:[ebx],al
+00435361    75 F7              jnz short 0043535A
+*/
+
+find eip, #61C6????????????74#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,8
+mov T2,$RESULT
+mov T4,$RESULT
+inc T4
+mov T4,[T4]
+mov [T2],EB
+inc T2
+MOV [T2],T4
+//Fixed Importing Function
+
+
+//FiXedOver！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+/*
+0040D624    F3:AA           rep stos byte ptr es:[edi]
+0040D626    66:AB           stos word ptr es:[edi]
+0040D628    FFE3            jmp near ebx
+0040D62A    8BBD 5AD34000   mov edi,dword ptr ss:[ebp+40D35A]
+0040D630    85FF            test edi,edi
+0040D632    EB 03           jmp short 0040D637
+*/
+find eip, #FFE38B#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,2
+log $RESULT
+bphws  $RESULT,"x"
+eob FiXedOver
+
+esto
+GoOn3:
+esto
+FiXedOver:
+cmp eip,$RESULT
+log eip
+log $RESULT
+jne  GoOn3
+bphwc $RESULT
+
+
+//！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+gmi eip, CODEBASE
+mov CB, $RESULT 
+log CB
+
+gmi eip, CODESIZE 
+mov CS, $RESULT 
+log CS
+
+mov T3,CB
+add T3,CS
+
+bprm CB, CS 
+eob Get OEP
+esto
+
+
+//！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+GoOn4:
+esto
+
+Get OEP:
+log eip
+log T3
+cmp eip,T3
+ja  GoOn4
+
+bpmc
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT.  Good Luck  "
+ret
+
+
+NoFind:
+MSG "Error! Maybe It's not tELock V0.80-V0.9X !  "
+ret

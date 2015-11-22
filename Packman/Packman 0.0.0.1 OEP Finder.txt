@@ -1,0 +1,29 @@
+
+// Script for OllyScript plugin by SHaG - http://ollyscript.apsvans.com
+/////// Packman v0.0.0.1 ///////
+// Script finds OEP
+// by dzen
+var x
+
+eob Break
+findop eip,#C640FBE9#
+bp $RESULT
+run
+
+Break:
+bc $RESULT
+sti
+mov x, eax
+sub x, 05
+eob Break2
+bp x
+run
+
+Break2:
+bc x
+sti
+MSG "Yeah, OEP! =)"
+ret
+
+
+// [BACK] 

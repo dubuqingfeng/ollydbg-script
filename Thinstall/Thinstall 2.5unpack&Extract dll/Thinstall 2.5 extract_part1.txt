@@ -1,0 +1,152 @@
+/*
+//////////////////////////////////////////////////
+Назначение скрипта Thinstall 2.5 extr
+/////////////////////////////////////////////////
+*/
+var va
+var va2
+var dmp
+var rgn
+var sz
+var Name
+var check
+
+gpa  "SetEnvironmentVariableA","kernel32.dll"
+bp $RESULT
+run 
+bc $RESULT
+rtu
+find eip,#83A5??FEFFFF00FFB5F4FEFFFFFFB5??FEFFFF8B45??FF30FF75CCE8#
+cmp $RESULT,0
+je quit
+mov va,$RESULT
+add va,1b
+bp va
+
+run
+/*
+//////////////////////////////////////////////////
+7FF212D2    83A5 74FEFFFF 0>AND DWORD PTR SS:[EBP-18C],0
+7FF212D9    FFB5 F4FEFFFF   PUSH DWORD PTR SS:[EBP-10C]
+7FF212DF    FFB5 74FEFFFF   PUSH DWORD PTR SS:[EBP-18C]
+7FF212E5    8B45 0C         MOV EAX,DWORD PTR SS:[EBP+C]
+7FF212E8    FF30            PUSH DWORD PTR DS:[EAX]
+7FF212EA    FF75 CC         PUSH DWORD PTR SS:[EBP-34]
+7FF212ED    E8 A0D4FFFF     CALL 7FF1E792                      ; <-------alloc dlll
+7FF212F2    83C4 10         ADD ESP,10
+7FF212F5    8945 C8         MOV DWORD PTR SS:[EBP-38],EAX
+7FF212F8    837D C8 00      CMP DWORD PTR SS:[EBP-38],0
+7FF212FC    0F85 D9000000   JNZ 7FF213DB
+7FF21302    83BD 44FFFFFF 0>CMP DWORD PTR SS:[EBP-BC],0
+7FF21309    75 43           JNZ SHORT 7FF2134E
+7FF2130B    8B45 0C         MOV EAX,DWORD PTR SS:[EBP+C]
+7FF2130E    8338 02         CMP DWORD PTR DS:[EAX],2
+7FF21311    74 3B           JE SHORT 7FF2134E
+7FF21313    8B45 0C         MOV EAX,DWORD PTR SS:[EBP+C]
+7FF21316    FF30            PUSH DWORD PTR DS:[EAX]
+7FF21318    8B85 D8FEFFFF   MOV EAX,DWORD PTR SS:[EBP-128]
+7FF2131E    0385 F4FEFFFF   ADD EAX,DWORD PTR SS:[EBP-10C]
+7FF21324    50              PUSH EAX
+7FF21325    FFB5 D8FEFFFF   PUSH DWORD PTR SS:[EBP-128]
+7FF2132B    FF75 08         PUSH DWORD PTR SS:[EBP+8]
+7FF2132E    68 64A0F47F     PUSH 7FF4A064                      ; ASCII "%s does not have image base relocation information and cannot be loaded
+Address %x-%x
+Loadlib_flags=%x"
+7FF21333    68 7D050000     PUSH 57D
+7FF21338    68 789FF47F     PUSH 7FF49F78                      ; ASCII "X:\thinstall\stub\load_library.cc"
+7FF2133D    E8 16460100     CALL 7FF35958
+/////////////////////////////////////////////////
+*/
+msg "in [esp] Name dll"
+mov va2,va
+add va2,140
+mov dmp,va
+add dmp,783
+bp dmp
+sto
+cmp eax,0
+je lastdll
+mov check,eax
+and check,F0000000
+cmp check,70000000
+je Thin_L
+mov rgn,eax
+mov sz,[esp+C]
+run
+ask "Enter name dll"
+cmp $RESULT, 0	
+je def
+mov Name,$RESULT
+dm rgn, sz, Name
+jmp loop
+def:
+dm rgn, sz, "our1.dll"
+msg "Rename our dll"
+bc va2
+jmp loop
+
+lastdll:
+bp va2
+run
+mov rgn,[esp]
+run
+mov sz,rgn
+find sz,#5045#
+mov sz,$RESULT
+add sz,50
+mov sz,[sz]
+ask "Enter name dll"
+cmp $RESULT, 0	
+je def2
+mov Name,$RESULT
+dm rgn, sz, Name
+pause
+bc va2
+jmp loop
+	
+def2:
+dm rgn, sz, "our2.dll"
+msg "Rename our dll"
+bc va2
+jmp loop
+
+loop:
+run
+cmp eip,va
+jne loop
+cmp eip,dmp
+je loop
+msg "in [esp] Name dll"
+
+jmp lastdll
+
+
+Thin_L:
+bp va2
+run
+mov rgn,[esp]
+run
+mov sz,rgn
+find sz,#5045#
+mov sz,$RESULT
+add sz,50
+mov sz,[sz]
+ask "Enter name dll"
+cmp $RESULT,0	
+je def3
+mov Name,$RESULT
+dm rgn, sz, Name
+pause
+jmp loop
+def3:
+dm rgn, sz, "our3.dll"
+msg "Rename our dll"
+pause
+jmp loop
+
+quit:
+msg "not Thinstall 2.5"
+ret
+quit2:
+msg "Все больше нет!"
+ret

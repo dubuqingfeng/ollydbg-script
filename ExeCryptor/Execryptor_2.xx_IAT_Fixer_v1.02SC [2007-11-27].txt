@@ -1,0 +1,1026 @@
+/*
+Script Version: v1.02SC 
+Debugging Environment: OllyDbg 1.1 (revised version), ODBGScript 1.52, HideOD V0.17, WINXP 
+Debugging options: setting OllyDbg addition INT 3 abnormal options, ignored all unusual options.
+*/
+
+var codeseg
+var tmp1
+var tmp2
+var tmp3
+var tmp4
+var tmp5
+var tmp6
+var tmp7
+var tmp8
+var tmp9
+var imgbase
+var signVA
+var 1stsecsize
+var 1stsecbase
+var lastsecbase
+var lastsecsize
+var rangeaddr
+var range
+var SizeofImage
+var fs30
+var LoaderData
+var ESP_EP
+var EPAddr
+var codeloc
+var hOEP
+var Delphi10
+var BCB
+var RTaddr
+var CTpatch
+var kfreeloc
+var RPMpatch
+var ZCpatch
+var newZCaddr
+var config1
+var noncrypted
+var caller
+
+//IAT fix
+var _esp
+var iat_start
+var iat_end
+var iat_cur
+var addr
+var iatsecsize
+var iend
+var mbase
+var msize
+var iatcrypted
+var v22x
+var ori1
+var ori2
+
+cmp $VERSION, "1.52"
+jb odbgver
+BPHWCALL
+mov tmp1, eax
+mov tmp2, eip
+gpa "IsDebuggerPresent", "kernel32.dll"
+mov tmp3, $RESULT
+cmp tmp3, 0
+je @error
+mov eip, tmp3
+sti
+sti
+mov fs30, eax        //PEB
+sti
+mov eip, tmp2
+mov eax, tmp1
+mov LoaderData, [fs30+0c]
+mov tmp2, [fs30+8]     //PEB+8 ImageBaseAddress
+mov imgbase, tmp2
+log imgbase
+mov tmp1, [imgbase+3C]    //40003C
+add tmp1, imgbase         //tmp1=signature VA
+mov signVA, tmp1
+mov tmp2, [signVA+28]
+add tmp2, imgbase
+mov EPAddr, tmp2
+log EPAddr                  //EP
+gmemi EPAddr,MEMORYBASE
+mov codeseg,$RESULT
+mov SizeofImage, [signVA+50]
+log SizeofImage
+mov 1stsecsize, [signVA+100]
+log 1stsecsize
+mov 1stsecbase, [signVA+104]
+mov [signVA+2c], 1stsecbase
+add 1stsecbase, imgbase
+log 1stsecbase
+mov tmp1, signVA
+add tmp1, f8             //1st section
+mov tmp2, [signVA+6], 2
+
+last:
+cmp tmp2, 1
+je lastfound
+add tmp1, 28
+sub tmp2, 1
+jmp last
+
+lastfound:
+add tmp1, 8
+mov lastsecsize, [tmp1]
+add tmp1, 4
+mov tmp3, [tmp1]
+add tmp3, imgbase
+mov lastsecbase, tmp3
+
+mov tmp2, [signVA+C0]     //TLS table
+add tmp2, imgbase
+mov tmp1, [tmp2+0C]
+mov tmp3, [tmp1]
+log tmp3, "CallBackTableVA "
+mov tmp1, tmp3
+sub tmp1, EPAddr
+cmp tmp1, 10
+jb lab1
+mov config1, 1
+   
+lab1:
+//log config1
+BPHWS tmp3, "x"
+run
+BPHWC tmp3
+gpa "CreateThread", "kernel32.dll"
+mov tmp1, $RESULT
+GMEMI tmp1, MEMORYBASE
+mov tmp2, $RESULT
+GMEMI tmp1, MEMORYSIZE
+mov tmp3, $RESULT
+mov tmp4, tmp3
+sub tmp4, 1000
+add tmp4, tmp2
+find tmp4, #00000000000000000000000000000000#
+mov tmp2, $RESULT
+cmp tmp2, 0
+je @error
+and tmp2, 0FFFFFFF0
+add tmp2, 30
+mov kfreeloc, tmp2
+find tmp1, #FF751C#
+mov CTpatch, $RESULT
+cmp CTpatch, 0
+je @error
+eval "push {kfreeloc}"
+asm CTpatch, $RESULT
+mov tmp1, CTpatch
+add tmp1, 5
+mov [tmp1], #C3#
+mov [tmp2], #FF751CC7451804000000FF7518#
+add tmp2, 0D
+add tmp1, 1
+eval "push {tmp1}"
+asm tmp2, $RESULT
+add tmp2, 5
+mov [tmp2], #C3#
+gpa "ReadProcessMemory", "kernel32.dll"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je @error
+find tmp1, #FF7510FF750C#
+mov RPMpatch, $RESULT
+cmp RPMpatch, 0
+je @error
+mov tmp4, kfreeloc
+add tmp4, 30
+eval "push {tmp4}"
+asm RPMpatch, $RESULT
+mov tmp2, RPMpatch
+add tmp2, 5
+mov [tmp2], #C3#
+mov [tmp4], #C7450C00004000FF7510FF750C#
+mov tmp1, tmp4
+add tmp1, 3
+mov [tmp1], imgbase
+add tmp1, 0A
+add tmp2, 1
+eval "push {tmp2}"
+asm tmp1, $RESULT
+add tmp1, 5
+mov [tmp1], #C3#
+gpa "ResumeThread", "kernel32.dll"
+mov RTaddr, $RESULT
+cmp RTaddr, 0
+je @error
+mov [RTaddr], #C20400#
+gpa "ZwClose", "ntdll.dll"
+mov ZCpatch, $RESULT
+GMEMI ZCpatch, MEMORYBASE
+mov tmp2, $RESULT
+GMEMI ZCpatch, MEMORYSIZE
+mov tmp3, $RESULT
+mov tmp4, tmp3
+sub tmp4, 1000
+add tmp4, tmp2
+find tmp4, #00000000000000000000000000000000#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je @error
+and tmp1, 0FFFFFFF0
+add tmp1, 30
+mov newZCaddr, tmp1
+mov [newZCaddr], #837C240408720A817C2404001000007203C20400#
+find ZCpatch, #C20400#
+mov tmp3, $RESULT
+cmp tmp3, 0
+je @error
+sub tmp3, ZCpatch      //bytes to copy
+mov tmp1, newZCaddr
+add tmp1, 14
+mov tmp2, ZCpatch
+
+loop2:
+cmp tmp3, 0
+je lab2
+mov tmp4, [tmp2], 1
+mov [tmp1], tmp4
+add tmp1, 1
+add tmp2, 1
+sub tmp3, 1
+jmp loop2
+
+lab2:
+eval "push {newZCaddr}"
+asm ZCpatch, $RESULT
+mov tmp2, ZCpatch
+add tmp2, 5
+mov [tmp2], #C3#
+mov [tmp1], #C20400#
+gpa "LdrLoadDll", "ntdll.dll"
+mov tmp5, $RESULT
+bc EPAddr
+cmp config1, 1
+jne lab3
+find 1stsecbase, #558BEC#
+mov tmp1, $RESULT
+cmp tmp1, 0
+jne lab2_1
+find 1stsecbase, #33C0#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je lab3
+
+lab2_1:
+mov noncrypted, 1
+jmp lab7
+
+lab3:
+bp tmp5
+eoe lab4
+eob lab4
+esto
+
+lab4:
+cmp eip, tmp5
+je lab5
+mov tmp1, eip
+sub tmp1, 1
+mov tmp1, [tmp1]
+and tmp1, FF
+cmp tmp1, CC
+je lab4_1
+esto
+
+lab4_1:
+BPHWCALL
+esto
+
+lab5:
+bc tmp5
+BPHWCALL
+gpa "ZwTerminateProcess", "ntdll.dll"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je @error
+mov tmp2, esp
+add tmp2, 2C
+mov tmp3, 4
+
+loop3:
+cmp tmp3, 0
+je lab7
+mov tmp4, [tmp2]
+cmp tmp1, tmp4
+je lab6
+add tmp2, 4
+sub tmp3, 1
+jmp loop3
+
+lab6:
+msg "OD was found!"
+pause
+jmp end
+
+lab7:
+cmp eip, EPAddr
+je lab9
+bp EPAddr
+eoe lab8
+eob lab8
+esto
+
+lab8:
+cmp eip, EPAddr
+je lab9
+esto
+
+lab9:
+mov ESP_EP, esp
+log ESP_EP
+BPHWCALL
+bc EPAddr
+GMEMI eip, MEMORYBASE
+mov codeseg, $RESULT
+mov tmp1, 1stsecsize
+add tmp1, 1stsecbase
+add tmp1, 1
+find tmp1, #558bec#
+mov tmp2, $RESULT
+cmp tmp2, 0
+je lab9_1
+mov Delphi10, 1
+
+lab9_1:
+cmp noncrypted, 1
+je lab16
+mov tmp1, codeseg
+sub tmp1, 1
+GMEMI tmp1, MEMORYBASE
+mov rangeaddr, $RESULT
+GMEMI tmp1, MEMORYSIZE
+mov range, $RESULT
+bprm rangeaddr, range
+eob lab10
+eoe lab11
+esto
+
+lab10:
+mov tmp1, eip
+sub tmp1, 1
+mov tmp2, [tmp1], 1
+cmp tmp2, CC
+je lab11
+mov tmp1, rangeaddr
+add tmp1, range
+cmp eip, tmp1
+ja lab11
+cmp eip, rangeaddr
+jb lab11
+jmp lab12
+
+lab11:
+find eip, #8B12F62A3CA4#   //search "mov edx,[edx],"imul byte [edx]", "cmp al, A4"
+mov tmp1, $RESULT
+esto
+
+lab12:
+cmp ecx, edx
+jne lab12_5
+cmp ecx, eip
+je lab12_3
+mov tmp1, ecx
+mov tmp3, [tmp1], 1
+cmp tmp3, 0E8
+jne lab12_2
+mov tmp2, ecx
+add tmp2, 5
+mov tmp3, [esp]
+cmp tmp2, tmp3
+je lab12_1
+mov tmp3, [esp+4] 
+cmp tmp2, tmp3
+jne lab12_5
+add esp, 8
+mov eip, ecx
+jmp lab12_3
+
+lab12_1:
+add esp, 4
+mov eip, ecx
+jmp lab12_3
+
+lab12_2:
+cmp tmp3, 0E9
+jne lab12_4
+mov tmp2, [tmp1+1]
+add tmp1, tmp2
+add tmp1, 5
+cmp tmp1, eip
+jne lab12_5
+cmp ESP_EP, esp
+jne lab12_5
+cmp ecx, 1stsecbase
+jb lab12_5
+mov tmp2, 1stsecbase 
+add tmp2, 1stsecsize
+cmp ecx, tmp2
+ja lab12_5
+mov hOEP, eip
+jmp lab17
+
+lab12_3:
+mov hOEP, ecx
+jmp lab17
+
+lab12_4:
+findop ecx, #E9#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je lab12_5
+mov tmp2, [tmp1+1]
+add tmp2, tmp1
+add tmp2, 5
+cmp tmp2, eip
+jne lab12_5
+mov eip, ecx
+mov esp, ESP_EP
+mov hOEP, ecx
+jmp lab17
+
+lab12_5:
+eob lab10
+eoe lab11
+esto
+
+lab16:
+mov hOEP, EPAddr
+
+lab17:
+mov tmp1, LoaderData
+add tmp1, 60
+mov [tmp1], SizeofImage     //correct Size of image
+bpmc
+mov range, 1stsecsize
+cmp Delphi10, 1
+jne lab17_1
+mov tmp1, 1stsecsize
+add tmp1, 1stsecbase
+add tmp1, 1
+GMEMI tmp1, MEMORYSIZE
+add range, $RESULT
+
+lab17_1:
+mov tmp6, eip
+alloc 10000
+mov codeloc, $RESULT
+mov tmp1, codeloc
+mov [tmp1], #609C33C0B0E9B900600000BF00104000F2AE8B1703D783C20481FAE5FB4000740F83F90075EA9D61686E614E00C30000#
+add tmp1, 30
+mov [tmp1], #C70550003F0001000000893D54003F00EBE40000000000000000000000000000#
+mov tmp1, codeloc
+add tmp1, 7     //7
+mov [tmp1], range
+add tmp1, 5     //C
+mov [tmp1], 1stsecbase
+add tmp1, 0F    //1B
+mov [tmp1], hOEP
+add tmp1, 0E    //29
+mov [tmp1], tmp6
+mov tmp2, codeloc 
+add tmp2, 50    //50
+mov tmp3, tmp2
+add tmp3, 4     //54
+add tmp1, 09    //32
+mov [tmp1], tmp2
+add tmp1, 0A    //3C
+mov [tmp1], tmp3
+mov eip, codeloc
+bp tmp6
+eob lab17_2
+eoe lab17_2
+run
+
+lab17_2:
+cmp eip, tmp6
+je lab18
+esto
+
+lab18:
+bc tmp6
+mov tmp1, [tmp2]
+cmp tmp1, 1
+je lab22
+mov tmp4, 0
+bprm 1stsecbase, range
+eob lab19
+eoe lab19
+esto
+
+lab19:
+mov tmp1, esp
+cmp ESP_EP, tmp1
+je lab21
+cmp tmp4, 8
+je lab19_1
+add tmp4, 1
+esto
+
+lab19_1:
+bpmc
+mov tmp3, ESP_EP
+sub tmp3, 4
+bphws tmp3, "r"
+eob lab20
+eoe lab20
+esto
+
+lab20:
+cmp ESP_EP, esp
+je lab20_1
+esto
+
+lab20_1:
+mov tmp1, eip
+cmp tmp1, 1stsecbase
+jb lab20_2
+mov tmp2, 1stsecbase
+add tmp2, range
+cmp tmp1, tmp2
+jb lab21
+
+lab20_2:
+bphwc tmp3
+bprm 1stsecbase, range
+mov tmp4, 0
+eob lab19
+eoe lab19
+esto
+
+lab21:
+bpmc
+BPHWCALL
+mov hOEP, eip
+cmp noncrypted, 1
+je lab21_1
+msg "??? OEP ?"
+jmp lab21_3
+
+lab21_1:
+MSGYN "Here is OEP? Not encrypted code, according to YES will continue to repair the IAT."
+cmp $RESULT, 1
+jne end
+cmp lastsecsize, 1000
+je lab21_2
+mov codeseg, lastsecbase
+jmp lab21_3
+
+lab21_2:
+mov tmp1, lastsecbase
+sub tmp1, 1
+gmemi tmp1,MEMORYBASE
+mov codeseg,$RESULT
+
+lab21_3:
+mov tmp6, eip
+jmp start
+
+lab22:
+mov tmp1, [tmp3]
+sub tmp1, 1
+mov hOEP, tmp1
+eval "OEP == {tmp1}"
+cmt eip, $RESULT
+cmp noncrypted, 1
+je lab22_1
+eval "???? OEP, OEP == {hOEP}."
+msg $RESULT
+jmp lab22_3
+
+lab22_1:
+eval "This is a pseudo-OEP, OEP ==) (hOEP, no encryption code, according to YES will continue to repair the IAT."
+MSGYN $RESULT
+cmp $RESULT, 1
+jne end
+cmp lastsecsize, 1000
+je lab22_2
+mov codeseg, lastsecbase
+jmp lab22_3
+
+lab22_2:
+mov tmp1, lastsecbase
+sub tmp1, 1
+gmemi tmp1,MEMORYBASE
+mov codeseg,$RESULT
+
+lab22_3:
+mov tmp6, eip
+
+start:
+cob
+coe
+mov tmp1, [signVA+30]
+add tmp1, imgbase
+find tmp1, #426F726C616E6420432B2B202D#   //Search "Borland C++ -"
+mov tmp2, $RESULT
+cmp tmp2, 0
+je lab23
+mov BCB, 1
+
+lab23:
+mov iend, SizeofImage
+add iend, imgbase
+mov count,0
+mov iatbase,0
+
+lab25:
+mov tmp1, codeloc
+mov [tmp1], #609CBD0003B000B8FF000000B9FC5F0000BF0010400033F6F2AE803F157421803F25741C83F90075EF90909D61000000#
+add tmp1, 30    //30
+mov [tmp1], #000000000000000000000000000000908B5F0181FB0010400072CD81FB00B0420077C5508B033D00000010770358EBB8#
+add tmp1, 30    //60
+mov [tmp1], #58895D0083FE10740683C5044675A933DB8B45002500F0FFFF83FB0075308BD8B92001400081C1040100008BD1528B09#
+add tmp1, 30    //90
+mov [tmp1], #81C10000400081F900A095007742034AFC3BC1772B5A8B1281C2000040003BC1772E3BC2722A4E83FE000F8469FFFFFF#
+add tmp1, 30
+mov [tmp1], #83ED04EBAC00000000000000000000905983C128EBB50000000000000000000090900000000000000000000000000000#
+mov tmp1, codeloc
+mov tmp2, tmp1
+add tmp1, 3       //3
+add tmp2, 300     //codeloc+300
+mov [tmp1], tmp2
+add tmp1, 0A      //0D
+mov tmp2, SizeofImage
+sub tmp2, 1004
+mov [tmp1], tmp2
+add tmp1, 5       //12
+mov [tmp1], 1stsecbase
+add tmp1, 33      //45
+mov [tmp1], 1stsecbase
+add tmp1, 8       //4D
+mov tmp2, SizeofImage
+add tmp2, imgbase
+mov [tmp1], tmp2
+add tmp1, 34      //81
+mov [tmp1], signVA
+add tmp1, 11      //92
+mov [tmp1], imgbase
+add tmp1, 6       //98
+mov [tmp1], tmp2
+add tmp1, 12      //AA
+mov [tmp1], imgbase
+mov tmp3, codeloc
+mov tmp4, tmp3
+add tmp3, 29    //end point
+bp tmp3
+add tmp4, E0    //error point
+bp tmp4
+mov tmp6, eip
+mov eip, codeloc
+eob lab26
+eoe lab26
+run
+
+lab26:
+cmp eip, tmp3
+je lab27
+cmp eip, tmp4
+je lab28
+jmp @error
+
+lab27:
+cob
+coe
+bc tmp3
+bc tmp4
+mov tmp1, ebx
+sti
+sti
+sti
+sti
+mov eip, tmp6
+fill codeloc, 400, 00
+gmemi tmp1, MEMORYBASE
+mov iatbase, $RESULT
+jmp lab29
+
+lab28:
+msg "Unable to find the importation of table section!"
+jmp @error
+
+//chk IAT start, IAT end
+lab29:
+gmemi iatbase,MEMORYSIZE
+mov iatsecsize,$RESULT
+mov tmp1, codeloc
+mov [tmp1], #609CBD0003D100BF00B05A00B9FC3F00008B0783F800752883E90483C70483F90077EE9090909D619000000000000000#
+add tmp1, 30
+mov [tmp1], #0000000000000000000000000000009090608BC78BDFBF00104000B9FC6F2D00F2AE83F90074493947FF75F466817FFD#
+add tmp1, 30    //60
+mov [tmp1], #FF15740866817FFDFF2575E4837D04007503894504894508C7450C000000008B003D00104000720E3D00806D007707C7#
+add tmp1, 30    //90
+mov [tmp1], #45000100000061E97CFFFFFF00000000837D040074138B1881FB000000107709837D0C08741AFF450C61E959FFFFFF00#
+add tmp1, 30    //C0
+mov [tmp1], #0000000000000000000000000000009061E94DFFFFFF00000000000000000000#
+mov tmp1, codeloc
+mov tmp2, tmp1
+add tmp1, 3    //3
+add tmp2, 300   //codeloc+300
+mov [tmp1], tmp2
+add tmp1, 5    //8
+mov [tmp1], iatbase
+add tmp1, 05   //0D
+mov tmp2, iatsecsize
+sub tmp2, 4
+mov [tmp1], tmp2
+add tmp1, 3A   //47
+mov [tmp1], 1stsecbase
+add tmp1, 5    //4C
+mov tmp2, SizeofImage
+sub tmp2, 1004
+mov [tmp1], tmp2
+add tmp1, 36   //82
+mov [tmp1], 1stsecbase
+add tmp1, 7    //89
+mov tmp2, SizeofImage
+add tmp2, imgbase
+mov [tmp1], tmp2
+mov tmp6, eip
+mov eip, codeloc
+mov tmp4, codeloc
+add tmp4, 23    //endpoint
+bp tmp4
+eob lab30
+eoe lab30
+run
+
+lab30:
+cmp eip, tmp4
+je lab31
+jmp @error
+
+lab31:
+cob
+coe
+bc tmp4
+mov tmp1, codeloc
+add tmp1, 300
+mov iatcrypted, [tmp1]
+mov iat_start, [tmp1+4]
+mov iat_end, [tmp1+8]
+sti
+sti
+sti
+sti
+sti
+mov eip, tmp6
+fill codeloc, 400, 00
+mov tmp1, iat_end
+mov tmp4, 2
+
+lab32:
+cmp tmp4, 0
+je lab34
+mov tmp2, [tmp1]
+cmp tmp2, 0
+je lab33
+gn tmp2
+mov tmp3, $RESULT_2
+cmp tmp3, 0
+je lab34
+mov iat_end, tmp1
+add tmp1, 4
+mov tmp4, 2
+jmp lab32
+
+lab33:
+add tmp1, 4
+sub tmp4, 1
+jmp lab32
+
+lab34:
+cmp iatcrypted, 1
+je lab50
+jmp iatskip
+
+lab50:
+log iat_start
+log iat_end
+mov tmp6, eip
+mov tmp1, codeloc
+mov [tmp1], #60B889000000BD000FE200B9FCFF3000BF00104000BE000EE200F2AE83F90074178B1781E2FFFF000081FA45F4000074#
+add tmp1, 30       //30
+mov [tmp1], #0FEBE790909090909061909090909090508BD783C202895504895508C74514000000008B5D088B0325FFFFFF003D8B45#
+add tmp1, 30       //60
+mov [tmp1], #F400741CE897010000837D10007402EBE258EBA69090909090909090909090908B450883C303895D08C7451000000000#
+add tmp1, 30       //90
+mov [tmp1], #C74514000000008B5D088B0325FFFFFF003D3B45EC007428E853010000837D10007402EBE258E95FFFFFFF0000000000#
+add tmp1, 30       //C0
+mov [tmp1], #000000000000000000000000000000908B450883C303895D08C7451000000000C745140000000066C7052D02CD00EB11#
+add tmp1, 30       //F0
+mov [tmp1], #8B5D088B03663D0F82740DE800010000837D10007402EBE866C7052D02D1008B03663D0F82740958E9FDFEFFFF909090#
+add tmp1, 30       //120
+mov [tmp1], #8BC783E80189065883C604E9EAFEFFFF#
+add tmp1, 0E0      //200
+mov [tmp1], #608B5D088B0325FF00FFF03D87002450743E3D8900245074373CE874633C680F84AB0000003CE90F84F30000008B0325#
+add tmp1, 30       //230
+mov [tmp1], #FFF000003D0F8000000F842101000090C745100000000061C3000000000000908BCB83C104C7451001000000C7451400#
+add tmp1, 30       //260
+mov [tmp1], #000000894D0861C3000000000000000000000000000000000000000000000000837D1401742A8B4B0103CB83C105E81D#
+add tmp1, 30       //290
+mov [tmp1], #01000085C07419C7451001000000C7451401000000894D0861C3000000009090C745100000000061C300000000000000#
+add tmp1, 30       //2C0
+mov [tmp1], #00000000000000000000000000000090837D1401742A807B05E975248B4B01E8CC00000085C07418894D08C745100100#
+add tmp1, 30       //2F0
+mov [tmp1], #000061C3000000000000000000000000C745100000000061C300000000000000# 
+add tmp1, 30       //320
+mov [tmp1], #837D1401742A8B4B0103CB83C105E87D00000085C07419894D08C745100100000061C300000000000000000000000090#
+add tmp1, 30       //350
+mov [tmp1], #C745100000000061C300000000000090837D1401742A8B4B0203CB83C106E83D00000085C07419894D08C74510010000#
+add tmp1, 30       //380
+mov [tmp1], #0061C300000000000000000000000090C745100000000061C300000000000000#
+add tmp1, 30       //3B0
+mov [tmp1], #33C081F900104000720981F9FF1F7100770140C3000000000000000000000000#
+mov tmp1, codeloc
+mov tmp2, tmp1
+mov tmp3, tmp1
+mov tmp4, tmp1
+add tmp2, 0f00     //codeloc+0f00
+add tmp3, 0e00     //codeloc+0e00
+add tmp4, 22D      //codeloc+022d
+add tmp1, 7        //7
+mov [tmp1], tmp2
+add tmp1, 5        //0c
+mov tmp2, SizeofImage
+sub tmp2, 1004
+mov [tmp1], tmp2
+add tmp1, 5        //11
+mov [tmp1], 1stsecbase
+add tmp1, 5        //16
+mov [tmp1], tmp3
+add tmp1, 0D4      //EA
+mov [tmp1], tmp4
+add tmp1, 21       //10B
+mov [tmp1], tmp4
+add tmp1, 2A9      //3B4
+mov [tmp1], 1stsecbase
+add tmp1, 8        //3BC
+mov tmp2, lastsecbase
+add tmp2, lastsecsize
+mov [tmp1], tmp2
+mov tmp5, codeloc
+add tmp5, 38       //end point
+bp tmp5
+mov eip, codeloc
+eob lab50_1
+eoe lab50_1
+run
+
+lab50_1:
+cmp eip, tmp5
+je lab51
+jmp @error
+
+lab51:
+cob
+coe
+bc tmp5
+mov tmp4, esi
+sti
+sti
+mov eip, tmp6
+mov tmp1, codeloc
+add tmp1, 0e00
+mov count, 0
+
+lab52:
+cmp tmp1, tmp4
+je lab52_1
+inc count
+add tmp1, 4
+jmp lab52
+
+lab52_1:
+cmp count, 0
+je wrongver
+cmp count, 1
+je lab53
+msg "more than one point"
+pause
+jmp @error
+
+lab53:
+mov tmp5, [codeloc+0e00]
+mov ori1, [tmp5]
+mov ori2, [tmp5+4]
+mov tmp1, codeloc
+add tmp1, 30
+eval "jmp {tmp1}"
+asm tmp5, $RESULT
+
+lab54:
+fill codeloc, 400, 00
+mov tmp1, codeloc
+mov [tmp1], #60BD0004CD008965088B45003DDC6A5300774D8B003D0010400072163D00D07300770F890424FFE09090909090909090#
+add tmp1, 30      //30
+mov [tmp1], #9090909090909090BD0004CD008B5D0089038B650883450004EBBE909090909090909090909090909090909090909090#
+add tmp1, 30      //60
+mov [tmp1], #8B650861909090909090909090909090#
+mov tmp1, codeloc
+mov tmp2, tmp1
+add tmp2, 400     //codeloc+400
+add tmp1, 2      //2
+mov [tmp1], tmp2
+add tmp1, 0B     //0D
+mov [tmp1], iat_end
+add tmp1, 9      //16
+mov [tmp1], 1stsecbase
+add tmp1, 7      //1D
+mov tmp3, imgbase
+add tmp3, SizeofImage
+mov [tmp1], tmp3
+add tmp1, 1C    //39
+mov [tmp1], tmp2
+mov tmp1, codeloc
+add tmp1, 400
+mov [tmp1], iat_start
+mov eip, codeloc
+mov tmp4, codeloc
+add tmp4, 63    //end point
+bp tmp4
+eob lab55
+eoe lab55
+run
+
+lab55:
+cmp eip, tmp4
+je lab56
+jmp @iaterror
+
+lab56:
+bc tmp4
+mov tmp1, [codeloc+400]
+sub tmp1, 04
+mov iat_end, tmp1
+sti
+mov eip, tmp6
+mov tmp1, tmp5
+mov [tmp1], ori1
+add tmp1, 4
+mov [tmp1], ori2
+fill codeloc, 1000, 00
+
+iatfixok:
+cmp BCB, 1
+je iatfixok_bcb
+log hOEP, "OEP= "
+log iat_start
+log iat_end
+//log iatbase
+eval "OEP : {hOEP} , IAT star: {iat_start} ,  IAT end: {iat_end}"
+msg $RESULT
+pause
+jmp end    
+
+iatfixok_bcb:
+mov tmp1, hOEP
+sub tmp1, 12
+mov tmp2, [tmp1], 2
+cmp tmp2, 10EB
+jne iatfixok_bcb1
+sub hOEP, 12
+
+iatfixok_bcb1:
+log hOEP, "OEP= "
+log iat_start
+log iat_end
+eval "OEP : {hOEP} , IAT start: {iat_start},  IAT end: {iat_end}. which is BCB procedures Please confirm IAT end address."
+msg $RESULT
+pause
+jmp end 
+
+iatskip:
+cmp BCB, 1
+je iatskip_bcb
+log hOEP, "OEP= "
+log iat_start
+log iat_end
+//log iatbase
+eval "OEP: (hOEP), IAT not encryption! IAT initial address: (iat_start), IAT end address: (iat_end)."
+msg $RESULT
+pause
+jmp end
+
+iatskip_bcb:
+mov tmp1, hOEP
+sub tmp1, 12
+mov tmp2, [tmp1], 2
+cmp tmp2, 10EB
+jne iatskip_bcb1
+sub hOEP, 12
+
+iatskip_bcb1:
+log hOEP, "OEP= "
+log iat_start
+log iat_end
+eval ""OEP: (hOEP), IAT not encryption! IAT initial address: (iat_start), IAT end address: (iat_end), which is BCB procedures Please confirm IAT end address."
+msg $RESULT
+pause
+jmp end
+
+odbgver:
+msg " ODbgscript 1.52 "
+jmp end
+
+wrongver:
+msg "not execryptor."
+jmp end
+
+@error:
+bphwcall
+msg "ERROR!"
+pause
+jmp end
+
+@iaterror:
+msg "When repair IAT mistakes!"
+pause
+
+end:
+ret

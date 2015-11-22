@@ -1,0 +1,38 @@
+/*
+===============================================================
+     SafeCast/Disc 2.xx - 3.xx OEP finder script (by haggar)
+===============================================================
+Notes: Ignore ALL exceptions, delete/remove ALL breakpoints
+(software, memory and hardware) before use. If you encounter
+some exception, add it to custom ones in Olly and try again.
+For protected CD/DVD you must have original disk.
+
+haggar
+===============================================================
+*/
+
+
+find eip,#E9????????CCCC81ECE802000053555657#  //Find OEP jump
+bp $RESULT
+
+gpa "IsDebuggerPresent","kernel32.dll"
+bp $RESULT
+esto
+bc eip
+rtr
+sti
+sti
+sti
+sti
+sti
+fill eip,1,0c3   //Kill "BadBoy" routine.
+
+esto      //Go to OEP.
+bc eip
+sti
+
+an eip
+cmt eip,"<-- OEP found!"
+ret
+
+

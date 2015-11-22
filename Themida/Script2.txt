@@ -1,0 +1,16 @@
+var CODE
+var x 
+var THEMIDA
+mov CODE,01001000
+mov THEMIDA,01018000
+P2:
+bprm CODE,217000
+run
+bpmc
+mov x,eip
+sub x,CODE
+cmp x,0
+jb P2
+cmp x,217000
+ja P2
+ret

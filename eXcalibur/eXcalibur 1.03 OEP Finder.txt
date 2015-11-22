@@ -1,0 +1,98 @@
+msg "忽略所有异常,取消所有断点"
+msg "code by skylly"
+dbh
+bpmc
+var stop1
+var stop2
+var stop3
+var stop4
+var stop5
+var stop6
+#log
+gpa "GetForegroundWindow", "user32.dll"
+find $RESULT,#C3#
+bprm $RESULT,1
+esto
+log $RESULT
+cmp eip,$RESULT
+jne err
+bpmc $RESULT
+rtu
+mov stop1,eip
+add stop1,21
+mov [stop1],#6A01# //窗口前置
+log stop1
+//msg "窗口前置"
+gpa "VirtualAlloc", "kernel32.dll"
+bp $RESULT
+run
+bc $RESULT
+rtu
+mov stop2,eip
+add stop2,16
+go stop2
+mov !ZF,1//
+//msg "保住stolen call"
+mov stop3,eip
+add stop3,D5
+go stop3
+mov [eip],#EB# //
+//msg "消灭反跟踪"
+mov stop4,eip
+add stop4,5E8
+mov stop5,eip
+add stop5,5A0
+bp stop5
+run
+bc stop5
+
+mov [eip],#6189078385E439400004#//保住函数地址
+bp stop4
+run
+bc stop4
+gpa "VirtualFree", "kernel32.dll"
+bp $RESULT
+run
+bc $RESULT
+rtu
+mov stop6,eip
+add stop6,29
+bp stop6
+run
+bc stop6
+sto
+sto
+sto
+sto
+sto
+sti
+sto
+sto
+sto
+sti
+sto
+sto
+sto
+sto
+sti
+sto
+sto
+sto
+sto
+sti
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+cmt eip,"oep,full dump!"
+ret
+
+err:
+msg "error"
+ret

@@ -1,0 +1,102 @@
+var va
+var peps 
+var ptype
+var pnum
+var pmemres
+var psizer
+var type
+var number
+var memres
+var sizeres
+var pdum
+var dresurse
+var pstr
+var nr
+var endres
+mov nr,1
+/*
+ exmpl:
+res7_A_A6F2D1FB.bin
+res6_1_6.bin
+#_type_number or a sring
+
+*/
+gpa  "VirtualAlloc","kernel32.dll"
+mov va, $RESULT
+bp va
+erun
+rtr
+mov peps,eax
+erun
+find peps,#8903EB398BD4#//#5356575583C4F48BF28BE88D542404B9040000008BC6# 
+cmp $RESULT,0
+je quit 
+mov ptype,$RESULT
+bp ptype
+find ptype,#894308EB3A8BD4#
+cmp $RESULT,0
+je quit
+mov pnum,$RESULT
+find pnum,#E8????????8943088BD4B902000000#
+cmp $RESULT,0
+je quit
+mov pstr,$RESULT
+bp pstr
+find pnum,#8943148B53148B4C24088BC6#
+cmp $RESULT,0
+je quit
+mov pmemres,$RESULT
+mov psizer,$RESULT+C
+find psizer,#4F0F85#
+mov pdum,$RESULT
+find psizer,#C3#
+mov endres,$RESULT
+bp pmemres
+bp pnum
+bp psizer
+bp pdum
+bp endres
+
+bc va
+loop:
+erun
+cmp eip,ptype
+jne quit
+mov type,eax
+erun
+cmp eip, pnum
+jne copystr
+mov number,eax
+n:
+erun
+
+mov memres,eax
+
+erun
+mov sizeres,ecx
+
+erun
+eval "res{nr}_{type}_{number}.bin"
+mov dresurse,$RESULT
+dm memres,sizeres,dresurse
+inc nr
+jmp loop
+copystr:
+ask "Copy Name resorse ,in eax (exempl:eax==A6F2D1FB)"
+mov number,$RESULT
+jmp n
+
+quit:
+msg " All ressourse dumped"
+ret
+
+
+
+
+
+
+
+
+
+
+    

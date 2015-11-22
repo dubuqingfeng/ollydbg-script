@@ -1,0 +1,128 @@
+//Execryptor 2.x IAT rebuilder by KaGra v1.1
+
+//This script may not resolve all pointers,or may resolve a few wrong...Fix them manually then;)
+//THE VALUE OF thersa IS CRUCIAL FOR THE RIGHT API RESOLVING,SO IF U HAVE INVALIDS (CHECK WHERE THE EXE
+//CRASHES) RUN THE SCRIPT AGAIN WITH A HIGHER OR LOWER LAVUE OF THAT value here (SEE where in script is that value)
+//In case the app crashes,do those thersa changes and re-run or re-run from APIfailed+4 pointer,having
+//saved the previous pointers.This that cannot be resolved,find it tracing,manually (or again change thersa)
+//You can also play with IATstart and IATend values,are what their name say...
+//This script can fix all or the most of them ;)...EnJoY
+//In zip is notepad packed,and the script succeeds in all IAT APIs :)
+//No need to be at OEP,and you should not be.It may not work at OEP...but i assume easier to find
+//a place not at OEP.Just run the exe and bp on code section...u should land somewhere in the code ;)
+//Then the script rulez...
+//So,changing a little bit the script,can resolva all pointerz ;)
+
+
+
+
+//only the rets,standard hard-coded tracer
+
+var IATstart
+var IATend
+var temp
+var size
+var temp2
+var size2
+var temp3
+var temp4
+var temp5
+var thersa
+
+mov thersa,10  	
+
+mov temp5,esp
+
+mov IATstart,01001000
+mov IATend,01001320    //(IAT last value + 4)
+
+
+
+again:
+
+mov esp,temp5
+
+
+mov temp2,[IATstart]
+
+cmp temp2,00000000
+je here			//in case of zeros,somewhere is a bug...
+cmp temp2,50000000
+ja here			//in case that the IAT has a valid pointer :) 
+
+mov eip,temp2
+
+mov [esp],eip
+
+
+exec
+ret
+ende
+
+
+
+sub esp,4
+
+BPHWS esp,"r"
+mov temp2,esp
+add esp,4
+
+esto
+
+check:
+
+
+BPHWC temp2
+
+mov temp3,eip
+gn temp3
+cmp $RESULT_2,0
+je checkF7
+
+ok:
+
+mov temp2,eip
+mov [IATstart],temp2 	// found!!
+add IATstart,4
+cmp IATstart,IATend
+je endit
+sub IATstart,4
+
+here:
+
+
+add IATstart,4
+cmp IATstart,IATend
+je endit
+
+jmp again
+
+
+
+notfound:
+BPHWS temp2,"r"
+esto
+jmp check
+
+
+
+checkF7:
+
+sti
+mov temp3,eip
+gn temp3
+cmp $RESULT_2,0
+jne ok
+dec thersa
+cmp thersa,0
+jne checkF7
+
+mov thersa,10 //for next time
+
+
+jmp notfound
+
+
+
+endit:
+ret

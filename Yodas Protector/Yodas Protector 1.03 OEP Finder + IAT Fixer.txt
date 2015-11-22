@@ -1,0 +1,181 @@
+//////////////////////////////////////////////////
+//  FileName    :  yoda's Protector V1.03.X.osc
+//  Comment     :  yoda's Protector V1.03.1/V1.03.2 UnPacK
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://www.unpack.cn
+//  Date        :  2005-10-05 23:00
+//////////////////////////////////////////////////
+#log
+dbh
+
+var T0
+var T1
+var T2
+var T3
+var T4
+
+
+//GetVersion————————————————————————————————
+
+/*
+00461EBE    FF541D 00       call dword ptr ss:[ebp+ebx]; kernel32.GetVersion
+00461EC2    A9 00000080     test eax,80000000
+00461EC7    74 20           je short 00461EE9
+00461EC9    3C 04           cmp al,4
+00461ECB    75 0C           jnz short 00461ED9
+00461ECD    C785 48A04200 0>mov dword ptr ss:[ebp+42A048],2
+00461ED7    EB 40           jmp short 00461F19
+00461ED9    3C 03           cmp al,3
+00461EDB    75 3C           jnz short 00461F19
+00461EDD    C785 48A04200 0>mov dword ptr ss:[ebp+42A048],1
+00461EE7    EB 30           jmp short 00461F19
+00461EE9    3C 03           cmp al,3
+//Windows3.X ?
+00461EEB    75 0C           jnz short 00461EF9
+00461EED    C785 48A04200 0>mov dword ptr ss:[ebp+42A048],4
+00461EF7    EB 20           jmp short 00461F19
+00461EF9    3C 04           cmp al,4
+//Windows9X?NT4.0 ?
+00461EFB    75 0C           jnz short 00461F09
+00461EFD    C785 48A04200 0>mov dword ptr ss:[ebp+42A048],8
+*/
+
+gpa "GetVersion", "KERNEL32.dll"
+eob GetVersion
+bp $RESULT
+esto
+GoOn0:
+esto
+
+GetVersion:
+cmp eip,$RESULT
+jne GoOn0
+bc $RESULT
+rtu
+mov eax,4
+
+
+//SetWindowLongA————————————————————————————————
+
+gpa "GetWindowLongA", "User32.dll"
+eob GetWindowLongA
+bp $RESULT
+esto
+GoOn1:
+esto
+
+GetWindowLongA:
+cmp eip,$RESULT
+jne GoOn1
+bc $RESULT
+rtu
+mov T0,eax
+
+//Lock Shell_TrayWnd
+gpa "SetWindowLongA", "User32.dll"
+eob SetWindowLongA
+bp $RESULT
+esto
+GoOn2:
+esto
+
+SetWindowLongA:
+cmp eip,$RESULT
+jne GoOn2
+bc $RESULT
+mov T1,esp
+add T1,C
+mov [T1],T0
+rtu
+
+
+//IsDebuggerPresent————————————————————————————————
+
+gpa "IsDebuggerPresent", "KERNEL32.dll"
+eob IsDebuggerPresent
+bp $RESULT
+esto
+GoOn3:
+esto
+
+IsDebuggerPresent:
+cmp eip,$RESULT
+jne GoOn3
+bc $RESULT
+rtu
+
+find eip, #C1CB07#
+cmp $RESULT, 0
+je NoFind
+mov T2,$RESULT
+eob Ror7
+bp T2
+log T2
+esto
+GoOn4:
+esto
+
+Ror7:
+cmp eip,T2
+jne GoOn4
+bc T2
+mov T3,ebx
+log ebx
+
+
+//Fixed Importing Function————————————————————————————————
+
+find eip, #89322BC683E805#
+cmp $RESULT, 0
+log $RESULT
+je NoFind
+
+mov T4,$RESULT
+mov [T4],C62B9090
+//Fixed Importing Function
+
+find eip, #740261C3#
+cmp $RESULT, 0
+je NoFind
+
+eob Popad
+bp $RESULT
+
+esto
+GoOn5:
+esto
+
+Popad:
+cmp eip,$RESULT
+jne GoOn5
+bc $RESULT
+mov [T4],C62B3289
+//Revert Code
+
+
+//MyOEP————————————————————————————————
+
+eob MyOEP
+bp T3
+
+esto
+GoOn6:
+esto
+
+MyOEP:
+cmp eip,T3
+jne GoOn6
+bc T3
+
+
+//GameOver————————————————————————————————
+
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT.  Good Luck   "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not yoda's Protector V1.03.1/V1.03.2 !  "
+ret

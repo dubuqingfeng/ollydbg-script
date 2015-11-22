@@ -1,0 +1,176 @@
+
+// 数据记录,调试父进程
+
+// 一开始记录数据到log.txt,根据nCounter值跳到
+// lbl_debug是后来调试时加的
+
+var	pfnCreateProcessA
+var	pfnWaitForDebugEvent
+var	pfnSetThreadContext
+
+var	nCounter
+var	regEsp
+var	ThreadID		// 子进程当前thread id
+var	pDebugEvent		// 断在408FD3时从stack获取的调试事件结构地址
+var	DebugEventCode		// 事件代码
+var	ExceptionAddress	// child process异常地址
+var	MyContext		//
+var	AddrOfEsp		// 用来访问MyContext中的esp
+var	EspOfChild		// 子进程context中的esp值
+
+var	AddrOfEip
+var	EipOfChild		// 子进程context中的eip值
+
+var	pContext		// SetThreadContext断下时得到的指针
+var	EipInContext
+
+////////////////////////////////////////////////////////////////////////////
+
+
+gpa 	"CreateProcessA", "kernel32.dll"
+mov	pfnCreateProcessA,$RESULT
+
+bphws 	pfnCreateProcessA, "x"
+run
+
+bphwc	pfnCreateProcessA
+gpa 	"WaitForDebugEvent", "kernel32.dll"
+mov	pfnWaitForDebugEvent,$RESULT
+bphws 	pfnWaitForDebugEvent, "x"
+
+run
+
+bphwc	pfnWaitForDebugEvent
+rtr
+sti	// 到WaitForDebugEvent的返回
+sti	// 调整到检测event code	
+sti
+bphws	eip, "x"	// 00408BD3
+
+gpa	"SetThreadContext", "kernel32.dll"
+mov	pfnSetThreadContext,$RESULT
+log	pfnSetThreadContext
+bp 	pfnSetThreadContext
+
+
+eob	lbl_record
+eoe	lbl_record
+mov	nCounter,0
+
+mov	MyContext,0040A570		// 找个空闲地址保存GetThreadContext的数据
+mov	[MyContext],00010007		// CONTEXT_FULL
+
+log	"begin the debug loop now"
+run
+
+lbl_record:
+
+	inc nCounter
+	log nCounter
+	
+	
+	// 通过设置nCounter判断值,停到log.txt中感兴趣的地方
+	
+	cmp nCounter,1F		// 
+	//cmp nCounter,20	// SetThreadContext
+	je lbl_debug		
+
+	//
+
+	cmp eip,pfnSetThreadContext	// 断在SetThreadContext?
+	jne lbl_debug_event
+
+	mov regEsp,esp
+	add regEsp,8
+	mov pContext,[regEsp]
+	add pContext,0B8
+	mov EipInContext,[pContext]
+	log EipInContext		// 记录设置的eip
+	log " "
+	esto	
+	
+	
+lbl_debug_event:
+	
+	mov pDebugEvent,004062AF
+	add pDebugEvent,ebp
+	mov DebugEventCode,[pDebugEvent]
+	log DebugEventCode	// 记录事件码
+	
+	cmp DebugEventCode,1	// 是否为EXCEPTION_DEBUG_EVENT?
+	jne lbl_continue
+	
+	add pDebugEvent,8
+	mov ThreadID,[pDebugEvent]	// 保存Thread ID
+
+	log ThreadID
+
+	add pDebugEvent,10
+	mov ExceptionAddress,[pDebugEvent]
+	log ExceptionAddress
+
+	cmp ExceptionAddress,70000000	// kernel32内的异常(DebugBreak)
+	ja lbl_continue	
+
+	
+	// 获取child process的context
+	// 这里的exec会触发408BD3的断点,导致重入script代码造成死循环
+	// 所以预先清除断点,执行完后再恢复
+	
+	bphwc 00408BD3			// 清场
+	bc pfnSetThreadContext
+	cob
+	coe
+
+	// 读取child的context
+
+	exec
+
+	push {ThreadID}
+	push 0
+	push 001f03ff
+	call OpenThread
+	push eax		// 保存handle
+	
+	push {MyContext}	// 保存GetThreadContext的数据
+	push eax
+	call GetThreadContext
+	call CloseHandle	
+
+	ende
+
+	//
+		
+	bphws 00408BD3, "x"	// 恢复断点
+	bp pfnSetThreadContext
+	eob lbl_record
+	eoe lbl_record
+
+	mov AddrOfEsp,MyContext
+	add AddrOfEsp,0C4
+	mov EspOfChild,[AddrOfEsp]
+	log EspOfChild
+
+		
+lbl_continue:
+	log " "
+	esto
+
+lbl_debug:
+
+	bphwc 00408BD3	//
+	bphws 00408EFF, "x"	//测试Event code
+	cob
+	coe
+	run
+
+	//bphwc 00408EFF	// 跟replaced code执行	
+	pause
+	
+
+	
+
+	
+
+
+

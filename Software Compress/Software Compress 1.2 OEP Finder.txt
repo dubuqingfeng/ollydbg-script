@@ -1,0 +1,70 @@
+///////////////////////////////////////////////////////////////
+// FileName    :  Software Compress V1.2.oSc
+// Comment     :  Software Compress V1.2.UnPacK
+// Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V1.65
+// Author      :  kienmanowar [REA-cRaCkErTeAm]
+// WebSite     :  http://reaonline.net
+// Date        :  2008.03.21
+///////////////////////////////////////////////////////////////
+#LOG
+dbh
+
+var MagicAddr
+var cbase
+var csize
+var OEP
+var index
+
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+
+MSGYN "Plz Clear All BreakPoints + Make First Pause at:Entry Point Of Main Module !  "
+cmp $RESULT, 0
+je TryAgain
+cmp $VERSION, "1.65"
+jb CheckODbgScripVersion
+bphwc
+bc
+mov index,0
+
+bprm cbase, csize
+show_full_iat:
+esto
+inc index
+cmp index,9
+jne show_full_iat
+bpmc
+
+find eip, #5157FFA5????410060FF7424246A40FF95??????008944241C61C2040060FF742424FF95????410061C20400#
+cmp $RESULT,0
+je NoFind
+add $RESULT,2
+mov MagicAddr, $RESULT
+log MagicAddr
+bp MagicAddr
+run
+bc MagicAddr
+sto
+bprm cbase, csize
+run
+
+mov OEP,eip
+eval "OEP VA:{OEP}"
+log OEP
+cmt eip, "This is the OEP!  Found By: kienmanowar[REA-cRaCkErTeAm] "                              
+msg "Just : OEP !  Dump and Fix IAT.  Good Luck   "
+ret       
+
+NoFind:
+msg "Error! Don't find."
+ret
+
+CheckODbgScripVersion:
+msg  "ODBGScript Version Need 1.65 or higher!"
+ret
+
+TryAgain:
+msg " Plz  Try  Again   !   "
+ret

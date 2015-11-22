@@ -1,0 +1,69 @@
+var base
+var size
+var allocmem
+var codebase
+var ep
+var stwr
+var va
+var mm
+gpa  "VirtualAlloc","kernel32.dll"
+mov va, $RESULT
+gpa "memmove","ntdll.dll"
+mov mm, $RESULT
+var movecod
+mov movecod,2E069000//<- for unpakme ,edit for  others apps
+eval "call {va}"
+mov va,$RESULT
+eval "call {mm}"
+mov mm,$RESULT
+mov ep,eip
+eval "jmp {ep}"
+mov ep,$RESULT
+
+
+
+mov base,469000//<- for unpakme ,edit for  others apps
+
+
+GMEMI base, MEMORYSIZE
+mov size,$RESULT
+
+
+find eip,#00000000000000000000000000000000000000000000000000000000000000#
+cmp $RESULT,0
+je quit
+mov stwr,$RESULT
+mov newep,stwr
+mov [stwr],#6A40680030000068#
+add stwr,8
+mov [stwr],size
+add stwr,4
+mov [stwr],#68#
+add stwr,1
+mov [stwr],movecod
+add stwr,4
+asm stwr, va
+add stwr,5
+mov [stwr],#68#
+add stwr,1
+mov [stwr],size
+add stwr,4
+mov [stwr],#68#
+add stwr,1
+mov [stwr],base
+add stwr,4
+mov [stwr],#68#
+add stwr,1
+mov [stwr],movecod
+add stwr,4
+asm stwr,mm
+add stwr,5
+asm stwr,ep
+mov eip,newep
+bp stwr
+erun
+bc eip
+sti
+ret
+quit:
+ret

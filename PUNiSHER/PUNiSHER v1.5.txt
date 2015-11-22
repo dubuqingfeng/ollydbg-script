@@ -1,0 +1,74 @@
+/*
+===========================================================
+    PUNiSHER v1.5 DEMO - unpacking script (c) haggar
+===========================================================
+*/
+
+msg "Uncheck ALL exceptions and delete ALL breakpoints! Script works only on Win XP."
+
+var temp
+
+//----------------- Find and kill OutputDebugStringA exploit ---------------------
+gpa "LoadLibraryA","kernel32.dll"
+cmp $RESULT,0
+je ERROR
+mov temp,$RESULT
+bphws temp,"x"
+esto
+esto
+esto
+bphwc temp
+mov temp,[esp]
+bp temp
+esto
+bc eip
+find eip,#870424FF95????????80BD????????00#
+cmp $RESULT,0
+je ERROR
+bp $RESULT
+esto
+bc eip
+mov [eip],#909090909090909090#
+
+
+//---------------- Find jump to OEP/stolen code ------------------
+find eip,#FF6424FC60EB04#
+cmp $RESULT,0
+je ERROR
+bp $RESULT
+esto
+bc eip
+sti
+
+
+//------------------ Check for stolen code ---------------------
+find eip,#68????????C30000000000000000#
+cmp $RESULT,0
+je GoToOEP
+cmt eip,"<--- Stolen Code starts here!"
+cmt $RESULT,"<--- This PUSH/RETN is jump to 'false' OEP!"
+msg "Stolen Code found! Check log for instructions."
+
+log " "
+log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+log " PUNiSHER 1.5 DEMO - INSTRUCTIONS (c) haggar"
+log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+log " "
+log "Stolen Code is found. Just copy these bytes in this block"
+log "and place them somewhere in main image. The best way that"
+log "you copy those bytes in protector section. Then set 'New"
+log "origin' there and dump file. That is new OEP. Use ImpREC"
+log "for rebuilding imports. That is all."
+log " "
+
+ret
+
+GoToOEP:
+sti
+sti
+cmt eip,"<-- OEP! Dump and rebilt IAT with ImpREC."
+
+ret
+ERROR:
+msg "Error ocurred! Exiting..."
+ret

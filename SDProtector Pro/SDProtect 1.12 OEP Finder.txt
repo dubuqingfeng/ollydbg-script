@@ -1,0 +1,238 @@
+/*
+//////////////////////////////////////////////////
+        SDProtect 1.12 ????
+        Author:        loveboom
+        Email : loveboom...163.com
+        OS    : Winxp sp2,OllyDbg 1.1,OllyScript v0.92
+        Date  : N/A
+        Config: ????????????????
+        Note  : ????????????,?????????,??????????^_^
+                ????1.12????;????????????????????,??????
+                ????????????????
+//////////////////////////////////////////////////
+*/
+
+
+var                apigetver
+var                count
+var                 apiaddr
+var                 val
+var                 addr
+var                oep
+var                 packerbase
+var                 epaddr
+var                crcaddr
+var                 apisysinfo
+var                IMGBASE
+
+
+start:
+                dbh
+                mov epaddr,eip
+                gpa "LoadLibraryA","kernel32.dll"
+                cmp $RESULT,0
+                JE lblend
+                MOV apigetver,$RESULT
+                BPRM apigetver,0F
+                eoe lblexcept
+                eob l1
+                esto
+
+l1:
+                cob
+                bpmc
+                mov val,[esp]                //?esp??
+                mov addr,val
+                /*
+                        $+30  85F6   TEST ESI,ESI
+                        $+32  8BD8   MOV EBX,EAX
+                */
+                add addr,30
+                mov val,[addr]                //????
+                cmp val,D88BF685
+                jne lblinver
+                bp addr
+                eoe lblexcept
+                run                
+l2:
+                bc addr
+                mov packerbase,eax        //Packer base
+                mov addr,eax
+                add addr,18
+                mov oep,[addr]
+
+
+l3:
+                bprm epaddr,FF
+                eob l4
+                eoe lblexcept
+                run
+
+
+l4:
+                cob 
+                bpmc
+                findop eip,#C3#                        //????
+                go $RESULT
+                mov addr,$RESULT
+                add addr,153                        //8B4C24 04    MOV ECX,DWORD PTR SS:[ESP+4]
+                mov val,[addr]
+                cmp val,04244C8B
+                jne lblinver
+                mov crcaddr,addr                //??CRC????
+        
+
+l5:
+                gpa "GetVersion","kernel32.dll"
+                mov apiaddr,$RESULT
+                findop apiaddr,#C3#
+                mov apiaddr,$RESULT
+                bp apiaddr
+                mov count,0
+
+
+l6loop:
+                eoe lblexcept
+                eob l7
+                esto
+
+
+
+l7:
+                cob
+                mov addr,[esp]
+                add addr,2
+                mov val,[addr]
+                cmp val,73800000                //????????win9x??,??Winnt???Anti-debug
+                jne l6loop
+                mov eax,80000000
+                cmp count,1
+                je l8
+                inc count
+                jmp l6loop
+l8:
+                
+                bc apiaddr
+                sto
+                rtr
+                sto
+                
+
+l9:
+                eob l10
+                eoe lblexcept
+                findop eip,#2DFA121DBC#                // 2D FA121DBC      SUB EAX,BC1D12FA
+                cmp $RESULT,0
+                JE lblinver
+                bp $RESULT
+                esto
+
+l10:
+                cob
+                bc $RESULT
+                mov eax,BC1D12FA
+
+
+l11:
+                eob l12
+                eoe lblexcept
+                gpa "GetSystemInfo","kernel32.dll"
+                mov apisysinfo,$RESULT
+                add apisysinfo,8
+                bp apisysinfo
+                esto
+
+
+l12:
+                cob
+                bc apisysinfo
+                rtu
+                mov addr,esp
+                sub addr,4
+                mov addr,[addr]                                //????????CPU
+                add addr,14
+                mov [addr],0
+                cob
+
+l13:
+                eob lblbperr
+                eoe l14
+                esto
+
+
+l14:
+                coe
+                gpa "GetModuleHandleA","kernel32.dll"
+                mov apiaddr,$RESULT
+                findop apiaddr,#C20400#                        //??GetModuleHandleA????RET4
+                mov apiaddr,$RESULT
+                bp apiaddr
+
+l15:
+                eob l16
+                eoe lblexcept
+                esto
+
+
+l16:
+                cob
+                mov addr,esp
+                add addr,4
+                mov val,[addr]                        //mov val,[esp+4]
+                cmp val,0
+                jne l15
+                sto
+
+l17:
+                bc  apiaddr
+                mov IMGBASE,eax
+                mov [crcaddr],08244c8b                //MOV ECX,DWORD PTR SS:[ESP+4]
+                mov addr,eip
+                add addr,12c
+                log addr
+                mov val,[addr]
+                log val
+                cmp val,282444c7      //$+121 >  C74424 28 01>MOV DWORD PTR SS:[ESP+28],1
+                jne lblinver
+                add addr,4
+                mov [addr],0
+                findop addr,#C20400#
+                bp $RESULT
+
+l18:
+                eob l19
+                eoe lblexcept
+                esto
+
+
+l19:
+                cob
+                bc $RESULT
+                mov [addr],1                        //????,??xxxx:-)
+                mov [crcaddr],04244C8B
+                
+
+ldone:
+                eval         "Done!target OEP(RVA):{oep},now please dump target."                //??????????,?????????
+                log         $RESULT                                //????,??????:-)
+                cmt        eip,$RESULT
+                msg "Script by loveboom[DFCG],[FCG][CUG],Thank you for using my Scripts!"                        
+
+lblend:
+
+                ret        
+
+
+
+lblexcept:
+                msg        "????,?????????,??????SDProtect 1.12???"
+                ret
+
+lblinver:
+                msg        "??????SDPROTECT 1.12???."
+                ret
+
+lblbperr:
+                eval        "???????:{eip}"
+                msg        $RESULT
+                ret

@@ -1,0 +1,52 @@
+/*
+       ---------------------------------------------------------------
+
+                     Morphine v3.3 Reloaded - OEP Finder
+
+                         Coded by +NCR/CRC! [ReVeRsEr]
+
+       ---------------------------------------------------------------
+
+       Config: OllyDbg v1.10 - WinXP SP1 - ODbgScript v1.26
+*/
+
+var dirPUSHAD
+var dirHE_ON_ACCESS
+var dirRET
+
+msg "If Any window, like 32 bits bad format appears...just accept XD"
+find eip,#60#
+mov dirPUSHAD,$RESULT
+bp dirPUSHAD
+eob bpx
+run
+
+bpx:
+cmp eip,dirPUSHAD
+jne end
+bc dirPUSHAD
+sti
+mov dirHE_ON_ACCESS,esp
+bphws dirHE_ON_ACCESS,"r"
+eob he_access
+run
+
+he_access:
+bphwc dirHE_ON_ACCESS
+find eip,#C3#
+mov dirRET,$RESULT
+bp dirRET
+eob bpx2
+run
+
+bpx2:
+cmp eip,dirRET
+jne end
+bc dirRET
+sti
+msg "Estas en el OEP"
+msg "Script by +NCR/CRC! [ReVeRsEr] / SnD 2006"
+jmp end
+
+end:
+ret

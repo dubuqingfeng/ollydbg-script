@@ -1,0 +1,32 @@
+//////////////////////////////////////////////////////////////////
+////Tested with Ollydbg 1.10 with plugins. Odbgscript 1.64
+////Written by What
+////May work for similiar packers
+////dump we PE tools because dosent like LordPe
+////Used Pupe as Process Patcher
+//////////////////////////////////////////////////////////////////
+
+var x
+var y
+msg "Must know ebfe trick, have process patcher, dump with pe tools."
+gpa "WriteProcessMemory","Kernel32.dll"
+cmp $RESULT,0
+je Damn
+BPHWS $RESULT, "x"
+esto
+rtu
+BPHWC $RESULT 
+find eip, #034228#
+bp $RESULT 
+run
+bc $RESULT 
+sto
+mov x,eax
+mov y,x
+eval "The Oep is {y} Click ok and breaks ResumeThread."
+msg $RESULT
+gpa "ResumeThread","Kernel32.dll"
+bp $RESULT 
+run
+bc $RESULT 
+ret

@@ -1,0 +1,135 @@
+/*
+==========================================================
+Win License and Themida VM go to near OEP by Computer Angel
++ Support Winlic/Themida 1.1.X.X - 1.9.X.X
+==========================================================
+*/
+
+var func_address0
+var flag_func_log
+var cbase
+var csize
+var dllimg
+var dllsize
+var tmp
+var tmp1
+var tmp2
+var count
+var push_value
+var VM_func
+var prev_push_value
+var cur_push_value
+
+_init:
+	gmi eip,CODEBASE
+	mov cbase,$RESULT
+	gmi eip,CODESIZE
+	mov csize,$RESULT
+	gmemi eip,MEMORYBASE      // Themida code section
+	mov dllimg,$RESULT
+	log dllimg
+	gmemi eip,MEMORYSIZE      //Themida code size
+	mov dllsize,$RESULT
+	mov flag_func_log,0	
+_start:
+	BPHWCALL
+	gpa "GetProcessHeap", "kernel32.dll"
+	mov func_address0,$RESULT   
+	bphws func_address0,"x"
+	
+	mov tmp,0
+	mov tmp,dllimg
+	add tmp,dllsize
+	mov tmp1,0
+	mov tmp1,cbase
+	add tmp1,csize
+
+_monitor:
+	esto
+	cmp eip,func_address0
+	je func_address0_handle
+	jmp _monitor
+
+func_address0_handle:
+	mov ret_value,[esp]
+	cmp ret_value,tmp
+	ja _log_func
+	cmp ret_value,dllimg
+	jb _log_func	
+	jmp _near_oep
+
+_log_func:
+	cmp flag_func_log,0
+	je _monitor
+	log eax
+	log [esp]
+	log ebx
+	log ecx
+	log edx
+	log esi
+	log edi	
+	log [esp+4]
+	log [esp+8]
+	log [esp+0c]
+	log [esp+10]
+	log [esp+14]
+	log [esp+18]
+	log [esp+1c]
+	log [esp+20]
+	jmp _monitor
+
+_near_oep:
+ 	bphwcall
+	bprm cbase,csize
+	esto
+	bpmc
+	cmp eip,tmp1
+	ja _cont_monitor
+	bphwcall
+	cmt eip,"OEP ???"	
+	msgyn "Do you want to find location of VM OEP ?"
+	cmp $RESULT,1
+	je _find_vm_oep
+	msg "You stopped in OEP or near OEP now !!!"
+	ret
+
+_find_vm_oep:
+	mov tmp,esp
+	mov count,0
+
+_find_vm_oep_loop:
+	sub tmp,4
+	mov tmp1,[tmp]
+	opcode tmp1	
+	cmp $RESULT_2,5
+	jne _not_vm_oep
+	mov tmp2,[tmp1],1
+	cmp tmp2,68
+	jne _not_vm_oep
+	add tmp1,5
+	opcode tmp1
+	cmp $RESULT_2,5
+	jne _not_vm_oep
+	mov tmp2,[tmp1],1
+	cmp tmp2,e9
+	jne _not_vm_oep
+	
+	sub tmp1,05
+	mov eip,tmp1
+	cmt eip,"VM OEP ???"
+	msg "You stopped in VM OEP??? now !!!"
+	ret
+	
+_not_vm_oep:
+	inc count
+	cmp count,1e
+	ja _no_vm_oep_found
+	jmp _find_vm_oep_loop
+
+_no_vm_oep_found:	
+	msg "No VM OEP Found,You stopped in OEP or near OEP now !!!"
+	ret
+
+_cont_monitor:
+	bphws func_address0,"x"
+	jmp _monitor

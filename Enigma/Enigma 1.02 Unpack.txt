@@ -1,0 +1,202 @@
+/*
+========================================================
+      Enigma protector 1.02 - unpacker script
+========================================================
+
+Use this script after first one. You need to know OEP
+address (or false if there is stolen bytes), stolen
+code address and relocated code original section base
+(if there is that feature).
+
+Script will fix 95% of file if file is protected with
+all options. Emulated API's you need to fix manually.
+
+haggar
+========================================================
+*/
+
+
+
+//Initialization:
+var ModBase
+var cave
+var stolen_code_start
+var stolen_code_end
+var oep
+var loader_jump
+var loader_oep
+var loader_base
+var internal_check_start
+var internal_check_end
+var counter
+var code_relocation
+var IAT_obfuscator_I
+var IAT_obfuscator_II
+var IAT_redirector
+
+mov stolen_code_start,0
+mov stolen_code_end,0
+
+
+//Collecting information from you:
+ask "Enter OEP value:"
+cmp $RESULT,0
+je EXIT
+mov oep,$RESULT
+ask "Enter stolen_code_start value:"
+mov stolen_code_start,$RESULT
+
+
+//Module base and finding space in PE header for injecting code:
+gmi eip,MODULEBASE
+mov ModBase,$RESULT
+find ModBase,#00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+mov cave,$RESULT
+
+
+//Find jump to loader:
+dbh
+cmt eip,"!!! P L E A S E  W A I T !!!"
+find eip,#EB019AC35589E5FF750CFF7508E846000000#
+cmp $RESULT,0
+je ERROR
+mov loader_jump,$RESULT
+add loader_jump,3
+bp loader_jump
+esto
+bc eip
+
+
+//Find loader base:
+sti
+mov loader_oep,eip
+mov loader_base,loader_oep
+sub loader_base,2720C
+
+
+//Find internal check procedure:
+mov internal_check_start,loader_base
+add internal_check_start,1FEE8
+mov internal_check_end,internal_check_start
+add internal_check_end,37
+
+
+//Pass internal check three times:
+mov counter,0
+LABEL_01:
+bp internal_check_start
+esto
+bc eip
+bphws internal_check_end,"x"
+esto
+bphwc internal_check_end
+inc counter
+cmp counter,3
+jne LABEL_01
+bp internal_check_start
+
+
+//Find code relocation point (after VirtualAlloc call):
+mov code_relocation,loader_base
+add code_relocation,26AB4
+bp code_relocation
+
+
+//Find IAT obfuscators and patch them:
+mov IAT_obfuscator_I,loader_base
+add IAT_obfuscator_I,1ECE3
+mov IAT_obfuscator_II,loader_base
+add IAT_obfuscator_II,1F71D
+mov [IAT_obfuscator_I],0A30E990
+mov [IAT_obfuscator_II],00A6E990
+//bp IAT_obfuscator_II
+//bp IAT_obfuscator_I
+
+
+//Find IAT jumps redirector:
+mov IAT_redirector,loader_base
+add IAT_redirector,1E457
+bp IAT_redirector
+
+
+//Let's see what we have here:
+esto
+cmp eip,IAT_redirector
+jne LABEL_02
+bc eip
+mov [IAT_redirector],90909068
+add IAT_redirector,1
+mov [IAT_redirector],cave
+add IAT_redirector,4
+asm IAT_redirector,"RETN"
+sti
+sti
+asm eip,"ADD EDI,DWORD PTR SS:[EBP]"
+sti
+asm eip,"PUSHAD"
+sti
+asm eip,"MOV EAX,DWORD PTR DS:[EDI]"
+sti
+asm eip,"MOV ECX,DWORD PTR DS:[ECX]"
+sti
+asm eip,"MOV DWORD PTR DS:[EAX],ECX"
+sti
+asm eip,"POPAD"
+sti
+asm eip,"INC EAX"
+sti
+mov cave,eip
+mov [cave],90909068
+add cave,1
+add IAT_redirector,1
+mov [cave],IAT_redirector
+sti
+asm eip,"RETN"
+esto
+
+LABEL_02:
+bc eip
+cmp eip,code_relocation
+jne LABEL_03
+ask "Enter base of original relocation section:"
+cmp $RESULT,0
+je LABEL_03
+mov eax,$RESULT
+
+LABEL_03:
+esto
+bc eip
+bp internal_check_end
+esto
+bc eip
+sti
+rtr
+sti
+rtr
+
+cmp stolen_code_start,0
+je LABEL_04
+mov [esp],stolen_code_start
+sti
+find eip,#6031C0B9????????BF????????F2AA47ABAB61C3000000000000000000000000000000#
+cmp $RESULT,0
+je ERROR
+fill $RESULT,13,90
+bp $RESULT
+esto
+bc eip
+rtr
+
+dbs
+ret
+
+LABEL_04:
+mov [esp],oep
+sti
+
+EXIT:
+dbs
+ret
+ERROR:
+msg "Error in script! Sorry :( . "
+ret

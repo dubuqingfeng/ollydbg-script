@@ -1,0 +1,36 @@
+//by Apuromafo
+//two works in my pc with this script
+var dime
+var temp
+var addr
+mov addr,eax
+cmp addr,0
+je dime
+//if im in "retn" my eax not is 0 and think that is WinUpack
+gpa  "LoadLibraryA","kernel32.dll"
+bp $RESULT
+run
+bc eip
+rtu //return to user ..etc
+find eip,#c3#
+mov temp, $RESULT
+bp temp
+run
+bc temp
+sti
+jmp dime
+//this get from pushad..to oep simple?
+dime:
+sti
+//call
+mov addr,esp
+bphws addr,"r"
+run
+bphwc addr
+//jmp eax
+sti
+//oep
+an eip
+cmt eip,"<- this is the OEP, dump and fix the iat"
+ret
+

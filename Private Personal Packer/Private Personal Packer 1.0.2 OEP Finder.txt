@@ -1,0 +1,25 @@
+var p
+var p1
+var sz
+var rgn
+
+mov p1,eip
+mov p,eip
+add p,60
+mov [p],#EB#
+add p,8E
+bp p
+run
+bc p
+mov sz,eax
+sto
+mov rgn,eax
+add p1,3F9
+bp p1
+run
+bc p1
+
+dm rgn, sz, "D:\CrackTools\Protector\PPP\PPP\dump.exe" // edit fo you
+
+Msg "File Unpacked!"
+ret

@@ -1,0 +1,56 @@
+
+////////////////////////////////////////////
+
+////    PECompact V2.X 完美脱壳脚本
+
+////    cyclotron [BCG][DFCG][FCG][OCN]
+
+////////////////////////////////////////////
+
+msg  "请忽略内存访问异常!"
+
+var  dwImport
+
+gpa  "VirtualAlloc","kernel32.dll" 
+bp  $RESULT
+run
+
+bc  $RESULT  
+rtu
+
+findop  eip,#FFD7#  //call edi
+bp  $RESULT
+run
+
+bc  $RESULT
+sti
+
+findop  eip,#8B4E34#  //mov ecx,[esi+34h]
+bp  $RESULT
+run
+
+bc  $RESULT
+sti
+mov  dwImport,ecx
+mov  ecx,0
+
+gpa  "VirtualFree","kernel32.dll" 
+bp  $RESULT
+run
+run
+
+bc  $RESULT
+rtu
+
+findop  eip,#FFE0#  //jmp eax
+bp  $RESULT
+run
+bc  $RESULT
+
+msg  dwImport
+msg  "请转储文件！"
+
+
+Regards,
+cyclotron
+05.2.6 

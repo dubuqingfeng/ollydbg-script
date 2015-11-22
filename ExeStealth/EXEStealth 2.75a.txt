@@ -1,0 +1,43 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//  OEP Find Script for EXEStealth 2.75a -> WebtoolMaster
+//  Coded by: PiONEER {RES}
+//  TEAM: TEAM RESURRECTiON
+//  Greetz to: {RES},ICU,ARTeam,SnD,CiM,RLD,AGN,trainer-paradies.de,sEby,Sonny27,dR.oLLe
+//  Anorganix,XeonByte,starzboy,Till.CH,Oxy87,Orthodox,ALiEN,cyclops,l0calh0st,
+zyzygy,B@S
+//  Data: 15:36 02.04.2007
+//  Environment : WinXP SP1,OllyDbg V1.10,ODbgScript V1.48
+//  Contact: http://www.appzclub.tk - or - admin@appzclub.tk
+//////////////////////////////////////////////////////////////////////////////////////////
+
+start:
+#log
+find eip, #EB5853#
+cmp $RESULT,0
+je _error
+sto
+sto
+sto
+bphws esp, "r"
+run
+bphwc
+find eip, #50#
+cmp $RESULT,0
+je _error
+gmi eip,CODEBASE
+mov cbase,$RESULT
+log cbase
+gmi eip,CODESIZE
+mov csize,$RESULT
+log csize
+bprm cbase,csize 
+run
+cmt eip, "This is the OEP! Found by PiONEER/TEAM {RES}"
+msg "Dumped and fix IAT now! Thanx for using my Script...!"
+ret
+
+
+_error:
+msg "ERRORR!!!"
+ret
+end:

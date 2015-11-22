@@ -1,0 +1,78 @@
+﻿/*
+OllyDbg & Fantom
+*/
+
+var psf
+var OEP
+
+
+gpa "GetModuleHandleA","kernel32.dll"
+mov psf,$RESULT
+find psf,#C20400#
+cmp $RESULT,0
+je quit
+mov psf,$RESULT
+bp psf
+erun
+bc psf
+rtu
+find eip,#8A1401#
+cmp $RESULT,0
+je quit
+mov [$RESULT+2],#19#
+gpa "GetFileSize","kernel32.dll"
+mov psf,$RESULT
+
+bp psf
+erun
+bc psf
+rtu
+find eip,#33BD2F564000#
+cmp $RESULT,0
+je quit
+mov psf,$RESULT
+mov [psf ],#33FF#
+add psf,2
+fill psf,4,90
+find eip,#33C98A1401#
+cmp $RESULT,0
+je quit
+mov [$RESULT+4],#19#
+
+find eip,#8B9D07564000039D0B564000C1CB07#
+cmp $RESULT,0
+je quit
+mov psf,$RESULT+C
+bp psf
+erun
+bc psf
+mov OEP,ebx
+find eip,#618902EB19#
+cmp $RESULT,0
+je quit
+bp $RESULT
+
+erun
+bc eip
+find eip,#F7850F564000200000007445#
+cmp $RESULT,0
+je quit
+mov [$RESULT+A],#EB#
+find eip,#4083F8017402#
+cmp $RESULT,0
+je quit
+mov psf,$RESULT+4
+bp psf
+erun
+mov eip,OEP
+bc psf
+cmt eip, "OEP Faund!"
+
+eval "file unpacked! Import fixed! Dump it & use ImpREC,OEP: {OEP}"
+msg $RESULT
+ret
+
+
+quit:
+MSG "Not CoolCryptor"
+ret

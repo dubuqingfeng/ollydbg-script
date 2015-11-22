@@ -1,0 +1,40 @@
+// Script for OllyScript plugin by SHaG - http://ollyscript.apsvans.com
+/*
+	======================================
+   	   |_____ // tRUE! \\  _____  2008
+	 __/    /_  __________/    /_________
+	/_     __ \/  __     /    /         /
+	 /    / /    / /    /    /    /    /
+	/    / /    / /    /    / ________/__
+	\___/  \___/  \________/\___________/
+
+		Coded by: Xylitol // tRUE
+		Contact: www.forum.lastepidemic.net
+		Packer: fEaRz Crypter 1.0
+		Script for: Found the OEP
+		Date: monday 6 mai 2008
+	 ====================================
+						*/
+
+Start:
+GO 402509
+MSGYN "Did you see 'CreateProcessA' in the highlighted line ?"
+cmp $RESULT,0
+je abort
+BP 402670 //The packer use the same plan crypting and same adresse
+run       //For all appz crypted by fEaRz Crypter 1.0 !
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+MSG "Look in the Registers (FPU),  your OEP is the EAX value"
+cmt eip, "The Original Entry Point is the EAX value"
+MSG "OEP found by tRUE tEAM 2008"
+ret
+
+abort:
+msg "Error,Script aborted!,Meybe target is not protect by fEaRz Crypter 1.0"
+ret

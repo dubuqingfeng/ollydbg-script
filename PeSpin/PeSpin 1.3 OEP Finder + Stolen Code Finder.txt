@@ -1,0 +1,39 @@
+//PEspin 1.3 Public Version stolen bytes OEP harvester by KaGra
+//RuleZ:Check all exceptionz,delete all kinds of breakpoints and then run the script
+//download PEspin 1.3 at http://pespin.w.interia.pl
+
+var temp
+var oep
+var counter
+
+mov counter,0
+mov temp,esp
+sub temp,4
+
+bphws temp,"r"
+esto
+esto
+
+again22:
+mov temp,[eip]
+and temp,000001EB
+cmp temp,000001EB
+je one
+jmp continue
+
+one:
+inc counter
+cmp counter,2
+je found
+
+continue:
+mov oep,eip
+sti
+jmp again22
+
+
+found:
+cmt oep,"[*] OEP DeTecteD => PEspin 1.3 Public Version stolen bytes OEP harvester by KaGra "
+mov eip,oep
+
+ret

@@ -1,0 +1,75 @@
+var va
+var peps 
+var ptype
+var code
+var sizec
+GMI eip, CODEBASE
+mov code,$RESULT
+GMI eip, CODESIZE
+mov sizec,$RESULT
+gpa  "VirtualAlloc","kernel32.dll"
+mov va, $RESULT
+bp va
+erun
+rtr
+mov peps,eax
+erun
+bc va
+find peps,#8B45FC3B05??????007539#//#5356575583C4F48BF28BE88D542404B9040000008BC6# 
+cmp $RESULT,0
+je quit 
+mov ptype,$RESULT+9
+mov [ptype],#EB#
+bp ptype
+erun
+bc eip
+find ptype,#5DC208#
+cmp $RESULT,0
+je quit
+bp $RESULT+1
+erun 
+bc eip
+BPRM code,sizec
+erun
+BPMC
+msg "OEP Faund Emulate Api Fix"
+ret
+/*
+2E0881FE    892C24          MOV DWORD PTR SS:[ESP],EBP <---OEP Stolen
+2E088201    8BEC            MOV EBP,ESP
+2E088203    6A FF           PUSH -1
+2E088205    68 600E4500     PUSH 450E60
+2E08820A    57              PUSH EDI
+2E08820B    C70424 C8924200 MOV DWORD PTR SS:[ESP],4292C8
+2E088212    64:A1 00000000  MOV EAX,DWORD PTR FS:[0]
+2E088218    81EC 04000000   SUB ESP,4
+2E08821E    890424          MOV DWORD PTR SS:[ESP],EAX
+2E088221    64:8925 0000000>MOV DWORD PTR FS:[0],ESP
+2E088228    83C4 A8         ADD ESP,-58
+2E08822B    53              PUSH EBX
+2E08822C    56              PUSH ESI
+2E08822D    81EC 04000000   SUB ESP,4
+2E088233    893C24          MOV DWORD PTR SS:[ESP],EDI
+2E088236    8965 E8         MOV DWORD PTR SS:[EBP-18],ESP
+2E088239    FF15 DC0A4600   CALL DWORD PTR DS:[460ADC] <---Stop
+2E08823F    33D2            XOR EDX,EDX
+2E088241    8AD4            MOV DL,AH
+..................
+2E088285    898C24 04000000 MOV DWORD PTR SS:[ESP+4],ECX             ; UnPackMe.0042720E <--in code
+2E08828C    59              POP ECX
+2E08828D    C3              RETN
+*/
+
+quit:
+ret
+
+
+
+
+
+
+
+
+
+
+    

@@ -1,0 +1,421 @@
+dbh //隐藏调试器
+///支持旧版，功能不全
+#log
+var cbase
+var addr1
+gmi eip, CODEBASE
+mov cbase, $RESULT 
+
+var k
+var imgbase
+var espsave
+mov espsave,esp
+sub espsave,4
+
+gmi eip,MODULEBASE //模块基地址400000
+mov imgbase,$RESULT
+mov k,imgbase
+add k,3C //40003C
+mov k,[k]
+add k,imgbase 
+add k,f8 //第一区段名
+log k
+add k,8 //地址加8字节的偏移就是区段大小 
+mov k,[k] //401000处第一区段大小
+log k 
+
+var addr2
+mov addr2,ebp //保存ebp=12fff0判断后面是否到达OEP 或 FOEP
+
+var addr3
+sub ebp,30 //实际取ebp=12ffc0判断后面是否到达OEP 或 FOEP
+mov addr3,ebp
+add ebp,30 //修改了寄存器值得还原
+
+msg "除了内存异常,忽略所有异常,打上prosess32next和unhandleexcption补丁"
+gpa "LoadLibraryA","kernel32.dll"
+cmp $RESULT,0
+je err
+sti
+var esptemp
+mov esptemp,esp
+
+var bp1
+mov bp1,$RESULT
+bp $RESULT
+gpa "GetProcAddress","kernel32.dll"
+cmp $RESULT,0
+add $RESULT,5
+var bp2
+mov bp2,$RESULT
+je err
+bp $RESULT
+esto
+var temp
+mov temp,esp
+add temp,4
+mov temp,[temp]
+
+var reps // repl code判断变量
+mov reps,0
+
+lp:
+esto
+cmp eip,bp1
+je ddd
+cmp eip,bp2
+je ddd
+jmp rep
+
+ddd:
+var temp2
+mov temp2,esp
+add temp2,4
+mov temp2,[temp2]
+cmp temp2,temp
+jne abcd
+mov temp,temp2
+jmp lp
+
+
+abcd:
+bc bp1
+bc bp2
+
+rtu
+
+ //开始处理输入表了
+msg "IAT"
+find eip,#3B85#
+cmp $RESULT,0 
+je ULTRAPROTECTOR
+
+
+STARTIAT:
+
+find eip,#7F??#
+cmp $RESULT,0
+je err
+mov [$RESULT],#EB# 
+log $RESULT
+
+find eip,#3B85#
+cmp $RESULT,0
+je err
+add $RESULT,6
+mov [$RESULT],#EB# //messagebox比较
+
+find eip,#8D85????4000#
+cmp $RESULT,0
+je err
+mov [$RESULT],#909090909090#
+
+find eip,#8D85????4000#
+cmp $RESULT,0
+je cool
+mov [$RESULT],#909090909090#
+cool:
+
+find eip,#83C614#
+cmp $RESULT,0
+je err
+add $RESULT,E
+go $RESULT
+msg "IAT fix end"
+
+var espvar
+
+//下面开始处理repl code
+cmp reps,1 //如果确认没有Replace Code,则直接跳到取OEP位置代码处
+jmp label69
+msg "存在repl code"
+
+label69:
+//jmp bibi  二哥方法
+pushad:
+var temp
+mov temp,[eip]
+and temp,FF
+cmp temp,60 //pushad
+je popad
+find eip,#60#
+go $RESULT
+jmp pushad
+ret
+
+popad:
+sto
+mov espvar,esp
+
+
+bphws espvar,"r"
+esto
+mov temp,[eip]
+and temp,FF
+cmp temp,61 //popad
+je call
+ret
+
+call:
+
+bphwc espvar
+sto
+lps:
+var temp
+mov temp,[eip]
+and temp,FF
+cmp temp,E8 //call;ret
+jne err
+sto
+sto
+mov espvar,esp
+add espvar,C
+bphws espsave,"r"
+ret
+bstp1:
+esto
+step1:
+mov temp,[eip]
+and temp,FF
+cmp temp,53   //push ebx
+jne bstp1
+
+bstp2:
+esto
+step2:
+mov temp,[eip]
+and temp,FF
+cmp temp,60   //pushad
+jne bstp2
+bstp3:
+run
+bphwc espsave
+ret
+esto
+step3:
+mov temp,[eip]
+and temp,FF
+cmp temp,EB   //EB01
+jne bstp3
+bphwc espsave
+sto
+sto
+ret
+esto
+bphwc espvar
+gpa "CreateToolhelp32Snapshot","kernel32.dll"
+var CTS
+cmp $RESULT,0
+je err
+mov CTS,$RESULT
+find CTS,#C20800#
+cmp $RESULT,0
+je err
+mov CTS,$RESULT
+bp CTS
+bphws esptemp,"r"
+esto
+bphwc esptemp
+cmp eip,CTS
+//je CTS
+bc CTS
+msg "如果有stolen oep 则dump,否则继续脚本"
+ask "是否有replace code"
+cmp $RESULT,0
+jne label333
+pause
+jmp bibi
+ret
+
+CTS:
+esto
+bc CTS
+rtu
+bphws esptemp,"r"
+esto
+bphwc esptemp
+msg "注意上面的stolen code,如果要带发则终止脚本"
+jmp bibi
+
+//以下是ESP定律
+cools:
+esto
+var temp
+mov temp,[eip]
+and temp,FFFF
+cmp temp,1EB //jmp
+jne cools
+sto
+mov temp,[eip]
+and temp,FFFF
+cmp temp,25FF //jmp
+jne cools
+bphwc espvar
+sto
+
+ret
+lok:
+
+ret
+
+bibi:
+bphwc espvar
+bprm cbase, k //然后就是跳OEP或FOEP了,内存镜像断点
+
+esto //Shift+F9
+
+
+label444: //这里我用一个条件判断OEP OR FOEP，有些AC壳到OEP或FOEP时候EBP一般是12fff0,或是
+
+//12ffc0,401000处中断一般都是OEP。
+
+cmp eip,401000 //汇编比较常用
+
+je label333
+
+cmp ebp,addr2 //12fff0一般没有抽代码 
+
+je label333
+
+cmp ebp,addr3 //12ffc0,抽代码常见
+
+je label333
+
+cmp ebp,12fff2 //12fff2,VB类
+
+je label333
+
+var addr4
+
+add addr4,1
+
+cmp addr4,70 //定义循环上限，如果Code段执行70行代码仍然无法发现OEP则认为死循环。
+
+ja Sorry
+
+esto
+
+jmp label444 //循环直到条件成立，当然有些AC版本会跑飞。
+
+label333:
+cmt eip,"OEP"
+bpmc
+msg "如果要修复STOLEN CODE,记下最后区段地址继续"
+pause
+var cb
+gmi eip,CODEBASE
+cmp $RESULT,0
+je err
+mov cb,$RESULT
+var sb
+var ss
+ask "stolen start"
+cmp $RESULT,0
+je end
+mov sb,$RESULT
+ask "stolen size"
+cmp $RESULT,0
+je end
+mov ss,$RESULT
+add ss,sb
+var temp1
+var temp
+
+loa:
+find cb,#E8# //call
+cmp $RESULT,0
+je end
+mov cb,$RESULT
+add cb,1
+cmp cb,468000 // 代码段结束地址,自己修改
+ja end
+mov temp,cb
+mov temp,[temp]
+add temp,4
+add temp,cb
+cmp temp,sb
+jb DNS
+cmp ss,temp
+jb DNS
+add temp,2
+mov temp,[temp]
+mov temp,[temp]
+mov temp1,[temp]
+sub cb,1
+log cb
+mov [cb],temp1
+add cb,4
+add temp,4
+mov temp1,[temp]
+var save
+mov save,cb
+add save,1
+mov save,[save]
+mov [cb],temp1
+add cb,1
+mov [cb],save
+jmp loa
+
+DNS:
+add cb,1
+jmp loa
+ret
+
+end:
+msg "修复完毕"
+ret
+
+err:
+msg "出错,可能版本不支持"
+ret
+
+Sorry:
+Msg "估计脚本陷入死循环，提前结束。"
+bpmc
+ret
+
+end: //INT1
+coe
+bprm 401000, k //内存镜像断点 //意外情况，没有Replace Code的程序，这时要跳FOEP了，得拦住
+bc addr1 //清除GlobalAlloc断点
+jmp label444
+
+rep:
+var temps
+mov temps,[eip]
+and temps,FFFF
+cmp temps,1CD  //int1
+je hosp
+esto
+hosp:
+msg "repl code"
+mov reps,1
+jmp lp
+ret
+
+GOGOGO:
+eob loopas
+eoe loopas
+esto
+
+
+ULTRAPROTECTOR:
+var temp
+mov temp,ebx
+bp bp2
+loopas:
+cmp temp,ebx
+log temp
+log ebx
+jne abcool
+mov temp,ebx
+jmp GOGOGO
+
+
+abcool:
+bc bp2
+cob loopas
+coe loopas
+rtu
+jmp STARTIAT
+ret

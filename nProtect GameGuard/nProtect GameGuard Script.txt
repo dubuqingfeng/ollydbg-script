@@ -1,0 +1,45 @@
+/////////////////////////////////////////////////
+//  FileName    :  nProtect GameGuard Script.txt
+//  Comment     :  nProtect GameGuard Exe File UnPack Script
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  仙剑太郎(XJTL)
+//  WebSite     :  http://www.CnXHacker.com
+//  Date        :  2006-01-12
+////////////////////////////////////////////////
+
+start:
+var aaa
+/*
+入口特征
+00437C70 Gam>  31FF           xor edi,edi
+*/
+find eip, #31FF#
+cmp $RESULT,0
+je errors
+
+/*
+根据特征搜索
+00437E39       FF96 107C0300  call dword ptr ds:[esi+37C10]
+00437E3F       61             popad
+00437E40     - E9 323EFDFF    jmp GameGuar.0040BC77
+*/
+
+find eip, #FF??????????61E9#
+mov aaa,eip
+cmp $RESULT,0
+je errors
+
+mov aaa,$RESULT
+fill aaa,6,90    //nop掉那个ExitProcess的CALL
+add aaa,7
+bp aaa
+run
+bc aaa
+sto
+
+cmt eip, "OEP Found! Script Written by XJTL"
+MSG "OEP Found!Correct ImageSize,then Dump and Fix IAT! Script Written by XJTL www.CnXHacker.com"
+ret
+
+errors:
+MSG "Sorry,May be not an nProtect GameGuard exe file! Script Written by XJTL www.CnXHacker.com"

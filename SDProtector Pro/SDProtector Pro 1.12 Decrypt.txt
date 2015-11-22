@@ -1,0 +1,84 @@
+//SDP 1.12 - runtime decryption
+
+var oep
+var addr
+var pointer
+var type
+
+mov oep,eip
+mov addr,401000
+
+
+
+LABEL_01:                          //Decrypt.
+    find addr,#E8??????FFEB11#
+    cmp $RESULT,0
+    je END_01
+    mov addr,$RESULT
+    
+    add addr,1
+    mov pointer,addr
+    mov pointer,[pointer]
+    add pointer,addr
+    add pointer,4
+    mov type,pointer
+    add type,1
+    mov type,[type]
+    add type,pointer
+    add type,5
+    cmp type,518738
+    jne LABEL_01
+
+    sub addr,1
+    mov eip,addr
+    add addr,5
+    bp  addr
+    esto
+    bc  eip
+    sub addr,5
+    mov [addr],#909090909090909090909090909090909090909090909090#
+jmp LABEL_01
+END_01:
+
+
+mov addr,401000
+LABEL_02:                          //Patch encryptor.
+    find addr,#E8??????FFEB11#
+    cmp $RESULT,0
+    je END_02
+    mov addr,$RESULT
+    
+    add addr,1
+    mov pointer,addr
+    mov pointer,[pointer]
+    add pointer,addr
+    add pointer,4
+    mov type,pointer
+    add type,1
+    mov type,[type]
+    add type,pointer
+    add type,5
+    cmp type,5185E1
+    jne LABEL_02
+
+    sub addr,1
+    mov [addr],#909090909090909090909090909090909090909090909090#
+jmp LABEL_02
+END_02:
+
+
+
+
+
+
+
+
+
+
+mov eip,oep
+
+
+
+
+
+ret

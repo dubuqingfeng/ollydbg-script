@@ -1,0 +1,14 @@
+// Script for OllyScript plugin by DarK_m00n - http://www.cim-team.wb.st
+
+
+
+
+sto
+findop eip,#C3#
+go $RESULT
+sto
+cmt eip,"OEP found by DarK_m00n | CiM"
+an eip
+ret
+
+// 

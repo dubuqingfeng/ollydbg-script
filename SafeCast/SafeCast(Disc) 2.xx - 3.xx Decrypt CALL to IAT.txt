@@ -1,0 +1,95 @@
+/*
+==================================================================
+    SafeCast 2.xx-3.xx - Script for finding correct imports
+==================================================================
+Instructions:
+
+This is second script for finding imports. This one will find and
+decrypt all CALL references to IAT and decrypt imports. Then it
+will redirect them to new IAT in new section. For jumps you need
+to change script a little bit, but in VC++ files you can fix jumps
+manually.
+
+haggar
+===================================================================
+*/
+
+
+
+var oep       //Just to take OEP (current EIP) for restore it after.
+var addr 
+var pointer
+var import    //Found import.
+var stack     //For placing harware bp.
+var iat       //Pointer to new IAT.
+
+
+//================ Finding and decrypting all calls =================
+mov oep,eip
+mov addr,12ec1000
+LABEL_01:
+ find addr,#ff15????ef12#   //Find all calls that point to IAT.
+ cmp $RESULT,0
+je END_01
+ mov addr,$RESULT
+ add addr,2
+ mov pointer,[addr]
+ mov pointer,[pointer]
+ and pointer,0ff000000
+ cmp pointer, 13000000       //Check pointer.
+jne NEXT_01                  //If it is not redirected.
+ sub addr,2                  //If it is, then find import.
+ mov eip,addr
+ sti
+ sti
+ sti
+ mov stack,esp
+ bphws stack,"r"
+ esto
+ bphwc stack
+ sti
+ mov import,eip
+ add addr,2
+ add esp,4                 //Ignore this if you search for JMP.
+
+     NEXT_02:
+     //==================    //Now, find that import in new IAT.
+     mov iat,12f1f000        //Hardcoded pointer to new IAT.
+     LABEL_02:
+      cmp iat,12f1f2c8       //End of new IAT.
+     je MISSING:
+      cmp [iat],import
+      add iat,4
+     jne LABEL_02
+      sub iat,4
+     //==================
+ mov [addr],iat              //Redirect pointer.
+jmp LABEL_01
+END_01:
+
+mov eip,oep
+
+ret
+
+NEXT_01:
+ mov import,[addr]
+ mov import,[import]
+jmp NEXT_02
+
+
+
+MISSING:
+msg "It seams that one import is missing ?!?"
+ret
+
+
+
+
+
+
+
+
+
+
+
+

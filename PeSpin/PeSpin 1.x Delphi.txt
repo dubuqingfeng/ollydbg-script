@@ -1,0 +1,80 @@
+/*
+==========================================================================
+   PESpin 1.0-1.3 Delphi IAT repair script for OllyScript plugin (SHaG)
+==========================================================================
+
+     Script should work on all Windows systems.
+     On a big files (1MB and more) this script can be *very*
+     slow (it takes minutes).
+     The purpose of this script is to change imports jumps from
+     JMP DWORD[xxxxxxxx] to JMP yyyyyyyy. Then you need to build
+     basic smalest IAT manually. Read tutorial for more info.
+
+     
+     [ haggar ]
+==========================================================================
+*/
+
+var imports
+mov imports,0
+var V
+var addr
+mov addr,401000
+
+log "[ Number of found and fixed imports ]"
+
+//This part will find jumps to API:
+search:
+findop addr,#FF25????????#
+cmp $RESULT,0
+je done
+add $RESULT,2
+mov V,[$RESULT]
+mov V,[V]
+sub V,$RESULT
+sub V,3
+sub $RESULT,2
+fill $RESULT,1,E9
+add $RESULT,1
+mov [$RESULT],V
+add $RESULT,4
+fill $RESULT,1,90
+inc imports
+mov addr,$RESULT
+sub addr,4
+jmp search
+
+
+done:
+//This one finds calls:
+mov addr,401000
+search2:
+findop addr,#FF15????????#
+cmp $RESULT,0
+je done2
+add $RESULT,2
+mov V,[$RESULT]
+mov V,[V]
+sub V,$RESULT
+sub V,3
+sub $RESULT,2
+fill $RESULT,1,E8
+add $RESULT,1
+mov [$RESULT],V
+add $RESULT,4
+fill $RESULT,1,90
+inc imports
+mov addr,$RESULT
+sub addr,4
+jmp search2
+
+
+done2:
+log imports
+ret
+
+
+
+
+
+

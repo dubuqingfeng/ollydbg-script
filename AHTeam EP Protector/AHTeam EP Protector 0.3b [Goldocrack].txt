@@ -1,0 +1,93 @@
+/*
+Avant d'utiliser ce script, vous devez aller dans les options de olly, 
+dans -> debugging options et cocher toutes les erreurs!
+
+
+
+*/
+
+
+
+/*
+	============================
+	                
+	      Author: Goldocrack 30 mars 2006
+	      Packer: AHTeam EP Protector v0.3b -> FEUERRADER *
+	      Script for: AHTeam EP Protector v0.3b -> FEUERRADER *
+	      Level: Easy
+	      Date: lundi 8 mai 2006
+
+            http://reverseengineering.online.fr
+            http://www.forumcrack.new.fr/
+            http://s141422204.onlinehome.fr/forum/
+            Merci à tous 
+	 ============================
+						*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var label
+
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto    
+an eip
+cmt eip, " Tu es a l'entry point  !"
+msgyn " Veux-tu enregistrer un fichier dumpe nomme unpacked.exe sur c:\    Normalement le dump est fonctionnel!                                                                                                           Goldocrack 2006!"
+cmp $RESULT,1 
+je label
+msg "N'oublie pas les imports avec imprec pour que le dump soit fonctionnel!"
+ret 
+
+label:
+dpe "c:\unpacked.exe",eip
+ret
+
+
+ 

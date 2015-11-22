@@ -1,0 +1,81 @@
+var	pcodebase
+var	getprocaddress
+var	magicpoint
+var	patchpoint
+
+start:
+	gmi	eip, CODEBASE
+	cmp	$RESULT, 0
+	je	err1
+	mov	pcodebase, $RESULT
+	BPRM	pcodebase, ff
+	eob	__BP1
+	esto
+
+__BP1:
+	BPMC
+	gpa	"GetProcAddress", "kernel32.dll"
+	cmp	$RESULT, 0
+	je	err2
+	mov	getprocaddress, $RESULT
+	bp	getprocaddress
+	eob	__BP2
+	esto
+
+__BP2:
+	bc	getprocaddress
+	rtu
+	find	eip, #25ffffff7f#
+	cmp	$RESULT, 0
+	je	err3
+	mov	magicpoint, $RESULT+5
+	find	eip, #0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+	mov	patchpoint, $RESULT+4
+	exec							//打补丁
+		mov	dword ptr [{patchpoint}], 0C683F08B		//
+		mov	dword ptr [{patchpoint}+4], 006C766FA		//
+		mov	dword ptr [{patchpoint}+8], 0478B25FF		//
+		mov	dword ptr [{patchpoint}+c], 002468904		//写入补丁代码
+		mov	byte ptr [{magicpoint}], 0e9		//写入jmp指令, 跳向补丁代码
+		pushad
+		pushfd
+		mov	eax, {patchpoint}			//
+		sub	eax, {magicpoint}			//
+		sub	eax, 5					//
+		mov	dword ptr [{magicpoint}+1], eax		//计算跳转距离, 然后补全jmp指令
+		mov	byte ptr [{patchpoint}+10], 0e9	//写入jmp指令, 跳回原来的代码
+		mov	eax, {patchpoint}		//
+		push	eax				//
+		add	eax, 15				//
+		mov	ebx, {magicpoint}		//
+		add	ebx, 7				//
+		sub	ebx, eax			//
+		mov	eax, ebx			//
+		pop	ebx				//
+		add	ebx, 11				//
+		mov	dword ptr [ebx], eax		//计算跳转距离, 之后补全jmp指令
+		popfd
+		popad
+	ende
+	
+	find	eip, #ffe0#
+	bp	$RESULT
+	eob	__OEP
+	esto
+
+__OEP:
+	bc	$RESULT
+	sto
+	msg	"已到达OEP, 修复一下IAT就行了."
+	jmp	exit
+
+err1:
+	msg	"获取代码段地址出错!"
+	jmp	exit
+err2:
+	msg	"获取GetProcAddress函数地址出错!"
+	jmp	exit
+err3:
+	msg	"内存定位关键地址出错, 可能这个脚本脱不了这壳!"
+	jmp	exit
+exit:

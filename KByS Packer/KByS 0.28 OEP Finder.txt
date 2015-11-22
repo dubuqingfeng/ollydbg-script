@@ -1,0 +1,77 @@
+/////////////////////////////////////////////////////////////
+//  FileName    :  KByS V0.28.osc
+//  Comment     :  OEP Find For KByS V0.28
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://www.unpack.cn
+//  Date        :  2006-05-22 14:30
+/////////////////////////////////////////////////////////////
+#log
+
+var OEP
+var Temp
+var Count
+var Second
+
+
+MSGYN "Plz Clear All BreakPoints + Set Events Make first pause at Entry Point !   "
+cmp $RESULT, 0
+je TryAgain
+
+//eXe————————————————————————————————
+
+mov Temp,eip
+find eip, #68????????E801000000C3C3#
+cmp $RESULT, 0
+je Second
+
+mov Temp,$RESULT
+add Temp,1
+mov Temp,[Temp]
+
+
+//Second————————————————————————————————
+
+Second:
+find Temp, #B8????????BA????????03C2FFE0#
+cmp $RESULT, 0
+je NoFind
+
+
+//OEP————————————————————————————————
+        
+add $RESULT,C
+mov OEP,$RESULT
+bp OEP
+
+eob OEP
+esto
+GoOn0:
+esto
+
+OEP:
+cmp eip,OEP
+jne GoOn0
+inc Count
+cmp Count,2
+je GameOver
+jmp GoOn0
+
+
+//GameOver————————————————————————————————
+
+GameOver:
+bc OEP        
+esti
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT.  Good Luck   "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not KByS V0.28  !  "
+ret
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret

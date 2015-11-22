@@ -1,0 +1,42 @@
+var espval
+var oep
+var g
+
+
+mov espval,esp
+sub espval,4
+bphws espval, "r"
+l1:
+run
+find eip, #64A1300000008B400C8B400C8D58208D48188333FF8B318B008B781889398D4424E0#
+cmp $RESULT,0
+je l1
+mov g,$RESULT
+bphws g,"x"
+bphwc  espval
+run
+bphwc g
+fill eip,B1,90
+find eip, #68????????64FF350000000064892500000000CD03#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT
+bphws oep,"x"
+run
+bphwc oep
+sti
+mov oep,[esp]
+bphws oep,"x"
+run
+bphwc oep
+MSG "OEP"
+ret
+quit
+MSG ":("
+ret
+
+
+
+
+
+

@@ -1,0 +1,134 @@
+msgyn "IGNORE ALL EXCEPTIONS and make sure that NO BREAKPOINT IS LEFT! Then (this is the most important) set OllyDbg to be just-in-time debugger (instead DrWatson) and set to 'Attach without confirmation'. You have done all this?"
+cmp $RESULT,0
+je  exit
+
+
+var tmp1
+var tmp2
+
+
+
+
+//--------- Base and Size of image -----------
+var Image_Base
+gmi eip,MODULEBASE
+mov Image_Base,$RESULT
+
+var Image_Size
+gmi eip,MODULESIZE
+mov Image_Size,$RESULT
+
+
+
+//------------- Debugee PID ----------------
+var process_PID
+gpa "CreateProcessA","kernel32.dll"
+bp  $RESULT
+esto
+bc  eip
+mov process_PID,esp
+add process_PID,28
+mov process_PID,[process_PID]
+add process_PID,8
+rtr
+sti
+sti
+sti
+mov process_PID,[process_PID]
+
+//------ Number of imports in packed target -------
+var imports
+mov imports,eip
+add imports,1C3
+mov tmp1,imports
+bp  imports
+esto
+bc  eip
+sti
+sti
+sti
+sti
+mov imports,edx
+
+//------------ OEP of packed target ---------------
+var OEP
+mov OEP,tmp1
+add OEP,0a
+bp  OEP
+esto
+bc  eip
+add OEP,2
+mov OEP,[OEP]
+mov OEP,[OEP]
+
+//------------ Base of import section --------------
+var IAT
+mov IAT,eip
+add IAT,CD9
+bp  IAT
+esto
+bc eip
+sti
+mov IAT,ecx
+
+//---------- Decrypt all untill IAT section ------------
+var rel_oep
+mov rel_oep,OEP
+and rel_oep,0FFF
+
+var break
+mov break,eip
+sub break,0cdd
+bp  break
+
+var jump
+mov jump,break
+add jump,12
+mov tmp1,[jump]
+mov [jump],9090eceb
+esto
+add break,2
+mov break,[break]
+mov [break],401000
+
+Decrypt: //Decrypt untill the end of file.
+esto
+add [break],1000
+mov tmp2,[break]
+cmp tmp2,IAT
+jne Decrypt
+bc  eip
+
+
+//------------ Detach processes -------------
+
+mov eax,process_PID
+asm eip,"PUSH EAX"
+sti
+asm eip,"CALL DebugActiveProcessStop"
+
+msg "Done! Check log window for details and instructions."
+
+
+log " "
+log "- - - - - - - - - - - - - - - - - - - -"
+log "BERIA 0.07 - UNPACKING SCRIPT by haggar"
+log "- - - - - - - - - - - - - - - - - - - -"
+log " "
+log "Target is unpacked and processes (almost) detached."
+log "If you have done all like I told you, another Olly"
+log "will popup after you press F8 with unpacked target"
+log "loaded in it, right on OEP."
+log " "
+log "Some information about unpacked target:"
+log " "
+log  Image_Base
+log  Image_Size
+log  process_PID
+log  OEP
+log  IAT
+log  imports
+log " "
+log "Press F8 now to detach processes."
+exit:
+ret

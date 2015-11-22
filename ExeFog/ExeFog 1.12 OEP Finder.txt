@@ -1,0 +1,41 @@
+///////////////////////////////////////////////////////////////////////
+//  OEP Finder Script for ExeFog 1.12 --> bagie
+//  Coded by: Sonny27 {TeaM SnD}
+//  My greetz and thanks to everyone at:
+//  SnD, gRn, RfN, iCU, CiP, ARTeam, eXeTools and UnPacKcN
+//  Data: 2007-03-30
+//  Environment :  WinXP SP2,OllyDbg V1.10,ODbgScript V1.51
+//  Contact: http://tuts4you.com/forum/ or http://snd.astalavista.ms/
+///////////////////////////////////////////////////////////////////////
+
+MSGYN "Are all set breakpoints deleted? Otherwise script will fail!"
+cmp $RESULT,0
+je breakpoint
+gpa "VirtualFree", "kernel32.dll"
+bp $RESULT
+run
+bc $RESULT
+rtr
+sto
+find eip, #FFD060EB04#
+bp $RESULT
+run
+bc $RESULT
+sto
+sto
+sto
+find eip, #61E8??000000#
+bp $RESULT
+run
+bc $RESULT
+find eip, #90EB04#
+bp $RESULT
+run
+bc $RESULT
+rtr
+sto
+msg "This should be OEP :-)"
+ret
+
+breakpoint:
+ret

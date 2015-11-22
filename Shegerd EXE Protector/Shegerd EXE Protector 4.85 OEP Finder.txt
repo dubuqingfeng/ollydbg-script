@@ -1,0 +1,44 @@
+//////////////////////////////////////////////////////////////////////////
+// OllyScript for UnPacking: Shegerd EXE Protector v4.85
+// By : Magic_h2001  -  Date : 2006/Mar/08
+// magic_h2001@yahoo.com - http://magic.shabgard.org  
+// Tested on WinXp sp2 and Shegerd v4.85
+// Remove All BPs and Enable Ignore all Exceptions then run Script
+//////////////////////////////////////////////////////////////////////////
+
+var GetTime
+var jmpadr
+dbh
+gpa "GetSystemTime","kernel32.dll"
+mov GetTime,$RESULT
+bp GetTime
+run
+rtu
+find eip,#668B55066689550466837D04000F859E090000#
+bc GetTime
+cmp $RESULT,0
+jne ok
+msg "Error: UnkNown Version of Shegerd Lock Script Aborted..."
+ret
+ok:
+add $RESULT,0D
+mov jmpadr,$RESULT
+find eip,#E98B85CA00#
+add $RESULT,1
+sub $RESULT,jmpadr
+sub $RESULT,5
+repl jmpadr,#0F#,#E9#,1
+inc jmpadr
+mov [jmpadr],$RESULT
+find eip,#C1C20689142B#
+add $RESULT,0A
+bp $RESULT
+run
+bc $RESULT
+sti
+//an eip 
+cmt eip,"This is OEP;)"
+msg "OEP found by : Magic_h2001  -  Now Dump and Fix IAT;)"
+ret
+
+//////////////////////////////////////////////////////////////////////////

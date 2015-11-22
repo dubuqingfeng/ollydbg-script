@@ -1,0 +1,38 @@
+// Script for OllyScript plugin by SHaG - http://ollyscript.apsvans.com
+/*
+4:40 AM 11/12/2004
+PECompact 2.40 OEP Finder
+Author : dqtln
+Email : dqtlncrk@gmail.com
+OS : WinXP Pro SP1 , OllyDbg 1.10 , OllyScript 0.85
+Website : www.phudu.com
+*/
+
+sto
+sto
+sto
+sto
+sto
+sto
+esti
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+findop eip,#FFE0#
+bp $RESULT
+run
+bc eip
+sto
+cmt eip,"This is the OEP - Found by dqtln"
+msg "Dump and fix IAT now - Thanks for using my script"
+ret
+
+// [BACK]

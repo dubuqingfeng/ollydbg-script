@@ -1,0 +1,226 @@
+/////////////////////////////////////////////////////////
+// Unpack PESpin v1.3 Beta2 unpackme
+// By softworm 6/6/2005
+//
+// Run as a single process,reach the dump address,fixes some 
+// replaced code(call into the virtual address space ) and
+// Nanomites.
+
+// Run the fixer.exe(No GUI available,replace the PID and recompile 
+// it;-) to fix the replaced codes pointing to the PE header when 
+// finished the script.
+
+
+var	nCounter
+var	addr
+var	currOpcode
+var	callee
+var	iat
+
+
+dbh
+
+bphws	4089F7, "x"
+run
+
+bphwc	4089F7	// call CreateMutexA后
+mov	eax,0
+sto
+sto
+sto
+sto
+mov	eax,0B7	// 修改GetLastError返回为ERROR_ALREADY_EXISTS
+
+/////////////////////////////////////////////////////////////
+//1. 00408A5E int 1
+//   父进程只修改了eip->408A7D
+
+bphws	408A5E, "x"
+run
+
+bphwc	408A5E
+mov	eip,408A7D
+
+
+/////////////////////////////////////////////////////////////////
+// 2. 004075C2   int3 SoftIce后门指令
+//    在softice未激活时,跳过就可以了
+
+bphws	4075C2, "x"
+run
+bphwc	4075C2
+inc	eip
+run
+
+// 注意这里有另外的异常:004075CA  lea eax,eax
+// 是由线程自己的SEH处理的,不用管,从log可以看出,father下一个介入点
+// 在407663
+
+
+////////////////////////////////////////////////////////////////
+// 3. 00407663  sub dword ptr ds:[edx],eax
+//    child自己处理
+
+//bphws	407663, "x"
+esto
+//bphwc	407663
+
+bp	407B75	// 407663处异常的handler
+esto
+bc	eip
+	
+
+////////////////////////////////////////////////////////////////
+// 4. 00405481    div ebx
+//    child自己处理
+
+run
+esto
+
+
+///////////////////////////////////////////////////////////
+// 5. 00405500   repe scas byte ptr es:[edi]
+//    child自己处理
+
+esto
+
+
+// 6. 004056AC   div bl
+
+esto
+
+// 7. 00407D0B   sti
+//    child自己处理
+//    注意在child断到这里时,esi->"\\.\SICE",还会检测SoftIce
+
+esto
+
+
+// 8. 00407D0B   sti(第2次)
+//    child自己处理
+
+esto
+
+// 9. 00407CCF   xlat byte ptr ds:[ebx+al]
+//    child自己处理
+
+esto
+
+// 10. 00407872 xlat byte ptr ds:[ebx+al]
+//     child自己处理
+
+esto
+
+// 11. 00405A43 mov dword ptr ds:[eax],ebx
+//     child自己处理
+
+esto
+
+
+//////////////////////////////////////////////////////////////////////////////
+// 12. 00400161    FFFF            ???    ; Unknown command
+//     child自己处理
+
+esto
+
+// 13. 00408037    int3
+
+bphws	409242, "x"
+esto
+
+
+// 14. 00409242    int1	
+//     00409243    xchg edi,ebx
+//     修改child的eip->40926C
+
+bphwc	409242
+mov	eip,40926C
+
+log "get apis now"
+
+
+// 在壳内(409803)保存真正的api地址,而不是动态分配内存
+// 的地址(指向抽取的api入口码)
+
+bp	406790		// eax->api
+bp	405FCD		// 保存api地址
+bphws	406AB2, "x" 	// dump点
+
+eob	lbl_get_api
+eoe	lbl_get_api
+run
+
+lbl_get_api:
+
+	cmp eip,406790
+	jne lbl_save
+
+	mov addr,eax
+	mov [edx],eax	// 把api地址保存回原iat,下面修复call代码需要
+	log addr
+
+	jmp lbl_continue
+	
+lbl_save:
+
+	cmp eip,405FCD
+	jne lbl_dump
+
+	mov eax,addr
+	log edi
+		
+lbl_continue:
+	
+	esto
+
+lbl_dump:	
+
+	bphwc 406AB2
+	bc 406790
+	bc 405FCD
+	cob
+	coe
+
+	// 修复replaced code全部放到Fix内
+	// 下面patch Nanomites,使程序能以单进程方式运行
+	
+	asm 401B13, "mov eax,[eax]"
+	asm 401B25, "jnz 401B33"
+	asm 401C72, "jnz 401C7D"
+	asm 401B82, "mov esi,[eax]"
+	asm 401B8A, "jnz 401BC6"
+	asm 401B94, "jz 401B9A"
+	asm 401B98, "jnz 401B8C"
+	asm 401B9D, "jnz 401BA3"
+	asm 401BA7, "jz 401BAD"
+	asm 401BBE, "jz 401BD1"
+
+	// 下面7个为没有实际执行到的
+	// asm的opcode错误,用mov
+
+	//asm 401BEE,"mov eax,[ebp-14]"
+	//asm 401BF1,"mov ecx,[eax]"
+	//asm 401BF3,"mov ecx,[ecx]"
+
+	mov [401BEE],#8B45EC8B088B0989#
+
+	//asm 401C02,"mov esp,[ebp-18]"
+	mov [401C02],#8B65E8FF#
+
+
+	//asm 401CC0,"mov ecx,[ebp-10]"
+	mov [401CC0],#8B4DF0E9#
+
+	//asm 401D50,"mov ecx,[ebp-10]"
+	mov [401D50],#8B4DF0E9#
+
+	//asm 401D70,"mov ecx,[ebp-10]"
+	mov [401D70],#8B4DF0E9#
+
+	msg "Run fix and dump it;-)"
+	ret
+
+
+
+
+

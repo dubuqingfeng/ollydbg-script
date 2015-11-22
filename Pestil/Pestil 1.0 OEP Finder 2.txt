@@ -1,0 +1,14 @@
+// Pestil v1.0 OEP Finder script by LaFarge / Team ICU
+
+find eip, #39C475FA83EC80E900ADFAFF#
+bp $RESULT
+run
+bc eip
+bp eip+7
+run
+bc eip
+sti
+an eip
+cmt eip, "This is OEP!"
+msg "This is OEP! Dump and rebuild imports now!."
+ret

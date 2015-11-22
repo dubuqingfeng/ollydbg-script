@@ -1,0 +1,384 @@
+/////////////////////////////////////////////////////////////////
+// FileName    :  CRYPToCRACk's PE Protector V0.9.3.oSc
+// Comment     :  CRYPToCRACk's PE Protector V0.9.2+V0.9.3 UnPacK
+// Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+// Author      :  fly
+// Date        :  2007-01-03 18:00
+// WebSite     :  http://www.unpack.cn  +  http://bbs.unpack.cn
+/////////////////////////////////////////////////////////////////
+#log
+dbh
+
+var X
+var Y
+var Z
+var EP
+var OEP
+var Temp
+var PE_Signature
+var e_lfanew
+var MagicJmp
+var ImageBase
+var SectionVA
+var SectionRVA
+var SectionTable
+var SectionTableSize
+var NumberOfSections
+var OrignalNumberOfSections
+var SizeOfOptionalHeader
+var LastSectionVA
+var LastSectionRSize
+var LastSectionRoffset
+var TlsTable
+var TlsTableVA
+var TlsTableRVA
+var TlsTableSize
+var TlsOrignal
+var SizeOfImage
+var ImportTable
+var ImportTableSize
+var AddressSizeOfImage
+var AddressImportTable
+var AddressImportTableSize
+var CRYPToCRACkSection
+var AddressNumberOfSections
+
+MSGYN "Plz Clear All BreakPoints  +  Set Debugging Option Ignore All Excepions Options  +  Set Events Make first pause at Entry Point !"
+cmp $RESULT, 0
+je TryAgain
+
+
+//CRYPToCRACk's PE Protector V0.9.X______________________________________
+
+find eip, #E801000000E8585B81E300FFFFFF66813B4D5A753784DB75338BF303????813E504500007526#
+cmp $RESULT, eip
+je IsDebuggerPresent
+
+find eip, #5B81E300FFFFFF66813B4D5A75338BF303733C813E5045000075260FB746188BC869C0AD0B0000F7E02DAB5D414B69C9DEC0000003C1#
+cmp $RESULT, eip
+jne NoCRYPToCRACkV093
+
+
+//IsDebuggerPresent______________________________________
+IsDebuggerPresent:
+	
+/*
+CRYPToCRACk's PE Protector V0.9.2 IsDebuggerPresent
+0040D12C     64:A1 18000000     mov eax,dword ptr fs:[18]
+0040D132     8B40 30            mov eax,dword ptr ds:[eax+30]
+0040D135     8A40 02            mov al,byte ptr ds:[eax+2]
+0040D138     C1E0 1A            shl eax,1A
+0040D13B     74 03              je short 0040D140
+0040D13D     58                 pop eax
+0040D13E     FFE0               jmp eax
+*/
+
+find eip, #64A1180000008B40308A4002C1E01A740358FFE0#
+cmp $RESULT, 0
+je CRYPToCRACkV093
+add $RESULT,0F
+jmp FixIsDebuggerPresent
+
+/*
+CRYPToCRACk's PE Protector V0.9.3 IsDebuggerPresent
+0040D11E     64:A1 30000000     mov eax,dword ptr fs:[30]
+0040D124     85C0               test eax,eax
+0040D126     64:8B0D 20000000   mov ecx,dword ptr fs:[20]
+0040D12D     78 04              js short 0040D133
+0040D12F     0FB648 02          movzx ecx,byte ptr ds:[eax+2]
+0040D133     E3 03              jecxz short 0040D138
+0040D135     58                 pop eax
+0040D136     FFE0               jmp eax
+*/
+
+CRYPToCRACkV093:
+find eip, #64A13000000085C0648B0D2000000078040FB64802E30358FFE0#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,15
+
+FixIsDebuggerPresent:
+mov [$RESULT],#EB#
+
+
+//MagicJmp______________________________________
+	
+/*
+0040D306     57                 push edi
+0040D307     FF3424             push dword ptr ss:[esp]
+0040D30A     55                 push ebp
+0040D30B     FF5424 20          call dword ptr ss:[esp+20]
+0040D30F     8B3C24             mov edi,dword ptr ss:[esp]
+0040D312     33C9               xor ecx,ecx
+0040D314     803C39 00          cmp byte ptr ds:[ecx+edi],0
+0040D318     74 07              je short 0040D321
+//Jmp 0040D321         <- MagicJmp
+0040D31A     C60439 00          mov byte ptr ds:[ecx+edi],0
+0040D31E     41                 inc ecx
+0040D31F     EB F3              jmp short 0040D314
+0040D321     83C4 04            add esp,4
+0040D324     EB 0B              jmp short 0040D331
+0040D326     2D 00000080        sub eax,80000000
+0040D32B     50                 push eax
+0040D32C     55                 push ebp
+0040D32D     FF5424 1C          call dword ptr ss:[esp+1C]
+0040D331     5A                 pop edx
+0040D332     59                 pop ecx
+0040D333     5B                 pop ebx
+0040D334     8B7C24 04          mov edi,dword ptr ss:[esp+4]
+0040D338     893C8A             mov dword ptr ds:[edx+ecx*4],edi
+0040D33B     807F 05 55         cmp byte ptr ds:[edi+5],55
+0040D33F     73 0C              jnb short 0040D34D
+0040D341     2B47 01            sub eax,dword ptr ds:[edi+1]
+0040D344     C747 05 81042400   mov dword ptr ds:[edi+5],240481
+0040D34B     EB 1E              jmp short 0040D36B
+0040D34D     807F 05 AA         cmp byte ptr ds:[edi+5],0AA
+0040D351     73 0E              jnb short 0040D361
+0040D353     F7D8               neg eax
+0040D355     0347 01            add eax,dword ptr ds:[edi+1]
+0040D358     C747 05 812C2400   mov dword ptr ds:[edi+5],242C81
+0040D35F     EB 0A              jmp short 0040D36B
+0040D361     3347 01            xor eax,dword ptr ds:[edi+1]
+0040D364     C747 05 81342400   mov dword ptr ds:[edi+5],243481
+0040D36B     8947 08            mov dword ptr ds:[edi+8],eax
+0040D36E     83C7 0D            add edi,0D
+0040D371     877C24 04          xchg dword ptr ss:[esp+4],edi
+0040D375     5F                 pop edi
+0040D376     41                 inc ecx
+0040D377     E9 33FFFFFF        jmp 0040D2AF
+0040D37C     83C6 14            add esi,14
+0040D37F     E9 F9FEFFFF        jmp 0040D27D
+*/
+ 
+find eip, #FF5424208B3C2433C9803C39007407C604390041EBF383C404EB0B#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,0D
+mov MagicJmp,$RESULT
+log MagicJmp
+eob MagicJmp
+bp MagicJmp
+
+esto
+GoOn0:
+esto
+
+MagicJmp:
+cmp eip,MagicJmp
+jne GoOn0
+bc MagicJmp
+mov [MagicJmp],#EB#
+mov ImageBase,ebx
+mov ImportTable,esi
+sub ImportTable,ImageBase
+
+find MagicJmp, #893C8A807F0555730C#
+cmp $RESULT, 0
+je NoFind
+mov [$RESULT],#909090#
+
+
+//EP______________________________________ 
+
+mov Temp,ImageBase
+add Temp,3C
+mov e_lfanew,[Temp]
+log e_lfanew
+
+mov Temp,e_lfanew
+add Temp,ImageBase
+mov PE_Signature,Temp
+log PE_Signature
+
+mov Temp,PE_Signature
+add Temp,28
+mov EP,Temp
+log EP
+
+mov Temp,PE_Signature
+add Temp,80
+mov AddressImportTable,Temp
+log AddressImportTable
+add Temp,4
+mov AddressImportTableSize,Temp
+
+
+//OEP______________________________________ 
+
+/*
+0040D2FE     83C4 0C            add esp,0C
+0040D301     E9 C63DFFFF        jmp 004010CC
+*/
+
+mov Temp,MagicJmp
+sub Temp,1A
+cmp [Temp],E90CC483
+log [Temp]
+je Game
+sub Temp,500
+find Temp, #83C40CE9????????57FF342455FF5424208B3C2433C9803C390074#
+cmp $RESULT, 0
+je NoFind
+
+Game:
+add Temp,3
+eob GameOEP
+bp Temp
+
+esto
+GoOn1:
+esto
+
+GameOEP:
+cmp eip,Temp
+jne GoOn1
+bc Temp
+esti
+
+mov OEP,Temp
+add Temp,1
+mov Temp,[Temp]
+add OEP,Temp
+add OEP,5
+sub OEP,ImageBase
+mov [EP],OEP
+
+
+//FixImportTable______________________________________ 
+
+mov [AddressImportTable],ImportTable
+mov Temp,esi
+sub Temp,ImageBase
+sub Temp,ImportTable
+mov ImportTableSize,Temp
+add ImportTableSize,14
+mov [AddressImportTableSize],ImportTableSize
+
+
+//FixTLS______________________________________ 
+
+mov Temp,PE_Signature
+add Temp,6
+mov AddressNumberOfSections,Temp
+mov NumberOfSections,[Temp]
+and NumberOfSections,0FFFF
+log NumberOfSections
+
+mov Temp,PE_Signature
+add Temp,14
+mov SizeOfOptionalHeader,[Temp]
+and SizeOfOptionalHeader,0FFFF
+
+mov Temp,PE_Signature
+add Temp,SizeOfOptionalHeader
+add Temp,18
+mov SectionTable,Temp
+log SectionTable
+
+mov OrignalNumberOfSections,NumberOfSections
+sub OrignalNumberOfSections,1
+
+mov Temp,eax
+mov CRYPToCRACkSection,SectionTable
+xor eax,eax
+execBug:
+add CRYPToCRACkSection,28
+inc eax
+cmp eax,OrignalNumberOfSections
+JNE execBug
+mov eax,Temp
+log CRYPToCRACkSection
+
+mov Temp,PE_Signature
+add Temp,C0
+mov TlsTable,Temp
+mov TlsTableRVA,[TlsTable]
+cmp TlsTableRVA,0
+je FixSection
+add Temp,4
+mov TlsTableSize,[Temp]
+mov TlsTableVA,TlsTableRVA
+add TlsTableVA,ImageBase
+
+mov Temp,TlsTableSize
+mov X,CRYPToCRACkSection
+sub Temp,4
+add X,C
+
+Scan:
+sub X,28
+cmp SectionTable,X
+ja GameOver
+
+mov LastSectionRoffset,[X]
+mov LastSectionVA,LastSectionRoffset
+add LastSectionVA,ImageBase
+
+ScanOne:
+mov Y,[LastSectionVA]
+mov Z,[TlsTableVA]
+cmp Y,Z
+jne Scan
+add LastSectionVA,4
+add TlsTableVA,4
+sub Temp,4
+cmp Temp,0
+jbe FixTls
+jmp ScanOne
+
+FixTls:
+mov TlsOrignal,LastSectionRoffset	
+mov [TlsTable],TlsOrignal
+log TlsOrignal
+
+
+//FixSection______________________________________ 
+FixSection:
+
+sub NumberOfSections,1
+mov [AddressNumberOfSections],NumberOfSections
+mov [CRYPToCRACkSection],#0000556E5061634B65642E42792E666C79000000687474703A2F2F7777772E756E7061636B2E636E#
+log CRYPToCRACkSection
+mov Temp,CRYPToCRACkSection
+sub Temp,1C
+mov LastSectionRSize,[Temp]
+sub Temp,4
+mov LastSectionRoffset,[Temp]
+mov Temp,LastSectionRoffset
+add Temp,LastSectionRSize
+mov SizeOfImage,Temp
+
+
+//FixSizeOfImage______________________________________ 
+
+mov Temp,PE_Signature
+add Temp,50
+mov AddressSizeOfImage,Temp
+mov [AddressSizeOfImage],SizeOfImage
+
+
+//GameOver______________________________________ 
+GameOver:
+
+MSG "Plz Set  LordPE->Option->Task View ->Select  " Full Dump: force RAW mode "  Only  !    "
+Dump:
+MSGYN  "  OK ,  Plz dump it now !  Dump file will be fixed !  Don't click " Y " before dump . "
+cmp $RESULT, 0
+je Dump
+
+log eip
+cmt eip, "This is the OEP!  Found By: fly "                                                                           
+MSG "Just : OEP !  Your dump file already fiXed .    Good Luck     "
+ret                       
+
+NoCRYPToCRACkV093:
+MSG "Sorry, Maybe It's not CRYPToCRACk's PE Protector V0.9.X !   HeHe    "
+ret	
+
+NoFind:
+MSG "Error! Don't find.     "
+ret
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret
