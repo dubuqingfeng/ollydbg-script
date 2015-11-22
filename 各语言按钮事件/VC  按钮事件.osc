@@ -1,0 +1,19 @@
+var VCAddr
+var VCAEND
+mov VCAddr,401000
+mov VCAEND,402000
+VCloop:
+find VCAddr,#E9????0000E9#
+cmp $RESULT,0
+je Exit
+add $RESULT,00
+bp $RESULT
+add $RESULT,1
+mov VCAddr,$RESULT
+cmp VCAddr,VCAEND
+jge Exit
+jmp VCloop
+Exit:
+eval "VC++按钮事件已经查找完毕"
+msg $RESULT
+ret

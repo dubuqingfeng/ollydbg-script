@@ -1,0 +1,14 @@
+g*/
+var GetProcessHeap
+var E languageAddr
+mov E languageAddr,401000
+find 00401000,#E9??????00#
+cmp $RESULT,0
+
+bp $RESULT
+MSG "按纽事件查找完毕！"
+ret
+
+Exit:
+MSG "脚本运行错误！请检查错误后再继续运行脚本！"
+ret
