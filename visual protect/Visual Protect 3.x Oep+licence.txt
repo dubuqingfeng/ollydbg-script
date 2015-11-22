@@ -1,0 +1,146 @@
+/*Autor: Apuromafo whit idea from others tutorials..
+Date: today
+Team: not have team..im retired but some time read all of others..
+Environment :  WinXP SP2,OllyDbg V1.10,ODbgScript V1.48
+Ignore all exceptions
+Erase all breakpoints
+*/
+var apuromafo
+var APUROMAFO
+var follow
+var follow2
+var tmp
+var tmp2
+var temp
+var temp1
+var en
+var temp2
+var addr
+find eip, #8A0141#
+mov temp, $RESULT
+bphws temp, "x"
+run
+mov APUROMAFO, $RESULT
+mov follow, eax
+log "el serial o clave de encriptacion"
+log "es:"
+log follow
+bphwc temp
+//msg "copy  licence in eax"
+gpa "GetSystemDirectoryA","kernel32.dll"
+bp $RESULT
+run
+bc $RESULT
+find eip, #C20800#
+mov temp, $RESULT
+//log "im go from getsystemdirectory "
+//log temp
+bphws temp, "x"
+run
+bphwc temp
+sti
+find eip, #8B8538FBFFFF#
+mov temp, $RESULT
+find eip, #B941000000#
+mov temp, $RESULT
+//log "stalk"
+//log temp
+bphws temp, "x"
+run
+bphwc temp
+sti
+//msg "can copy licence whit  follow in dump edx"
+mov follow2, edx
+log "el nombre del proyecto,name of proyect"
+log follow2
+//msg "im here"
+find eip, #8B08FF5154#
+mov en, $RESULT
+//log temp
+bphws en, "x"
+run
+bphwc en
+sti
+find eip,#FFFFFFFF#
+mov en,$RESULT
+log "patch in..."
+log en
+mov [en],#00000000#
+//msg "check patching... parchado?"
+sti //aca estamos
+find eip, #8BD98BF28BF833C0#
+cmp $RESULT,0
+je error
+mov tmp, $RESULT
+bphws tmp, "x"
+run
+bphwc tmp
+sti
+find eip, #3B35????????74133B35????????740B5356E8????????8BD8#
+cmp $RESULT,0
+je error
+mov temp1, $RESULT
+//log temp1
+find temp1,#7413#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+find temp1,#740B#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+bphws temp1, "x"
+run
+bphwc temp1
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+//second api redirect
+//log eip
+find eip, #6685C0751D8B4424083905????????75076681FE540174275650#
+cmp $RESULT,0
+je error
+mov temp2, $RESULT
+//log temp2
+find temp2,#751D#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+find temp2,#7507#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+find temp2,#7427#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+rtr
+sti
+find eip, #FF65FC6A00E8????????E9????????A1#
+cmp $RESULT,0
+je error
+mov temp, $RESULT
+bphws temp, "x"
+run
+bphwc temp
+sti
+cmt eip, "<-- OEP found ! one invalid function remaining: GetProcAddress"
+//mov [follow3],edx
+msgyn "analize?? analizo?"
+cmp $RESULT,0
+je analiza
+msg [follow]
+msg [follow2]
+analiza:
+log "se analizo!"
+an eip
+mov edx, 0
+mov edx,[APUROMAFO]
+ret

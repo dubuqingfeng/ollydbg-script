@@ -1,0 +1,79 @@
+////////////////////////////////////////////////////////// 
+// !EP Exe Pack (Software Compress) 1.2
+// Get Thunk Table Addresses, Keep Original Thunk Table, 
+// Calculate Thunk Table Size, Find OEP
+// Written by Fungus
+// Date: 2006-31-10
+//////////////////////////////////////////////////////////
+
+var addr1            // temp variable for thunk table origin
+var addr2            // temp variable for think table end
+var org                // variable for thunk table origin
+var end               // variable for thunk table end
+var size               // variable for thunk table size
+var oep               // variable for OEP
+var temp
+
+eob getthunk
+findop eip,#61#
+bphws $RESULT,"x"
+mov temp,$RESULT
+run
+
+getthunk:             // get thunk table origin, end, and size
+
+eob dothunk
+bphwc temp
+findop eip,#0305#
+bphws $RESULT,"x"
+mov temp,$RESULT
+run
+
+dothunk:
+
+eob findoep
+
+bphwc temp
+sto
+mov addr1,eax      // get thunk table origin
+mov org,eax
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+mov addr2,ebx      // get thunk table end
+mov end,ebx
+sub addr2,addr1    // calculate size
+mov size,addr2
+find eip,#8907#
+fill $RESULT,2,90 // keep original thunk table
+find eip,#61#
+bphws $RESULT,"x"
+mov temp,$RESULT
+run
+
+findoep:                // find OEP
+
+bphwc temp
+sto
+sto
+sti
+mov oep,eip
+eval "OEP = {oep}"
+msg $RESULT
+eval "Start of Thunk Table = {org}"
+msg $RESULT
+eval "End of Thunk Table = {end}"
+msg $RESULT
+eval "Size of Thunk Table = {size}"
+msg $RESULT
+ret
+
+/end
+
+

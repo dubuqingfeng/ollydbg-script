@@ -1,0 +1,593 @@
+/*
+Script written by VolX
+
+main purpose : locate OEP 
+
+Debugging options : 1. In Exceptions page Ignore all exceptions expcet INT3 breaks.
+                    2. In Events page select Make first pause at System Breakpoint
+
+Tools : OllyDbg 1.10(modified)+ HideOD (or other similar plugin)
+
+Operating System : WinXP SP2(SP1) , won't work under win2000.
+                  
+Thanks : Oleh Yuschuk - author of OllyDbg
+         SHaG - author of OllyScript
+         Kanxue - author of HideOD
+*/
+
+
+var tmp1
+var tmp2
+var tmp3
+var tmp4
+var tmp5
+var tmp6
+var tmp7
+var tmp8
+var tmp9
+var imgbase
+var signVA
+var 1stsecsize
+var 1stsecbase
+var rangeaddr
+var range
+var SizeofImage
+var fs30
+var LoaderData
+var ESP_EP
+var EPAddr
+var 1sthandle
+var freeloc
+var hOEP
+var Delphi10
+var RTaddr
+var CTpatch
+var kfreeloc
+var RPMpatch
+var ZCpatch
+var newZCaddr
+var config1
+var noncrypted
+var ori1
+var ori2
+var ori3
+var ori4
+var ori5
+
+cmp $VERSION, "1.47"
+jb odbgver
+BPHWCALL
+mov tmp1, eax
+mov tmp2, eip
+gpa "IsDebuggerPresent", "kernel32.dll"
+mov tmp3, $RESULT
+cmp tmp3, 0
+je error
+mov eip, tmp3
+sti
+sti
+mov tmp4, eax        //PEB
+sti
+mov eip, tmp2
+mov eax, tmp1
+mov fs30, tmp4       //PEB
+log fs30
+mov tmp1, fs30
+add tmp1, 68           //NtGlobalFlag
+mov [tmp1], 0          
+mov LoaderData, [fs30+0c]
+log LoaderData
+mov tmp2, [fs30+18]    //PEB+18 Processheap
+add tmp2, c
+fill tmp2, 8, 00       //Clear Flags and ForceFlags
+mov tmp2, [fs30+8]     //PEB+8 ImageBaseAddress
+mov imgbase, tmp2
+log imgbase
+mov tmp1, [imgbase+3C]    //40003C
+add tmp1, imgbase         //tmp1=signature VA
+mov signVA, tmp1
+mov tmp2, [tmp1+C0]       //TLS table
+add tmp2, imgbase
+mov tmp1, [tmp2+0C]
+mov tmp4, [tmp1]
+log tmp4                  //CallBackTableVA
+mov tmp2, [signVA+28]
+add tmp2, imgbase
+mov EPAddr, tmp2
+log EPAddr                  //EP
+mov SizeofImage, [signVA+50]
+log SizeofImage
+mov 1stsecsize, [signVA+100]
+log 1stsecsize
+mov 1stsecbase, [signVA+104]
+add 1stsecbase, imgbase
+log 1stsecbase
+mov tmp1, tmp4
+sub tmp1, EPAddr
+cmp tmp1, 10
+jb lab1
+mov config1, 1
+
+lab1:
+log config1
+BPHWS tmp4, "x"
+run
+BPHWC tmp4
+gpa "CreateThread", "kernel32.dll"
+mov tmp1, $RESULT
+GMEMI tmp1, MEMORYBASE
+mov tmp2, $RESULT
+GMEMI tmp1, MEMORYSIZE
+mov tmp3, $RESULT
+mov tmp4, tmp3
+sub tmp4, 1000
+add tmp4, tmp2
+find tmp4, #00000000000000000000000000000000#
+mov tmp2, $RESULT
+cmp tmp2, 0
+je error
+and tmp2, 0FFFFFFF0
+add tmp2, 30
+mov kfreeloc, tmp2
+find tmp1, #FF751C#
+mov CTpatch, $RESULT
+cmp CTpatch, 0
+je error
+mov ori1, [CTpatch]
+mov ori2, [CTpatch+4]
+eval "push {kfreeloc}"
+asm CTpatch, $RESULT
+mov tmp1, CTpatch
+add tmp1, 5
+mov [tmp1], #C3#
+mov [tmp2], #FF751CC7451804000000FF7518#
+add tmp2, 0D
+add tmp1, 1
+eval "push {tmp1}"
+asm tmp2, $RESULT
+add tmp2, 5
+mov [tmp2], #C3#
+gpa "ReadProcessMemory", "kernel32.dll"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+find tmp1, #FF7510FF750C#
+mov RPMpatch, $RESULT
+cmp RPMpatch, 0
+je error
+mov ori3, [RPMpatch]
+mov ori4, [RPMpatch+4]
+mov tmp5, kfreeloc
+add tmp5, 30
+eval "push {tmp5}"
+asm RPMpatch, $RESULT
+mov tmp2, RPMpatch
+add tmp2, 5
+mov [tmp2], #C3#
+mov [tmp5], #C7450C00004000FF7510FF750C#
+mov tmp1, tmp5
+add tmp1, 3
+mov [tmp1], imgbase
+add tmp1, 0A
+add tmp2, 1
+eval "push {tmp2}"
+asm tmp1, $RESULT
+add tmp1, 5
+mov [tmp1], #C3#
+gpa "ResumeThread", "kernel32.dll"
+mov RTaddr, $RESULT
+cmp RTaddr, 0
+je error
+mov ori5, [RTaddr]
+mov [RTaddr], #C20400#
+gpa "ZwClose", "ntdll.dll"
+mov ZCpatch, $RESULT
+GMEMI ZCpatch, MEMORYBASE
+mov tmp2, $RESULT
+GMEMI ZCpatch, MEMORYSIZE
+mov tmp3, $RESULT
+mov tmp4, tmp3
+sub tmp4, 1000
+add tmp4, tmp2
+find tmp4, #00000000000000000000000000000000#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+and tmp1, 0FFFFFFF0
+add tmp1, 30
+mov newZCaddr, tmp1
+log newZCaddr
+mov [newZCaddr], #817C2404001000007203C20400#
+find ZCpatch, #C20400#
+mov tmp3, $RESULT
+cmp tmp3, 0
+je error
+sub tmp3, ZCpatch      //bytes to copy
+mov tmp1, newZCaddr
+add tmp1, 0D
+mov tmp2, ZCpatch
+
+loop2:
+cmp tmp3, 0
+je lab2
+mov tmp4, [tmp2], 1
+mov [tmp1], tmp4
+add tmp1, 1
+add tmp2, 1
+sub tmp3, 1
+jmp loop2
+
+lab2:
+eval "push {newZCaddr}"
+asm ZCpatch, $RESULT
+mov tmp2, ZCpatch
+add tmp2, 5
+mov [tmp2], #C3#
+log tmp1
+mov [tmp1], #C20400#
+gpa "LdrLoadDll", "ntdll.dll"
+mov tmp8, $RESULT
+log tmp8
+bc EPAddr
+cmp config1, 1
+jne lab3
+find 1stsecbase, #558BEC#
+mov tmp1, $RESULT
+cmp tmp1, 0
+jne lab2_1
+find 1stsecbase, #33C0#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je lab3
+
+lab2_1:
+mov noncrypted, 1
+jmp lab23
+
+lab3:
+bp tmp8
+eoe lab4
+eob lab4
+esto
+
+lab4:
+cmp eip, tmp8 
+je lab20
+mov tmp1, eip
+sub tmp1, 1
+mov tmp1, [tmp1]
+and tmp1, FF
+cmp tmp1, CC
+je lab4_1
+esto
+
+lab4_1:
+BPHWCALL
+esto
+
+lab20:
+bc tmp8
+BPHWCALL
+gpa "ZwTerminateProcess", "ntdll.dll"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+mov tmp2, esp
+add tmp2, 2C
+mov tmp3, 4
+
+loop3:
+cmp tmp3, 0
+je lab23
+mov tmp4, [tmp2]
+cmp tmp1, tmp4
+je lab21
+add tmp2, 4
+sub tmp3, 1
+jmp loop3
+
+lab21:
+msg "Shit, debugger has been detected!"
+pause
+jmp end
+
+lab23:
+cmp eip, EPAddr
+je lab37
+bp EPAddr
+eoe lab24
+eob lab24
+esto
+
+lab24:
+cmp eip, EPAddr
+je lab37
+esto
+
+lab37:
+mov ESP_EP, esp
+log ESP_EP
+BPHWCALL
+bc EPAddr
+GMEMI eip, MEMORYBASE
+mov codeseg, $RESULT
+mov tmp1, 1stsecsize
+add tmp1, 1stsecbase
+add tmp1, 1
+find tmp1, #558bec#
+mov tmp2, $RESULT
+cmp tmp2, 0
+je lab37_1
+mov Delphi10, 1
+
+lab37_1:
+cmp noncrypted, 1
+je lab54
+mov tmp1, codeseg
+sub tmp1, 1
+GMEMI tmp1, MEMORYBASE
+mov rangeaddr, $RESULT
+GMEMI tmp1, MEMORYSIZE
+mov range, $RESULT
+bprm rangeaddr, range
+eob lab38
+eoe lab39
+esto
+
+lab38:
+mov tmp1, eip
+sub tmp1, 1
+mov tmp2, [tmp1], 1
+log tmp2
+cmp tmp2, CC
+je lab39
+log eax
+log ecx
+log edx
+mov tmp1, rangeaddr
+add tmp1, range
+cmp eip, tmp1
+ja lab39
+cmp eip, rangeaddr
+jb lab39
+jmp lab49
+
+lab39:
+find eip, #8B12F62A3CA4#   //search "mov edx,[edx],"imul byte [edx]", "cmp al, A4"
+mov tmp1, $RESULT
+log tmp1
+esto
+
+lab49:
+cmp ecx, edx
+jne lab49_5
+cmp ecx, eip
+je lab49_3
+mov tmp1, ecx
+mov tmp3, [tmp1], 1
+cmp tmp3, 0E8
+jne lab49_2
+mov tmp2, ecx
+add tmp2, 5
+mov tmp3, [esp]
+cmp tmp2, tmp3
+je lab49_1
+mov tmp3, [esp+4]      //CSE HTML Validator v8.0403
+cmp tmp2, tmp3
+jne lab49_5
+add esp, 8
+mov eip, ecx
+jmp lab49_3
+
+lab49_1:
+add esp, 4
+mov eip, ecx
+jmp lab49_3
+
+lab49_2:
+cmp tmp3, 0E9
+jne lab49_4
+mov tmp2, [tmp1+1]
+add tmp1, tmp2
+add tmp1, 5
+log tmp1
+cmp tmp1, eip
+jne lab49_5
+cmp ESP_EP, esp
+jne lab49_5
+cmp ecx, 1stsecbase
+jb lab49_5
+mov tmp2, 1stsecbase 
+add tmp2, 1stsecsize
+cmp ecx, tmp2
+ja lab49_5
+mov hOEP, eip
+jmp lab55
+
+lab49_3:
+mov hOEP, ecx
+jmp lab55
+
+lab49_4:
+findop ecx, #E9#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je lab49_5
+mov tmp2, [tmp1+1]
+add tmp2, tmp1
+add tmp2, 5
+log tmp2
+cmp tmp2, eip
+jne lab49_5
+mov eip, ecx
+mov esp, ESP_EP
+mov hOEP, ecx
+jmp lab55
+
+lab49_5:
+eob lab38
+eoe lab39
+esto
+
+lab54:
+mov hOEP, EPAddr
+
+lab55:
+mov tmp1, LoaderData
+add tmp1, 60
+mov [tmp1], SizeofImage     //correct Size of image
+bpmc
+mov range, 1stsecsize
+cmp Delphi10, 1
+jne lab55_1
+mov tmp1, 1stsecsize
+add tmp1, 1stsecbase
+add tmp1, 1
+GMEMI tmp1, MEMORYSIZE
+add range, $RESULT
+log range
+
+lab55_1:
+mov tmp7, eip
+alloc 1000
+mov freeloc, $RESULT
+mov tmp1, freeloc
+mov [tmp1], #609C33C0B0E9B900600000BF00104000F2AE8B1703D783C20481FAE5FB4000740F83F90075EA9D61686E614E00C30000#
+add tmp1, 30
+mov [tmp1], #C70550003F0001000000893D54003F00EBE40000000000000000000000000000#
+mov tmp1, freeloc
+add tmp1, 7     //7
+mov [tmp1], range
+add tmp1, 5     //C
+mov [tmp1], 1stsecbase
+add tmp1, 0F    //1B
+mov [tmp1], hOEP
+add tmp1, 0E    //29
+mov [tmp1], tmp7
+mov tmp2, freeloc 
+add tmp2, 50    //50
+mov tmp3, tmp2
+add tmp3, 4     //54
+add tmp1, 09    //32
+mov [tmp1], tmp2
+add tmp1, 0A    //3C
+mov [tmp1], tmp3
+mov eip, freeloc
+bp tmp7
+eob lab55_2
+eoe lab55_2
+run
+
+lab55_2:
+cmp eip, tmp7
+je lab56
+esto
+
+lab56:
+bc tmp7
+mov tmp1, [tmp2]    //stolen code flag in freeloc
+cmp tmp1, 1
+je lab60
+mov tmp4, 0
+bprm 1stsecbase, range
+eob lab57
+eoe lab57
+esto
+
+lab57:
+mov tmp1, esp
+cmp ESP_EP, tmp1
+je lab59
+cmp tmp4, 8
+je lab57_1
+add tmp4, 1
+esto
+
+lab57_1:
+bpmc
+mov tmp3, ESP_EP
+sub tmp3, 4
+bphws tmp3, "r"
+eob lab58
+eoe lab58
+esto
+
+lab58:
+cmp ESP_EP, esp
+je lab58_1
+esto
+
+lab58_1:
+mov tmp1, eip
+cmp tmp1, 1stsecbase
+jb lab58_2
+mov tmp2, 1stsecbase
+add tmp2, range
+cmp tmp1, tmp2
+jb lab59
+
+lab58_2:
+bphwc tmp3
+bprm 1stsecbase, range
+mov tmp4, 0
+eob lab57
+eoe lab57
+esto
+
+lab59:
+bpmc
+BPHWCALL
+cmp noncrypted, 1
+je lab59_1
+msg "OEP Found."
+//pause
+jmp lab59_2
+
+lab59_1:
+msg "OEP Found, program code is not encrypted."
+//pause
+
+lab59_2:
+mov tmp7, eip
+jmp end
+
+lab60:
+mov tmp1, [tmp3]
+sub tmp1, 1
+eval "OEP == {tmp1}"
+cmt eip, $RESULT
+cmp noncrypted, 1
+je lab60_1
+msg "Stolen Code start, address of OEP is in comment column."
+//pause
+jmp lab60_2
+
+lab60_1:
+msg "Stolen Code start, program code is not encrypted, address of OEP is in comment column."
+//pause
+
+lab60_2:
+mov tmp7, eip
+
+end:
+pause
+log noncrypted
+mov [RTaddr], ori5
+mov tmp1, CTpatch
+mov [tmp1], ori1
+add tmp1, 4
+mov [tmp1], ori2
+mov tmp1, RPMpatch
+mov [tmp1], ori3
+add tmp1, 4
+mov [tmp1], ori4
+ret
+
+odbgver:
+msg "This script work with ODbgscript 1.47 or above"
+jmp end
+
+error:
+msg "error"
+pause
+jmp end

@@ -1,0 +1,113 @@
+//SDPR 1.12 Pro - redirecting decryption calls
+
+var oep
+var addr
+var pointer
+var type
+
+mov oep,eip
+mov addr,401000
+
+
+
+LABEL_01:  
+    find addr,#E8??????FFEB11#
+    cmp $RESULT,0
+    je END_01
+    mov addr,$RESULT
+    
+    add addr,1
+    mov pointer,addr
+    mov pointer,[pointer]
+    add pointer,addr
+    add pointer,4
+    mov type,pointer
+    add type,1
+    mov type,[type]
+    add type,pointer
+    add type,5
+
+cmp type,518738
+je  FIX_01
+cmp type,5185E1
+je  FIX_01
+cmp type,5188D6
+je  FIX_01
+cmp type,5187F4
+je  FIX_01
+jmp LABEL_01
+
+FIX_01:
+sub type,addr
+sub type,4
+mov [addr],type
+jmp LABEL_01
+END_01:
+
+
+
+
+
+
+mov addr,401000
+
+LABEL_02:          
+    find addr,#E8??????FFEB11#
+    cmp $RESULT,0
+    je END_02
+    mov addr,$RESULT
+    
+    add addr,1
+    mov pointer,addr
+    mov pointer,[pointer]
+    add pointer,addr
+    add pointer,4
+    mov type,pointer
+    add type,1
+    mov type,[type]
+    add type,pointer
+    add type,5
+
+cmp type,14622E
+je  FIX_02
+cmp type,146233
+je  FIX_02
+cmp type,146238
+je  FIX_02
+cmp type,14623D
+je  FIX_02
+cmp type,146242
+je  FIX_02
+cmp type,146247
+je  FIX_02
+jmp LABEL_02
+
+FIX_02:
+
+mov pointer,type
+add pointer,1
+mov pointer,[pointer]
+add pointer,type
+add pointer,5
+sub pointer,addr
+sub pointer,4
+mov [addr],pointer
+
+jmp LABEL_02
+END_02:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ret

@@ -1,0 +1,33 @@
+var oep
+var gp
+ask "Enter address code section vp.dll"
+cmp $RESULT,0
+je quit
+
+mov bdl,$RESULT
+GMEMI bdl, MEMORYBASE
+mov bdl,$RESULT
+find bdl,#E8????????FF65FC#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT+5
+
+/*
+003C5FED    E8 46BCFFFF     CALL VP.003C1C38
+003C5FF2    FF65 FC         JMP DWORD PTR SS:[EBP-4]
+
+*/
+find bdl,#8A1A428BF381E6FF0000008BCE8D45F8#
+cmp $RESULT,0
+je quit
+mov gp,$RESULT+33
+asm gp, "Call GetProcAddress"
+bp oep
+erun
+sti
+cmt eip,"<--oep"
+msg " Oep Faund Iat fix"
+ret
+quit:
+msg "Not Visage"
+ret

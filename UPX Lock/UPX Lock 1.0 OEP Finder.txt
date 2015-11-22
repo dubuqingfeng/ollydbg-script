@@ -1,0 +1,63 @@
+/*
+
+; //////////////////////////////////////////////////////////////
+;
+; UPXLock 1.0 by CyberDoom/TeamX unpacking script 
+;
+; Script by: ap0x
+; WebSite:   http://ap0x.headcoders.net
+; When?  :   8:52 PM 4/25/2006
+;
+; Settings: 
+;      Only check INT3 break under debugging options/exceptions
+; -------------------------------------------------------------
+;
+;
+;     Visit Reversing Labs at http://ap0x.headcoders.net
+;
+; //////////////////////////////////////////////////////////////
+
+*/
+
+var cpa
+find eip, #60E8????????61#
+cmp $RESULT,0 
+je _notUPXLock
+mov cpa,$RESULT
+add cpa,6
+an eip
+bp cpa
+run
+bc cpa
+find eip, #E2FD6168????????C3#
+cmp $RESULT,0 
+je _notUPXLock
+mov cpa,$RESULT
+an eip
+bp cpa
+run
+bc cpa
+add cpa,3
+bp cpa
+run
+bc cpa
+sto
+sto
+cmt eip, "This is the UPX entry point!"
+find eip, #61#
+cmp $RESULT,0 
+je _notUPXLock
+mov cpa,$RESULT
+an eip
+bp cpa
+run
+bc cpa
+sto
+sto
+cmt eip, "This is the original entry point!"
+an eip
+ret
+_notUPXLock:
+msg "Error, this not UPXLock!"
+ret
+

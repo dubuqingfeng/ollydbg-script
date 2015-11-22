@@ -1,0 +1,41 @@
+//Securom 7.x Jump Bridge & Crypted Code Fixer by Human/MiNT
+var oep
+var oldesp
+var scan
+var tmp
+
+mov oep,eip
+mov oldesp,esp
+mov scan,401000
+
+scan_bridge:
+find scan,#FF25??????06#
+cmp $RESULT,0
+je end_bridge
+mov eip,$RESULT
+mov scan,$RESULT+2
+mov tmp,[scan]
+eob do_bridge
+
+bphws tmp,"w"
+run
+
+do_bridge:
+bphwc tmp
+eob do_bridge2
+bphws [tmp],"x"
+do_crypted:
+run
+
+do_bridge2:
+cmp [eip],E8,1
+je do_crypted
+bphwc [tmp]
+mov esp,oldesp
+jmp scan_bridge
+
+end_bridge:
+mov eip,oep
+tick
+log $RESULT
+ret

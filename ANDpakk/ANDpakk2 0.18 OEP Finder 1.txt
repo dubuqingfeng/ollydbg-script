@@ -1,0 +1,31 @@
+/* 
+ANDpakk2 (apk2) 0.18 OEP Finder
+Script   by  FobnN
+www.fobnn.com
+*/
+msg "请删除原有断点，忽略所有异常"
+findop eip, #C3#
+go $RESULT
+sto
+findop eip, #C3#
+go $RESULT
+sto
+findop eip, #E9#
+go $RESULT
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+findop eip, #C3#
+go $RESULT
+sto
+cmt eip, "请查看是否为OEP!"
+msg "请修复DUMP,修复IAT"
+ret

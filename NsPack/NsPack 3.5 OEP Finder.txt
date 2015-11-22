@@ -1,0 +1,46 @@
+/*
+Avant d'utiliser ce script, vous devez aller dans les options de olly, 
+dans -> debugging options et cocher toutes les erreurs!
+
+Ce script pourra peut-être marcher sur d'autres versions de Nspack, a essayer
+*/
+
+
+
+/*
+	============================
+	                .:[OllyScript Editor v2.0]:.
+	      Author: Goldocrack 30 mars 2006
+	      Packer: Nspack 3.5
+	      Script for: Nspack 3.5
+	      Level: Easy
+	      Date: jeudi 30 mars 2006
+                  http://xtx.free.fr
+                  http://s141422204.onlinehome.fr/forum/
+                  Merci à tous 
+	 ============================
+						*/
+
+
+
+var label
+
+sto 
+sto 
+bphws esp,"r"
+run  
+sto 
+an eip
+cmt eip, " Tu es a l'entry point  !"
+msgyn " Veux-tu enregistrer un fichier dumpe nomme unpacked.exe sur c:\    N'oublie pas les imports avec imprec pour que le dump soit fonctionnel!                                                                                                           Goldocrack 2006!"
+cmp $RESULT,1 
+je label
+msg "N'oublie pas les imports avec imprec pour que le dump soit fonctionnel!"
+ret 
+
+label:
+dpe "c:\unpacked.exe",eip
+ret
+
+
+ 

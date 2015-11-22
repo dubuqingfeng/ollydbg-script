@@ -1,0 +1,219 @@
+/*
+---------------------------------------------------------
+ SDProtector Pro 1.12 - OEP script for tutorial (haggar)
+---------------------------------------------------------
+ Script just finds stolen code.
+---------------------------------------------------------
+*/
+
+
+
+var SDP_base
+var GetVersion
+var CreateFile
+var IsDebugger
+var Snapshot
+var SystemInfo
+var Unhandled
+var GetTick
+var ModHandle
+
+
+mov    SDP_base,eip
+
+gpa    "GetVersion","kernel32.dll"
+mov    GetVersion,$RESULT
+findop GetVersion,#c3#
+mov    GetVersion,$RESULT
+
+gpa    "CreateFileA","kernel32.dll"
+mov    CreateFile,$RESULT
+findop CreateFile,#C21C00#
+mov    CreateFile,$RESULT
+
+gpa    "IsDebuggerPresent","kernel32.dll"
+mov    IsDebugger,$RESULT
+findop IsDebugger,#c3#
+mov    IsDebugger,$RESULT
+
+gpa    "CreateToolhelp32Snapshot","kernel32.dll"
+mov    Snapshot,$RESULT
+findop Snapshot,#c20800#
+mov    Snapshot,$RESULT
+
+gpa    "GetSystemInfo","kernel32.dll"
+mov    SystemInfo,$RESULT
+findop SystemInfo,#C20400#
+mov    SystemInfo,$RESULT
+
+gpa    "UnhandledExceptionFilter","kernel32.dll"
+find   $RESULT,#50FF15????????85C00f8C#
+mov    Unhandled,$RESULT
+
+gpa    "GetTickCount","kernel32.dll"
+mov    GetTick,$RESULT
+findop GetTick,#C3#
+mov    GetTick,$RESULT
+
+gpa    "GetModuleHandleA","kernel32.dll"
+mov    ModHandle,$RESULT
+findop ModHandle,#c20400#
+mov    ModHandle,$RESULT
+
+
+
+
+//-------- To the ZwQueryInformationProcess,custom IsDebuggerPresent -------
+bp   GetVersion
+esto
+esto
+esto
+esto 
+mov  eax,80000001
+bc   eip
+
+
+//------------------------- Temporary file check --------------------------
+bp   CreateFile
+esto
+bc   eip
+sti
+find eip,#837C241C0C7376E8#
+bp   $RESULT
+esto
+bc   eip
+add  eip,7d
+mov  $RESULT,eip
+add  $RESULT,32
+bp   $RESULT
+esto
+bc   eip
+mov  edi,1234
+
+
+//--------------------- IsDebuggerPresent check ------------------------
+bp  IsDebugger
+esto
+bc  eip
+mov eax,0
+
+
+//--------------------- CreateToolhelp32Snapshot ------------------------
+bp  Snapshot
+esto
+bc  eip
+mov eax,0
+
+
+//---------------------- Kill Monitoring Threads ------------------------
+bp     SystemInfo
+esto
+bc     eip
+sti
+mov    $RESULT,esp
+add    $RESULT,24
+mov    [$RESULT],0
+sti
+sti
+mov    [$RESULT],1
+
+
+//------------------- UnhandledExceptionFilter trick --------------------
+bp     Unhandled
+esto
+mov    eax,0
+bc     eip
+
+
+//--------------------- CreateFileA for drivers check -------------------
+bp   CreateFile
+esto              //First time it opens itself.
+esto
+bc   eip
+sti
+add  eip,0cc
+
+
+//----------------- GetTickCount initialization stuff -------------------
+bp   GetTick
+esto
+mov  eax,3
+mov  edx,2
+mov  esi,1
+esto
+mov  eax,3
+mov  edx,2
+mov  esi,1
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+mov  eax,211
+esto
+mov  eax,3
+mov  edx,2
+mov  esi,1
+bc   eip
+
+
+//----------------- Registration, nag window , reg keys -------------------
+bp   GetVersion
+esto
+esto
+bc   eip
+rtr
+sti
+rtr
+
+
+//----------------------- Find stolen OEP code -----------------------------
+bp   GetTick
+esto
+esto
+esto
+esto
+bc   eip
+
+bp   ModHandle
+esto
+esto
+bc   eip
+sti
+
+find SDP_base,#58054BFFFFFF8038E90F85????FFFFC600E89D61FFE0#
+add  $RESULT,14
+bp   $RESULT
+esto
+bc   eip
+
+
+
+
+ret
+ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

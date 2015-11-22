@@ -1,0 +1,161 @@
+///////////////////////////////////////////////////////////////////////////////////
+// FileName    :  EncryptPE_2007.12.1.txt
+// Comment     :  EncryptPE V2.2007.12.1 S方式完美脱壳 0.2
+// Environment :  WinXP SP2,LifeDbg V1.4, OllyScript 1.65.2 
+// Author      :  softtip
+// Date        :  2008-2-18
+// WebSite     :  http://www.unpack.cn
+///////////////////////////////////////////////////////////////////////////////////
+var patch1
+var OEP
+var baseaddress
+var RVA
+var RVASIZE
+
+// 注意：须设置忽略0EEDFADE异常
+//运行结束以后alt+l查看记录显示oep和rva信息
+//如果是dll文件请自行先载入dll入od以后下硬件断点7120964C，再次载入dll再运行脚本
+//脚本自动寻找OEP,修复IAT，跳过注册框，修复ReplaceCode，修复EmbeCode，自动保存RVA重定位数据
+Start:
+    cmp $VERSION, "1.48" 
+    jb version
+    ask "请输入程序基值，例如400000或者10000000"
+    cmp $RESULT,0
+    je end
+    mov baseaddress,$RESULT
+
+next:    
+gpa "IsDebuggerPresent","kernel32.dll"
+
+ISDEBUGGER:
+bp $RESULT
+esto
+bc $RESULT
+
+    mov  patch1 ,7120B101
+    mov [patch1],#E9FA9F0100#
+    mov  patch1 ,712059F0
+    mov [patch1],#90E9#
+    mov  patch1 ,71207968
+    mov [patch1],#EB5E#
+    mov  patch1 ,7120B1DA
+    mov [patch1],#9090909090#
+    mov  patch1 ,7120B266
+    mov [patch1],#E9B59E0100#
+    mov  patch1 ,7120B4DD
+    mov [patch1],#9090#
+    mov patch1 ,712082ED
+    mov [patch1],#E9AECD01009090#
+    mov  patch1 ,7120B27A
+    mov [patch1],#9090909090#
+    mov  patch1, 71207105
+    mov [patch1],#EB0B#
+    mov patch1 ,711f94B1
+    mov [patch1],#E9A600000090#
+    mov  patch1 ,7120B287
+    mov [patch1],#9090#
+    mov patch1 ,711F9054
+    mov [patch1],#B201#
+    mov  patch1 ,71209182
+    mov [patch1],#B00090#
+    mov patch1 ,711F91EF
+    mov [patch1],#8B25D1502271C3909090#
+    mov  patch1 ,7120B2C7
+    mov [patch1],#E9749E0100#
+    mov  patch1 ,7120B31C
+    mov [patch1],#9090#
+    mov  patch1, 711fdc15
+    mov [patch1],#7400#
+    mov  patch1 ,711FDC23
+    mov [patch1],#B00090#
+    mov  patch1 ,7120B4E4
+    mov [patch1],#E9979C0100#
+    mov  patch1 ,7120B4C6
+    mov [patch1],#9090909090#
+    mov  patch1, 712070f6
+    mov [patch1],#7400#
+    mov  patch1 ,7120B50E
+    mov [patch1],#EB05#
+    mov  patch1 ,711FCC59
+    mov [patch1],#00#
+    mov  patch1 ,71209172
+    mov [patch1],#7400#
+    mov patch1 ,712084b3
+    mov [patch1],#E908CD01009090#
+    mov patch1 ,711f92b9
+    mov [patch1],#B001#
+    mov  patch1, 71205b74    
+    mov [patch1],#EB7E#
+    mov patch1 ,711f955C
+    mov [patch1],#8B25F1512271C39090#
+    mov  patch1 ,711F8E32
+    mov [patch1],#9090909090#
+    mov  patch1 ,711F8E41
+    mov [patch1],#9090#
+    mov  patch1, 71206239
+    mov [patch1],#00#
+    mov  patch1 ,7120B83D
+    mov [patch1],#B00090#
+    mov  patch1 ,711F5E2D
+    mov [patch1],#909090909090#
+    mov  patch1 ,711F5E36
+    mov [patch1],#909090909090#
+    mov  patch1 ,7120B41F
+    mov [patch1],#9090#
+    mov  patch1, 711f7490
+    mov [patch1],#750E#
+    mov  patch1 ,711F5E43
+    mov [patch1],#909090909090#
+    mov  patch1 ,711F5E63
+    mov [patch1],#9090#
+    mov patch1 ,711f949b
+    mov [patch1],#E9BC00000090#
+    mov  patch1 ,711F5E89
+    mov [patch1],#9090#
+    mov  patch1 ,711FC214
+    mov [patch1],#C3#
+    mov  patch1 ,711F8E74
+    mov [patch1],#8B2573512271C3#
+    mov  patch1 ,7120B506
+    mov [patch1],#E99B9C0100#
+    mov  patch1 ,71225100
+    mov [patch1],#609C8B7E0C81C7000000108BF08B4EFCF3A49D61E8AFFEEFFFE9E85FFEFF0000609C8B75C88B4EFC8B3B81C702000010F3A49D618B45C8E92F61FEFF00000000E88F2DFEFF609C892573512271832D7351227104FFD08BF08B4EFC3E8B7DB8890790909090909090909090909D61E95961FEFFFCF40700000000000000000090C70000000000E95E63FEFF900000000000000000000000000000000000900000000000000000A1443E2271C70000000000E95563FEFF00000000000000000000609C8925F1512271832DF15122710448FFD08B3083C0168B38668916897E029D61FF0424FF4C2408E9CD32FEFF#
+    mov patch1 ,712250A0
+    mov [patch1],#609C8925D1502271832DD15022710448FFD0C740FA00000000C740FC000000009D61FF0424FF4C2408E92632FEFF#
+    mov patch1 ,71225107
+    mov [patch1],baseaddress
+    add baseaddress,2
+    mov patch1 ,7122512c
+    mov [patch1],baseaddress
+
+    bp 7120B39F
+    esto
+    bc 7120B39F
+    mov RVA,edx
+    bp 7120B3A8
+    esto
+    bc 7120B3A8
+    mov RVASIZE,edx
+    bp 71209687
+    esto
+    bc 71209687
+    mov OEP,eax
+    BP OEP
+    ESTO
+    BC OEP
+    cmt eip,"This is the OEP! "
+    sub OEP,baseaddress
+    add OEP,2
+    log OEP, "OEP = "
+    cmp RVASIZE,0
+    je end
+    log RVA, "重定位表的RVA地址 = "
+    log RVASIZE, "重定位表的大小 = "
+    jmp end
+
+version:
+    msg "插件版本过低"  
+    ret
+
+end:
+   ret

@@ -1,0 +1,64 @@
+// Petite2.2 oep finder 
+// by Mr.David        
+// www.chinadfcg.com
+
+msg "请设置OD异常设置忽略内存和单步异常，然后从菜单处继续运行脚本。"
+
+pause
+
+var addr1
+
+gpa "GetProcAddress","kernel32.dll"
+mov addr1,$RESULT                    //捷径 API断点GetProcAddress
+bp addr1
+run
+
+bc addr1    //Clear break point  //取消断点
+rtu        //Alt+F9
+
+findop eip,#7D??#    //特征指令
+mov addr1,$RESULT         
+bphws addr1,"x"     
+run
+BPHWC addr1
+
+repl eip, #7D??#, #EB??#, 10       //修复IAT
+
+findop eip,#C70600000000#    //特征指令
+mov addr1,$RESULT         
+bphws addr1,"x"    
+run
+BPHWC addr1
+
+findop eip,#5E#    //特征指令
+mov addr1,$RESULT         
+bphws addr1,"x"    
+run
+BPHWC addr1
+sti
+sti
+sti
+sti
+sti
+
+
+findop eip,#E9??????#    //特征指令
+mov addr1,$RESULT         
+bphws addr1,"x"    
+
+run
+BPHWC addr1
+
+ask "请告诉我程序OEP入口，可以通过Peid找到。"
+cmp $RESULT, 0
+je c11
+mov eip, $RESULT
+msg "已经到达OEP,IAT已经修复,现在可以直接脱壳并重建IAT!"
+ret
+
+
+c11:
+msg "取消就得重来了!"
+
+
+

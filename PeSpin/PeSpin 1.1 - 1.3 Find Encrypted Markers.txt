@@ -1,0 +1,49 @@
+/*
+==================================================================
+    PESpin marker founder script for SHaG's OllyScrip plugin
+==================================================================
+
+   This script will search for posible decrypt/encrypt
+   markers in the unpacked target and it will place
+   breakpoint on them. After that you have to manually
+   fix code by copy-pasting it. Check results in bp
+   window. Note: You need to edit search cryteria for
+   every target manually! Read tutorial.
+
+   haggar
+==================================================================
+*/
+
+var x
+var y
+gmi eip,CODEBASE
+mov x,$RESULT
+mov y,x
+
+
+//Searching for CLEAR_START and CLEAR_END markers:
+
+ClearMarker:
+find x,#9C60B9????????BF????????81E9????????B8????????05????????FF0D????????0011619D#
+cmp $RESULT,0
+je CryptMarker
+bp $RESULT
+mov x,$RESULT
+add x,1
+jmp ClearMarker
+
+
+//Searching for CRYPT_START and CRYPT_END markers:
+
+CryptMarker:
+find y,#FF15????4100# //You need to edit this find cryteria!!!
+cmp $RESULT,0
+je done
+bp $RESULT
+mov y,$RESULT
+add y,1
+jmp CryptMarker
+
+
+done:
+ret

@@ -1,0 +1,14 @@
+//Packer is simple and I was bored :) Here is the script. 
+
+//Start of script 
+//Script for unpacking WinUpack 0.30beta - by haggar 
+msg "Ignore ALL exceptions! " 
+sto 
+findop eip,#0F84???????F# 
+bpcnd $RESULT,"EAX==0" 
+run 
+sto 
+an eip 
+cmt eip,"This is OEP! Dump now. Cheers ;-)" 
+ret 
+//End of script..

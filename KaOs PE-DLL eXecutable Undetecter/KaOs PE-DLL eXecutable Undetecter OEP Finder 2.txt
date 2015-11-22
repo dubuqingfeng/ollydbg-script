@@ -1,0 +1,13 @@
+// KaOs PE-DLL eXecutable Undetecter OEP Finder script by LaFarge / Team ICU
+
+find eip, #750761FF25#
+bp $RESULT
+run
+bc eip
+sti
+sti
+sti
+an eip
+cmt eip, "This is OEP!"
+msg "This is OEP! Dump and rebuild imports now!."
+ret

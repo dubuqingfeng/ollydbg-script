@@ -1,0 +1,292 @@
+/////////////////////////////////////////////////////////////
+// FileName    :  Thinstall V2.5X.oSc
+// Comment     :  Thinstall.V2.5X.Single.Main.eXe.UnPacK
+// Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+// Author      :  fly
+// WebSite     :  http://www.unpack.cn
+// Date        :  2006-05-29 12:40
+/////////////////////////////////////////////////////////////
+#log
+dbh
+
+
+var Map
+var Temp
+var VirtualAlloc
+var SetEnvironmentVariableA
+var MagicOccasion
+var FindOEP
+var ImageBase
+var PE_Signature
+var SizeOfImage
+var NumberOfSections
+var GetNumberOfSections
+
+MSGYN "Plz Clear All BreakPoints + Set Debugging Option Ignore All Excepions Options + Set Events Make first pause at Entry Point !"
+cmp $RESULT, 0
+je TryAgain
+
+//ImageBase______________________________________
+
+mov Temp,eax
+exec
+		push 0
+		call GetModuleHandleA
+ende
+mov ImageBase,eax
+mov eax,Temp
+mov Temp,ImageBase
+add Temp,3C
+mov Temp,[Temp]
+add Temp,ImageBase
+mov PE_Signature,Temp
+log PE_Signature
+
+mov Temp,PE_Signature
+add Temp,50
+mov SizeOfImage,[Temp]
+log SizeOfImage
+
+
+//VirtualAlloc______________________________________
+
+/*
+004017C4     6A 40              push 40
+004017C6     68 00101000        push 101000
+004017CB     8B45 0C            mov eax,dword ptr ss:[ebp+C]
+004017CE     6BC0 0C            imul eax,eax,0C
+004017D1     FFB405 90FDFFFF    push dword ptr ss:[ebp+eax-270]
+004017D8     6A 00              push 0
+004017DA     FF15 F8534000      call dword ptr ds:[4053F8] ; kernel32.VirtualAlloc
+004017E0     A3 845A4000        mov dword ptr ds:[405A84],eax
+*/
+
+gpa "VirtualAlloc", "KERNEL32.dll"
+find $RESULT,#5DC21000#
+cmp $RESULT,0
+je NoFind
+add $RESULT,1
+mov VirtualAlloc,$RESULT
+bp VirtualAlloc
+
+eob VirtualAlloc
+esto
+GoOn0:
+esto
+
+VirtualAlloc:
+cmp eip,VirtualAlloc
+jne GoOn0
+mov Temp,esp
+mov Temp,[Temp]
+sub Temp,12
+cmp [Temp],FF0CC06B
+jne GoOn0
+bc VirtualAlloc
+mov Map,eax
+log Map	
+		
+
+//SetEnvironmentVariableA______________________________________
+
+/*
+0012FB38    7FF42553  /CALL to SetEnvironmentVariableA from 7FF4254D
+0012FB3C    7FF866C4  |VarName = "TS_EXECUTE_EXTERNAL"
+0012FB40    00000000  \Value = NULL
+*/
+
+gpa "SetEnvironmentVariableA", "KERNEL32.dll"
+mov SetEnvironmentVariableA,$RESULT
+bp SetEnvironmentVariableA
+
+eob SetEnvironmentVariableA
+esto
+GoOn1:
+esto
+
+SetEnvironmentVariableA:
+cmp eip,SetEnvironmentVariableA
+jne GoOn1
+mov Temp,esp
+add Temp,4
+mov Temp,[Temp]
+cmp [Temp],455F5354
+jne GoOn01
+bc SetEnvironmentVariableA
+
+
+//CreateProcessA______________________________________
+
+/*
+7FF75E35     833D E85FF97F 00   cmp dword ptr ds:[7FF95FE8],0
+7FF75E3C     75 1C              jnz short 7FF75E5A
+7FF75E3E     68 F86BF87F        push 7FF86BF8                    ; ASCII "IsDebuggerPresent"
+7FF75E43     68 EC6BF87F        push 7FF86BEC                    ; ASCII "kernel32"
+7FF75E48     FF15 D862F87F      call dword ptr ds:[7FF862D8]     ; kernel32.GetModuleHandleA
+7FF75E4E     50                 push eax
+7FF75E4F     FF15 C862F87F      call dword ptr ds:[7FF862C8]     ; kernel32.GetProcAddress
+7FF75E55     A3 E85FF97F        mov dword ptr ds:[7FF95FE8],eax
+7FF75E5A     C705 F05FF97F 9400>mov dword ptr ds:[7FF95FF0],94
+7FF75E64     68 F05FF97F        push 7FF95FF0
+7FF75E69     FF15 9C60F87F      call dword ptr ds:[7FF8609C]     ; kernel32.GetVersionExA
+7FF75E6F     A1 AC59F97F        mov eax,dword ptr ds:[7FF959AC]
+7FF75E74     25 00000002        and eax,2000000
+7FF75E79     85C0               test eax,eax
+7FF75E7B     0F84 B3010000      je 7FF76034
+7FF75E81     FF15 9860F87F      call dword ptr ds:[7FF86098]     ; kernel32.GetCurrentProcessId
+*/
+
+find Map,#A1????????250000000285C00F84B3010000FF15#
+cmp $RESULT,0
+je NoFind
+add $RESULT,0A
+mov [$RESULT],#33C0#
+
+
+//FixSizeOfImage！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+/*
+7FF41D41     25 00000001        and eax,1000000
+7FF41D46     85C0               test eax,eax
+7FF41D48     74 35              je short 7FF41D7F
+7FF41D4A     64:A1 30000000     mov eax,dword ptr fs:[30]
+7FF41D50     85C0               test eax,eax
+7FF41D52     78 0F              js short 7FF41D63
+7FF41D54     8B40 0C            mov eax,dword ptr ds:[eax+C]
+7FF41D57     8B40 0C            mov eax,dword ptr ds:[eax+C]
+7FF41D5A     8140 20 00200000   add dword ptr ds:[eax+20],2000
+//Modify SizeOfImage
+7FF41D61     EB 1C              jmp short 7FF41D7F
+*/
+
+find Map,#250000000185C0743564A130000000#
+cmp $RESULT,0
+je NoFind
+add $RESULT,05
+mov [$RESULT],#85C0EB35#
+
+
+//NumberOfSections！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+/*
+7FF614F3     F3:A5              rep movs dword ptr es:[edi],dword ptr ds:[esi]
+7FF614F5     6A 38              push 38
+7FF614F7     59                 pop ecx
+7FF614F8     8DB5 BCFEFFFF      lea esi,dword ptr ss:[ebp-144]
+7FF614FE     8B7D E8            mov edi,dword ptr ss:[ebp-18]
+7FF61501     F3:A5              rep movs dword ptr es:[edi],dword ptr ds:[esi]
+7FF61503     A1 A459F97F        mov eax,dword ptr ds:[7FF959A4]
+7FF61508     25 00008000        and eax,800000
+7FF6150D     85C0               test eax,eax
+7FF6150F     0F84 8F000000      je 7FF615A4
+*/
+
+find Map,#F3A56A38598DB5????????8B7D??F3A5A1????????250000800085C00F848F000000#
+cmp $RESULT,0
+je NoFind
+add $RESULT,2
+mov GetNumberOfSections,$RESULT
+bp GetNumberOfSections
+
+eob GetNumberOfSections
+esto
+GoOn2:
+esto
+
+GetNumberOfSections:
+cmp eip,GetNumberOfSections
+jne GoOn2
+bc GetNumberOfSections
+mov Temp,PE_Signature
+add Temp,6
+mov NumberOfSections,[Temp]
+log NumberOfSections
+
+
+//MagicOccasion！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+/*
+7FF61821     FF75 DC            push dword ptr ss:[ebp-24]
+7FF61824     E8 FB2AFFFF        call 7FF54324
+7FF61829     834D DC FF         or dword ptr ss:[ebp-24],FFFFFFFF
+7FF6182D     8B45 0C            mov eax,dword ptr ss:[ebp+C]
+7FF61830     8B00               mov eax,dword ptr ds:[eax]
+7FF61832     83E0 02            and eax,2
+7FF61835     85C0               test eax,eax
+*/
+
+find Map,#FF????E8????????83??????8B????8B0083E00285C0#
+cmp $RESULT,0
+je NoFind
+mov MagicOccasion,$RESULT
+bp MagicOccasion
+
+eob MagicOccasion
+esto
+GoOn3:
+esto
+
+MagicOccasion:
+cmp eip,MagicOccasion
+jne GoOn3
+bc MagicOccasion
+
+
+//FixPE！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,6
+mov [Temp],NumberOfSections
+
+add Temp,0CA
+mov [Temp],#0000000000000000#
+//Clear Bound Import Table Address And Size.
+
+
+MSG "Plz Set  LordPE->Option->Task View ->Select  " Full Dump: force RAW mode "  Only  !    "
+Dump:
+MSGYN  "  OK ,  plz dump it now !  Dump file will be fixed !  Don't click " Y " before dump . "
+cmp $RESULT, 0
+je Dump
+esti
+
+
+//FindOEP！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+/*
+7FF4289C     FF95 48FCFFFF      call dword ptr ss:[ebp-3B8]
+7FF428A2     6A 00              push 0
+*/
+
+find Map,#FF95????FFFF6A00#
+cmp $RESULT,0
+je NoFind
+mov FindOEP,$RESULT
+bp FindOEP
+
+eob FindOEP
+esto
+GoOn4:
+esto
+
+FindOEP:
+cmp eip,FindOEP
+jne GoOn4
+bc FindOEP
+esti
+
+
+//GameOver！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！  
+
+log eip
+cmt eip, "This is the OEP!  Found By: fly  "                                                                           
+MSG "Just : OEP !  Your dump file already fiXed .    Good Luck     "
+ret                       
+
+NoFind:
+MSG "Error! Don't find.     "
+ret
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret

@@ -1,0 +1,107 @@
+/*
+=============================================================================
+ Obsidium 1.2.5.0 - script for collecting imports, "code 2"
+=============================================================================
+
+This script helps to collect 90% imports in Obsidium 1.2.5.0 protector.
+Script works for basic import protection (CRC32 hash decrypting) for
+type of imports "code 2". More info find in tutorial.
+
+haggar, BIW reversing
+=============================================================================
+*/
+
+
+var addr
+var pointer
+var thunk
+var temp
+
+mov addr,404000
+
+LABEL_01:
+find addr,#FF15????4000#     //Signature for call/jump, needs to be changed.
+cmp $RESULT,0
+je END_01
+
+mov addr,$RESULT
+mov eip,addr
+mov pointer,$RESULT
+add pointer,2
+mov pointer,[pointer]
+mov thunk,[pointer]
+mov temp,thunk
+and temp,0FFFF0000
+cmp temp, 00B00000       //Address - pointer check, needs to be changed.
+    je OK_01
+       add addr,6
+       jmp LABEL_01
+    OK_01:
+
+sti
+mov temp,[eip]
+and temp,0FFFFFF
+cmp temp,0BE6660         //Obsidium jump type check, maybe needs to be changed too.
+    je OK_02
+       add addr,6
+       add esp,4
+       jmp LABEL_01
+    OK_02:
+
+log addr
+log pointer
+log thunk
+esto
+
+mov temp,edi
+add temp,4
+mov temp,[temp]
+cmp temp,0FFFFFFFF
+    je OK_03
+       add esp,24
+       add addr,6
+       jmp LABEL_01
+    OK_03:
+
+esto
+cmp eax,2
+    je OK_04
+       add esp,24
+       add addr,6
+       jmp LABEL_01
+    OK_04:
+
+esto
+mov [pointer],eax
+log eax
+log " "
+add addr,6
+add esp,24
+
+
+
+jmp LABEL_01
+
+
+
+END_01:
+
+
+
+
+ret
+ERROR:
+msg "Some error occured in this script."
+ret
+
+
+
+
+
+
+
+
+
+
+
+

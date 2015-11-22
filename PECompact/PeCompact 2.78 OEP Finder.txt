@@ -1,0 +1,45 @@
+/*
+	============================
+	                .:[OllyScript Editor v2.0]:.
+	      Author: Goldocrack 30 mars 2006
+	      Packer: Pecompact 2.78a
+	      Script for: Pecompact 2.78a
+	      Level: Easy
+	      Date: jeudi 30 mars 2006
+                  http://xtx.free.fr
+                  http://s141422204.onlinehome.fr/forum/
+                  Merci à tous 
+	 ============================
+						*/
+
+
+/*
+Avant d'utiliser ce script, vous devez aller dans les options de olly, 
+dans -> debugging options et cocher toutes les erreurs!
+*/
+
+
+
+
+
+
+
+sto
+sto
+bphws esp,"r"
+esto
+esto
+esto
+esto
+sto
+AN eip
+CMT eip, " Tu es a l'entry point  !"
+msgyn " Veux-tu enregistrer un fichier dumpe nomme unpacked.exe sur c:\    N'oublie pas les imports avec imprec pour que le dump soit fonctionnel!                                                                                                           Goldocrack 2006!"
+cmp $RESULT,1 
+je label
+msg "N'oublie pas les imports avec imprec pour que le dump soit fonctionnel!"
+ret 
+
+label:
+dpe "c:\unpacked.exe",eip
+ret

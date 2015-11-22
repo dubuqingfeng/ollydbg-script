@@ -1,0 +1,188 @@
+var espv
+var iat_st
+var pf
+var xloc
+var oep
+var img_base
+gmi eip,MODULEBASE
+mov img_base,$RESULT
+var compiler
+
+
+
+mov espv,esp-4
+GMEMI eip,MEMORYBASE
+mov xloc,$RESULT
+
+gpa "VirtualAlloc", "kernel32.Dll" 
+bphws $RESULT,"x"
+erun
+bphwc eip
+rtu
+
+Find eip, #7421FFB5#
+cmp $RESULT,0
+je quit
+mov [$RESULT],#EB#
+mov pf,$RESULT+40
+fill pf,5,90
+cmt pf,"if Show Nag push try:)"
+bphws pf,"x"
+erun
+bphwc pf
+mov iat_st,ebx
+find eip,#3385????????33C2ABEBF0#
+cmp $RESULT,0
+je quit
+mov pf,$RESULT
+bphws pf,"x"
+erun
+bphwc pf
+fill pf,8,90
+bphws espv,"r"
+cmt pf,"Go to OEP Waiting :)"
+erun
+bphwc espv
+sti
+sti
+sti
+cmt eip, "<---OEP"
+
+msgyn " Fix Import?"
+cmp $RESULT,0
+je quit
+msgyn " App DELPiI? ..yes App MSVC...No "
+mov compiler,$RESULT
+
+var srh
+var vz
+var if
+var fn
+var nc
+var pntf
+var code_st
+var oep
+find xloc,#9C50538B5C24??5383EB0668????????68????????C3#
+cmp $RESULT,0
+je quit
+mov pntf,$RESULT+11
+mov pntf,[pntf]
+find pntf,#35????????50#
+mov pntf,$RESULT   
+mov oep,eip
+gmi eip,CODEBASE
+mov srh,$RESULT
+mov code_st,$RESULT
+bp pntf
+loop:
+find srh,#FF155CE14400# // call for Library of the Ages edit for other prog...
+cmp $RESULT,0
+je call_to_Call
+mov addr,$RESULT
+mov vz,$RESULT+6
+mov nc,$RESULT+2
+mov eip,addr
+
+erun
+mov if,eax
+buf if
+find iat_st,if
+
+mov fn,$RESULT
+mov [addr],#FF25#
+mov [nc],fn
+mov srh,vz
+jmp loop
+call_to_Call:
+cmp compiler,0
+jne end
+mov srh,code_st
+loop2:
+find srh,#FF1560E14400# // call for Library of the Ages edit for other prog...
+cmp $RESULT,0
+je call_to_R32
+mov addr,$RESULT
+mov vz,$RESULT+6
+mov nc,$RESULT+2
+mov eip,addr
+
+erun
+mov if,eax
+buf if
+find iat_st,if
+
+mov fn,$RESULT
+mov [addr],#FF15#
+mov [nc],fn
+mov srh,vz
+jmp loop2
+
+call_to_R32:
+var chek_r32
+mov srh,code_st
+pause
+loop3:
+FINDCMD srh, "CALL 0044E16A"
+cmp $RESULT,0
+je end
+mov addr,$RESULT
+mov vz,$RESULT+6
+mov nc,$RESULT+2
+mov chek_r32,$RESULT+5
+mov eip,addr
+mov chek_r32,[chek_r32]
+and chek_r32,000000FF
+
+erun
+mov if,eax
+buf if
+find iat_st,if
+mov fn,$RESULT
+cmp chek_r32,69
+jae m_ebx
+mov [addr],#8B15#
+jmp Wr_r
+m_ebx:
+cmp chek_r32,6A
+jae m_ecx
+mov [addr],#8B1D#
+jmp Wr_r
+m_ecx:
+cmp chek_r32,6C
+jae m_esi
+mov [addr],#8B0D#
+jmp Wr_r
+m_esi:
+cmp chek_r32,6D
+jae m_edi
+mov [addr],#8B35#
+jmp Wr_r
+m_edi:
+cmp chek_r32,6E
+jae m_ebp
+mov [addr],#8B3D#
+jmp Wr_r
+m_ebp:
+mov [addr],#8B2D#
+jmp Wr_r
+Wr_r:
+mov [nc],fn
+mov srh,vz
+jmp loop3
+
+end:
+bc pntf
+mov eip,oep
+sub iat_st,img_base
+eval "import is already restored!, IAT Start: {iat_st}"
+msg $RESULT
+ret
+
+
+quit:
+msg "No SoftWrap file"
+ret
+
+
+
+

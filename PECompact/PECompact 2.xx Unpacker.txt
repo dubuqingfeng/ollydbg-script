@@ -1,0 +1,87 @@
+////////////////////////////////////////////////////////////////////////////////////
+// Скрипт полностью распаковывает PECompact 2.xx, и написан специально для статьи
+// "Распаковка PECompact 2.xx без использования ImpREC"
+// Автор: PE_Kill
+////////////////////////////////////////////////////////////////////////////////////
+var api_redirect
+var iat_start
+var VirtualAlloc
+var VirtualFree
+var ImageBase
+var OEP
+var counter
+
+  gpa "VirtualAlloc","kernel32.dll"	// После второго срабатывания бряка мы выходим
+  mov VirtualAlloc,$RESULT		// чуть выше кода, отвечающего за импорт
+  bp VirtualAlloc
+  
+  gpa "VirtualFree","kernel32.dll"	// Нужно для прохождения до OEP
+  mov VirtualFree,$RESULT
+  
+  mov counter,0
+  gmi eip,MODULEBASE			// Надо, чтобы фиксить PEHeader
+  mov ImageBase,$RESULT
+@Shift_F9:				// Выполнится, когда произойдет ошибка
+  esto 					// и эмулирует нажатие Shift+F9 в Olly
+  jmp @check_unpack
+@F9:					// Просто запускает программу (F9)
+  run
+@check_unpack:				
+  find eip,#8908#			// Ищем команду mov dword ptr ds:[eax],ecx
+  cmp $RESULT,eip			// если мы стоим на ней, значит произошла 
+ je @Shift_F9				// ошибка. Нажимаем Shift+F9
+  inc counter				// Иначе мы на VirtualFree и увеличиваем счетчик
+  cmp counter,2				// Если равен 2, то пора выходить из функции
+ jne @F9				// иначе продолжаем.
+  bc VirtualAlloc			// убираем бряк с VirtualAlloc
+  rtr					// доходим до RET
+  sti					// Выполняем её
+  find eip,#8906890283C20483C604#	// и ищем команды запонения IAT по сигнатуре
+  cmp $RESULT,0				// если ничего не нашли, то генерим ошибку
+ je @ERR_SIGN_NOT_FOUND			// и выходим
+  mov api_redirect,$RESULT		// иначе запоминаем этот адрес
+  bp api_redirect			// ставим на него бряк
+  run					// запускаем программу
+  bc api_redirect			// убираем бряк
+  mov [api_redirect],068F32FF		// и патчим это место, чтобы работало, как надо :)
+  mov iat_start,[esp]			// запоминаем начало IAT
+  bp VirtualFree			// ставим бряк на VirtualFree
+@trace_to_oep:
+  run					// Запускаем программу
+  rtr					// Доходим до RET
+  sti					// Выполняем её
+  cmp [eip],030C468B    		// Мы перед переходом на OEP?
+ jne @trace_to_oep			// Нет, продолжим трассировку
+  bc VirtualFree			// Убираем бряк с VirtualFree
+  sti					// Даем сформироваться
+  sti					// OEP в eax
+  mov OEP,eax				// В eax находится адрес OEP, запомним
+  bp OEP				// Ставим бряк на OEP
+  run					// Запускаем программу
+  bc OEP				// Убираем бряк
+
+cmt eip,"<- This is OEP! Good luck crecker!"
+sub OEP,ImageBase			// OEP = OEP - ImageBase
+sub iat_start,ImageBase			// Import Directory RVA = Import Directory RVA - ImageBase
+mov counter,ImageBase			
+add counter,3C				// Смещаемся на DOSStub.e_ifanew
+mov counter,[counter]			// Читаем, смещение на NtHeader
+add counter,ImageBase			// Получаем абсолютный адрес
+add counter,28				// Смещаемся на NtHeader.OptionalHeader.OEP
+mov [counter],OEP			// Fix OEP
+add counter,58				// Теперь импорт
+mov [counter],iat_start			// Fix RVA
+
+log OEP
+log iat_start
+eval "The file is completely unpacked! Dump it on a disk. Do not use ImpREC, import is already restored! OEP: {OEP}, IAT Start: {iat_start}"
+msg $RESULT
+
+@end:
+log "Who, if not I?"
+pause
+ret
+
+@ERR_SIGN_NOT_FOUND:
+msg "Error! Signature not found! Done..."
+jmp @end

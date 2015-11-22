@@ -1,0 +1,13 @@
+Loop:
+
+eob ExceptionBreak
+ESTO
+ExceptionBreak:
+
+cmp [eip],0089,2
+je RemoveException
+ret
+
+RemoveException:
+mov [eip],#EB01#
+jmp Loop

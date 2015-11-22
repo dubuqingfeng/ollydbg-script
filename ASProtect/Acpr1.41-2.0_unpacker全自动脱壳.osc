@@ -1,0 +1,94 @@
+/*
+Script written by ~icy~学习班
+Script   : Acpr1.41-2.0_unpacker全自动脱壳
+日期     : 2007-03-26
+调试环境 : OllyDbg 1.1, ODBGScript 1.51, Winxp Win2003
+调试选项 : 设置 OllyDbg 忽略所有异常选项 
+工具     : OllyDbg, ODBGScript 1.51, Import Reconstructor.
+*/
+//support ACprotect1.41-2.0  UltraProtect 1.x
+
+var eipaddr1 
+var esiadd   
+var ebxadd   
+var cbase
+var csize
+var imgbase 
+var iatrva
+var add1
+
+GMI eip, MODULEBASE 
+cmp $RESULT,0
+je lblabort
+mov imgbase,$RESULT
+
+gmi eip,CODEBASE                       //获得代码基地
+cmp $RESULT,0
+je lblabort
+mov cbase,$RESULT
+mov cbase,$RESULT
+gmemi cbase,MEMORYsize
+cmp $RESULT,0 
+je lblabort
+mov csize,$RESULT
+gpa "GetModuleHandleA","kernel32.dll"
+cmp $RESULT,0
+je lblabort
+mov add1,$RESULT
+bprm add1,ff 
+esto 
+bpmc
+rtu 
+findop eip,#F3AA#                     //查找指定内容
+cmp $RESULT,0
+je lblabort   
+repl $RESULT,#F3AA#,#9090#,2 
+bp $RESULT
+run
+bc $RESULT
+sto 
+sto 
+sto
+bprm add1,ff
+esto
+bpmc
+rtu
+mov eipaddr1,eip
+mov eipaddr1,eipaddr1-30
+mov esiadd,esi+0c 
+mov ebxadd,ebx-imgbase
+mov [esiadd],ebxadd
+mov iatrva,esi-imgbase
+findop eipaddr1,#83660c00#           //地址中查找：and dword ptr ds:[esi+C],0
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#83660C00#,#90909090#,4
+find eipaddr1,#2BC08803#             //内存中查找:sub eax,eax mov byte ptr ds:[ebx]
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#2BC08803#,#90909090#,4
+find eipaddr1,#2BC08803#
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#2BC08803#,#90909090#,4
+find eipaddr1,#80BD16564100007457#   //魔法跳
+je lblabort
+repl $RESULT,#80BD16564100007457#,#80BD1656410000eb57#,9 //jmp
+find eipaddr1,#8DBD??????0033C0#
+cmp $RESULT,0
+je lblabort
+bp $RESULT
+esto
+bc $RESULT
+bpmc
+bprm cbase,csize
+esto
+cmt eip,"传说中的光明之颠~OEP~"
+dpe "\\已脱壳未修复IAT.exe", eip
+eval "程序已脱壳请直接用ImportREC修复IAT"
+msg $RESULT
+ret
+
+lblabort:
+msg "脚本失败!"
+ret

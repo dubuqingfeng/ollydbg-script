@@ -1,0 +1,294 @@
+//////////////////////////////////////////////////
+//  FileName    :  Protection Plus V4.2.osc
+//  Comment     :  Protection Plus V4.2 UnPacK
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://fly2004.163.cn.com
+//  Date        :  2005-10-12 11:30
+//////////////////////////////////////////////////
+#log
+
+var T0
+var T1
+var T2
+var T3
+
+//！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+MSG "If there is a trial NaG, Plz select "Evaluate" radio and press "Continue" button.  "
+
+find eip, #6A006A018B85230300005003850C000000FFD0#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,11
+eob Break1
+bp $RESULT
+mov T0,$RESULT
+log $RESULT
+
+esto
+GoOn0:
+esto
+
+Break1:
+cmp eip,$RESULT
+log eip
+jne GoOn0
+bc $RESULT
+sti
+
+
+//Magic Jmp！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+/*
+Protection Plus V4.2
+00B61151    81FF 00000080   cmp edi,80000000
+00B61157    8958 08         mov dword ptr ds:[eax+8],ebx
+00B6115A    0F92C1          setb cl
+00B6115D    81E1 FF000000   and ecx,0FF
+00B61163    894424 2C       mov dword ptr ss:[esp+2C],eax
+00B61167    8948 04         mov dword ptr ds:[eax+4],ecx
+00B6116A    E8 B98E0000     call 00B6A028
+00B6116F    90              nop
+00B61170    8B4424 08       mov eax,dword ptr ss:[esp+8]
+00B61174    8B4C24 04       mov ecx,dword ptr ss:[esp+4]
+00B61178    56              push esi
+00B61179    50              push eax
+00B6117A    51              push ecx
+00B6117B    FF15 0810B700   call dword ptr ds:[B71008] ; kernel32.GetProcAddress
+00B61181    8B5424 10       mov edx,dword ptr ss:[esp+10]
+00B61185    8BF0            mov esi,eax
+00B61187    81E2 FF000000   and edx,0FF
+00B6118D    8D42 FF         lea eax,dword ptr ds:[edx-1]
+00B61190    83F8 03         cmp eax,3
+00B61193    77 73           ja short 00B61208
+00B61195    FF2485 1012B600 jmp dword ptr ds:[eax*4+B61210]
+00B6119C    6A 06           push 6
+*/
+
+/*
+Protection Plus V4.X
+01271780    56              push esi
+01271781    8B7424 08       mov esi,dword ptr ss:[esp+8]
+01271785    85F6            test esi,esi
+01271787    74 1B           je short 012717A4
+01271789    68 C0942901     push 12994C0               ; ASCII "fake.dll"
+0127178E    56              push esi
+0127178F    E8 AC2E0000     call 01274640
+01271794    83C4 08         add esp,8
+01271797    85C0            test eax,eax
+01271799    75 09           jnz short 012717A4
+0127179B    B8 FDFFFFFF     mov eax,-3
+012717A0    5E              pop esi
+012717A1    C2 0400         retn 4
+012717A4    56              push esi
+012717A5    FF15 E4612901   call dword ptr ds:[12961E4]; kernel32.GetModuleHandleA
+012717AB    5E              pop esi
+012717AC    C2 0400         retn 4
+012717AF    90              nop
+012717B0    53              push ebx
+012717B1    55              push ebp
+012717B2    56              push esi
+012717B3    57              push edi
+012717B4    68 20952901     push 1299520               ; ASCII "kernel32.dll"
+012717B9    E8 C2FFFFFF     call 01271780
+012717BE    8B6C24 14       mov ebp,dword ptr ss:[esp+14]
+012717C2    8B7C24 18       mov edi,dword ptr ss:[esp+18]
+012717C6    3BE8            cmp ebp,eax
+012717C8    0F85 94000000   jnz 01271862
+012717CE    81FF 00000100   cmp edi,10000
+012717D4    0F82 F0000000   jb 012718CA
+012717DA    BE 0C952901     mov esi,129950C            ; ASCII "GetModuleHandleA"
+012717DF    8BC7            mov eax,edi
+012717E1    8A10            mov dl,byte ptr ds:[eax]
+012717E3    8A1E            mov bl,byte ptr ds:[esi]
+012717E5    8ACA            mov cl,dl
+012717E7    3AD3            cmp dl,bl
+012717E9    75 1E           jnz short 01271809
+012717EB    84C9            test cl,cl
+012717ED    74 16           je short 01271805
+012717EF    8A50 01         mov dl,byte ptr ds:[eax+1]
+012717F2    8A5E 01         mov bl,byte ptr ds:[esi+1]
+012717F5    8ACA            mov cl,dl
+012717F7    3AD3            cmp dl,bl
+012717F9    75 0E           jnz short 01271809
+012717FB    83C0 02         add eax,2
+012717FE    83C6 02         add esi,2
+01271801    84C9            test cl,cl
+01271803    75 DC           jnz short 012717E1
+01271805    33C0            xor eax,eax
+01271807    EB 05           jmp short 0127180E
+01271809    1BC0            sbb eax,eax
+0127180B    83D8 FF         sbb eax,-1
+0127180E    85C0            test eax,eax
+01271810    75 0C           jnz short 0127181E
+01271812    5F              pop edi
+01271813    5E              pop esi
+01271814    5D              pop ebp
+01271815    B8 80172701     mov eax,1271780
+0127181A    5B              pop ebx
+0127181B    C2 0C00         retn 0C
+0127181E    BE FC942901     mov esi,12994FC            ; ASCII "GetProcAddress"
+01271823    8BC7            mov eax,edi
+01271825    8A10            mov dl,byte ptr ds:[eax]
+01271827    8A1E            mov bl,byte ptr ds:[esi]
+01271829    8ACA            mov cl,dl
+0127182B    3AD3            cmp dl,bl
+0127182D    75 1E           jnz short 0127184D
+0127182F    84C9            test cl,cl
+01271831    74 16           je short 01271849
+01271833    8A50 01         mov dl,byte ptr ds:[eax+1]
+01271836    8A5E 01         mov bl,byte ptr ds:[esi+1]
+01271839    8ACA            mov cl,dl
+0127183B    3AD3            cmp dl,bl
+0127183D    75 0E           jnz short 0127184D
+0127183F    83C0 02         add eax,2
+01271842    83C6 02         add esi,2
+01271845    84C9            test cl,cl
+01271847    75 DC           jnz short 01271825
+01271849    33C0            xor eax,eax
+0127184B    EB 05           jmp short 01271852
+0127184D    1BC0            sbb eax,eax
+0127184F    83D8 FF         sbb eax,-1
+01271852    85C0            test eax,eax
+01271854    75 0C           jnz short 01271862
+01271856    5F              pop edi
+01271857    5E              pop esi
+01271858    5D              pop ebp
+01271859    B8 80192701     mov eax,1271980
+0127185E    5B              pop ebx
+0127185F    C2 0C00         retn 0C
+01271862    68 EC942901     push 12994EC               ; ASCII "msvbvm50.dll"
+01271867    E8 14FFFFFF     call 01271780
+0127186C    3BE8            cmp ebp,eax
+0127186E    74 0E           je short 0127187E
+01271870    68 DC942901     push 12994DC               ; ASCII "msvbvm60.dll"
+01271875    E8 06FFFFFF     call 01271780
+0127187A    3BE8            cmp ebp,eax
+0127187C    75 4C           jnz short 012718CA
+0127187E    81FF 00000100   cmp edi,10000             
+01271884    72 44           jb short 012718CA
+01271886    BE CC942901     mov esi,12994CC            ; ASCII "DllFunctionCall"
+0127188B    8BC7            mov eax,edi
+0127188D    8A10            mov dl,byte ptr ds:[eax]
+0127188F    8A1E            mov bl,byte ptr ds:[esi]
+01271891    8ACA            mov cl,dl
+01271893    3AD3            cmp dl,bl
+01271895    75 1E           jnz short 012718B5
+01271897    84C9            test cl,cl
+01271899    74 16           je short 012718B1
+0127189B    8A50 01         mov dl,byte ptr ds:[eax+1]
+0127189E    8A5E 01         mov bl,byte ptr ds:[esi+1]
+012718A1    8ACA            mov cl,dl
+012718A3    3AD3            cmp dl,bl
+012718A5    75 0E           jnz short 012718B5
+012718A7    83C0 02         add eax,2
+012718AA    83C6 02         add esi,2
+012718AD    84C9            test cl,cl
+012718AF    75 DC           jnz short 0127188D
+012718B1    33C0            xor eax,eax
+012718B3    EB 05           jmp short 012718BA
+012718B5    1BC0            sbb eax,eax
+012718B7    83D8 FF         sbb eax,-1
+012718BA    85C0            test eax,eax
+012718BC    75 0C           jnz short 012718CA
+012718BE    5F              pop edi
+012718BF    5E              pop esi
+012718C0    5D              pop ebp
+012718C1    B8 A01B2701     mov eax,1271BA0
+012718C6    5B              pop ebx
+012718C7    C2 0C00         retn 0C
+012718CA    57              push edi
+012718CB    55              push ebp
+012718CC    E8 AF000000     call 01271980
+012718D1    8BF0            mov esi,eax
+012718D3    8B4424 1C       mov eax,dword ptr ss:[esp+1C]
+012718D7    25 FF000000     and eax,0FF
+012718DC    48              dec eax
+012718DD    83F8 03         cmp eax,3
+012718E0    77 7C           ja short 0127195E
+*/
+
+mov T0,eip
+and T0,0FFFF0000
+log T0
+
+
+find T0,#FFD0F7D81BC0F7D8C3# 
+cmp $RESULT, 0
+je Magic Jmp1
+mov [$RESULT],#FFD0F7D81BC033C0C3# 
+//Pass IsDebuggerPresent
+
+
+Magic Jmp1:
+find T0,#8B??????8B??????3BE8# 
+cmp $RESULT, 0
+log $RESULT
+je Magic Jmp2
+
+mov T1,$RESULT
+add T1,A 
+mov [T1],#E9#
+
+find T1,#81??000001000F82??000000# 
+cmp $RESULT, 0
+log $RESULT
+je Magic Jmp2
+
+mov T2,$RESULT
+
+add T2,8
+mov T3, [T2]
+sub T2,T1
+log T2
+add T1,1
+add T3,T2
+sub T3,1
+mov [T1],T3
+log T3
+
+
+Magic Jmp2:
+find T0,#83F80377??FF24# 
+cmp $RESULT, 0
+je NoFind
+log $RESULT
+mov [$RESULT],#83F803EB#
+//Fixed Importing Function
+
+
+//GetOEP！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+/*
+01273841    61              popad
+01273842    870424          xchg dword ptr ss:[esp],eax
+01273845    C3              retn
+*/
+
+find T0, #61870424C3#
+cmp $RESULT, 0
+je NoFind
+
+add $RESULT,4
+eob GetOEP
+bp $RESULT
+
+esto
+GoOn1:
+esto
+
+GetOEP:
+cmp eip,$RESULT
+jne GoOn1
+log eip
+bc $RESULT
+sti
+
+log eip
+cmt eip, "This is the OEP! Found by fly"
+MSG "Just: OEP !  Dump and Fix IAT & Last Section Size.  Good Luck  "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not Protection Plus V4.X  "
+ret

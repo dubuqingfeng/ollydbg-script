@@ -1,0 +1,37 @@
+//(Win)Upack 0.31-0.32 beta OEP finder
+//Made by GaBoR {RES}
+findop eip,#E8????????#
+cmp $RESULT,0
+jne bpushad
+sto
+find eip,#46AD#
+bphws $RESULT,"x"
+run
+bphwc $RESULT
+sto
+sto
+sto
+bp eip
+run 
+eob test
+test:
+cmp eax,0
+je OEP
+run
+OEP:
+bc eip
+sti
+cmt eip,"OEP found by GaBoR {RES}"
+msg "Dump & fix IAT now!"
+ret
+bpushad:
+sto
+var t
+mov t,esp
+bphws t,"r"
+run
+bphwc t
+sti
+cmt eip,"OEP found by GaBoR {RES}"
+msg "Dump & fix IAT now!"
+ret

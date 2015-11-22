@@ -1,0 +1,57 @@
+/*
+===============================================================
+   SafeCast/Disc 2.xx-3.xx - IAT decryptor script (by haggar)
+===============================================================
+Instructions:
+
+This script WILL NOT FIX IMPORTS!!! This script will decrypt
+import table, but pointers will be incorrect! But, table will
+hold ALL IMPORTS that are used in protected file. As described
+in my tutorial, then you binary copy-paste that tablle to new
+section (that you have added to protected file), undo changes
+done by this script, and use script for redirecting pointers
+to that new table. Read my tutorial for more information.
+
+Script is tested on VC++ program. All values are hardcoded
+and you must modify it for your file.
+
+haggar
+===============================================================
+*/
+
+
+var iat      //Variable that points to thunks.
+var pointer  //Variable to take DWORD that is in thunk.
+var stack    //Variable just used to place hardware breakpoint.
+var oep      //To return EIP to initial value.
+
+mov iat,12ef6000        //Start address of thunks in IAT.
+mov oep,eip
+
+LABEL_01:
+ cmp iat,12ef62c8       //Check is it end of thunks.
+je END_01
+ mov pointer,[iat]
+ and pointer,0ff000000
+ cmp pointer, 13000000  //Check destination in thunk to redirected one.
+ add iat,4
+jne LABEL_01
+ sub iat,4              //If thunk holds some 13xxxxxx (in my case)
+ mov pointer,[iat]      //then find import.
+ mov eip,pointer
+ sti
+ sti
+ mov stack,esp
+ bphws stack,"r"
+ esto
+ sti
+ bphwc stack
+ mov [iat],eip          //Place import in thunk.
+jmp LABEL_01
+END_01:
+
+mov eip,oep
+ret
+
+
+

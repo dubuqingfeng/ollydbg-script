@@ -1,0 +1,167 @@
+/*
+=====================================================================
+   PESpin v1.3 unpacker script for OllyScript plugin (by SHaG)
+=====================================================================
+
+    Script requires Windows XP.
+    Script works good only with ASM and BC++ programs. Delphi
+    and VC++ will not be properly fixed using OllyDump plugin.
+    For those programs check my other scripts and read tutorial.
+    Script will fix IAT redirection, code redirection and find
+    stolen OEP code. This PESpin version uses CRYPT and CLEAR
+    markers, which this script cannot decrypt. You'll have to
+    decrypt code manually. However, two other scripts
+    "PESpin - Code Fixer.txt"
+    "PESpin - Find Markers.txt"
+    will help you find encrypted sections and repair them.
+    This 1.3 version also uses advanced code redirection which
+    this script cannot detect and fix because such packed
+    targets where no available to explore. Before use, ignore
+    ALL exceptions!
+
+    [ haggar ]
+=====================================================================
+*/
+
+var x
+var A
+var B
+var C
+
+msg "Script runs on Win XP only. Ignore ALL exceptions!"
+
+//Break on GetTickCount
+gpa "GetTickCount","kernel32.dll"
+findop $RESULT,#C3#
+bp $RESULT
+esto
+bc eip
+rtu
+
+
+//Find that code around timer call and just place bp.
+mov A,eip
+sub A,0F80
+find A,#F?723F8D850F6E271E2D8417E71DFFD0EB02#
+add $RESULT,1
+bp $RESULT
+
+
+//Now find place where is IAT redirection jump.
+mov A,eip
+sub A,1058
+findop A,#FF6424FC#
+bp $RESULT
+esto
+bc eip
+mov A,$RESULT
+//Find good call and NOP all bytes between.
+find eip,#E8??????FFE803000000#
+mov B,$RESULT
+noping:
+fill A,1,90
+inc A
+cmp A,B
+jne noping
+esto
+
+//Timer place noping:
+bc eip
+fill eip,0F,90
+
+
+
+//Go to byte before POPAD and NOP it.
+
+mov A,eip
+add A,221
+fill A,1,90
+add A,2
+bp A
+esto
+bc eip
+cmt eip,"Here starts stolen OEP."
+
+
+//Code fixing:
+
+
+
+var addr
+var Redir
+var buffer
+var temp
+var Value
+mov addr,401000
+
+
+
+
+
+
+search:
+findop addr,#E???????FF#        //Find posible CALL/JMP to PEheader.
+cmp $RESULT,0
+je exit
+mov addr,$RESULT
+mov buffer,addr
+add addr,1
+
+mov Redir,[addr]                //Check does it realy jumps to PEheader.
+add Redir,addr
+and Redir,4FF000
+cmp Redir,400000
+jne search
+
+mov Redir,[addr]                //Find that redirected address.
+add Redir,addr
+add Redir,4
+mov Value,[Redir]               //Check is there JMP (E9) opcode.
+and Value,0FF
+cmp Value,0E9
+je JumpsCalls                   //If not, just copy all bytes. If yes, goto Jumps fixing.
+
+add Redir,1                     //Copy bytes, PUSH opcodes.
+mov Value,[Redir]
+sub addr,1
+//cmt addr,"Fixed PUSH opcode."
+fill addr,1,68
+add addr,1
+mov [addr],Value
+mov addr,buffer
+jmp search
+
+JumpsCalls:                         //Fix jumps/calls.
+sub addr,1
+//cmt addr,"Fixed JMP or CALL opcode."
+mov temp,[addr]
+cmp temp,0E9
+je Jump
+fill addr,1,0E8
+jmp Call
+Jump:
+fill addr,1,0E9
+Call:
+add Redir,1
+add addr,1
+mov Value,[Redir]
+add Value,Redir
+add Value,4
+sub Value,addr
+sub Value,4
+mov [addr],Value
+mov addr,buffer
+jmp search
+
+
+exit:
+ret
+
+
+
+
+
+
+
+
+

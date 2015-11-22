@@ -1,0 +1,52 @@
+//For MoleBox 2.x,By wynney
+#log
+Var Addr1
+Var Addr2
+Var Addr3
+Var VirtualProtect
+log eip
+cmt eip, "请忽略所有异常" 
+STI
+STO
+MOV Addr1,esp
+bphws Addr1,"r"                //esp定律,用来找OEP
+GPA "VirtualProtect","kernel32.dll"
+CMP $RESULT,0
+JE ERR
+MOV VirtualProtect,$RESULT
+BP VirtualProtect             //下断点,找IAT加密的地方
+RUN
+RUN
+RUN
+BC VirtualProtect
+RTU
+find eip,#8901#
+CMP $RESULT,0
+JE ERR
+MOV Addr2,$RESULT
+BP Addr2
+RUN
+BC Addr2
+fill eip,2,90
+RUN
+RUN
+RUN
+RUN
+BPHWC Addr1
+STO
+find eip,#83EC80E9????????#
+CMP $RESULT,0
+JE ERR
+MOV Addr3,$RESULT
+BP Addr3
+RUN
+BC Addr3
+STO
+STO
+log eip
+cmt eip, "This is the OEP!  Found By: wynney "  
+RET
+
+ERR:
+MSG "error"
+RET

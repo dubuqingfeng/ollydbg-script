@@ -1,0 +1,17 @@
+// ASDPack 2.0 OEP Finder Script by LaFarge / Team ICU
+  
+  bp eip+7
+  run
+  bc eip
+  sti
+  find eip, #595B5F5E50C3#
+  bp $RESULT
+  run
+  bc eip
+  bp eip+5
+  run
+  bc eip
+  sti
+  cmt eip, "This is OEP"
+  msg "This is OEP! Dump and fix imports now!"
+  ret

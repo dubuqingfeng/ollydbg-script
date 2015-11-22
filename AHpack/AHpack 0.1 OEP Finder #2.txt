@@ -1,0 +1,13 @@
+find eip,#FFE2#
+cmp $RESULT,0
+je err
+go $RESULT
+sto
+
+OEP:
+cmt eip,"OEP"
+ret
+
+err:
+msg "error"
+ret

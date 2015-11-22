@@ -1,0 +1,34 @@
+
+/*
+    -=================================================================-
+    |                       .:[CracksLatinoS]:.                       |
+    |    Script realizado por : Yllera                                |
+    |    Script para :  eXPressor                                     |
+    |    Configuracion:                                               |
+    |    Fecha : 21/06/2005                                           |
+    |                                                                 |
+    |                                                                 |
+    |                                                                 |
+    -=================================================================-
+*/
+
+sto
+findop eip, #6A00#
+add $RESULT, 2
+go $RESULT
+findop eip, #6A00#
+add $RESULT, 2
+go $RESULT
+add eip,6
+findop eip, #FFE0# 
+bphws $RESULT, "x" 
+run // Ejecutar el programa.
+esti  
+log "El OEP del programa es:"
+log eip
+log "Dumpealo ahora y repara la IAT automaticamente con el IREC"
+log "Script CracksLatinos by Yllera"
+log "@: yllera222@yahoo.com.ar"
+msg "Script finalizado correctamente. Ahora esta parado en el OEP, dumpealo y arregla la IAT :D"
+
+ret

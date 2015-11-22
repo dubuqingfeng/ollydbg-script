@@ -1,0 +1,196 @@
+////////////////////////////////////////////////
+/// TMDCheckVer v0.1                         ///
+/// 检查tmd版本, 用于1.9.1.x - 1.9.7.0       ///
+/// By the0crat                              ///
+/// the0crat.cn@gmail.com                    ///
+/// 2008/01/18                               ///
+////////////////////////////////////////////////
+
+data:
+var cbase
+var csize
+var dllimg
+var dllsize
+var mem
+var getprocadd
+var gatprocadd_2
+var tmp
+var temp
+
+cmp $VERSION, "1.52"
+jb odbgver
+
+bphwcall
+bpmc
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+gmemi eip,MEMORYBASE      //壳段的基地址
+mov dllimg,$RESULT
+log dllimg
+gmemi eip,MEMORYSIZE      //壳段的长度
+mov dllsize,$RESULT
+log dllsize
+
+findapibase:
+gpa "GetProcAddress", "kernel32.dll"
+mov getprocadd,$RESULT                   //取GetProcAddress函数地址，用于定位加密表
+cmp getprocadd,0
+gpa "_lclose","kernel32.dll"             //同上  
+mov getprocadd_2,$RESULT
+gpa "GetLocalTime", "kernel32.dll"       //下面代码取自okdodo 感谢 okdodo
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+gpa "VirtualAlloc", "kernel32.dll"
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+mov apibase,eax
+log apibase
+gpa "LoadLibraryA", "kernel32.dll"
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+
+
+bphwc tmpbp
+rtu
+findVirtualAlloc:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE8090000005DC21000#     //查找被虚拟的VirtualAlloc函数
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je win2003
+bphws tmpbp ,"x"
+jmp tmploop
+
+win2003:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE878FFFFFF5DC21000#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+
+
+tmploop: 
+                               //下面代码重新改写
+esto 
+cmp eax,getprocadd                       //定位加密表出现时机
+je iatbegin
+cmp eax,getprocadd_2
+je iatbegin
+jne tmploop
+
+iatbegin:
+esto
+esto
+
+bphwcall
+rtr
+sti
+sti
+find eip, #8BB5#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+jne next1
+find eip, #8BB5??????06#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je findnext_1
+next1:
+bphws tmpbp ,"x"
+esto
+
+sti
+var iatcalltop      //加密表的首地址
+var iatcallend
+mov iatcalltop,esi
+find iatcalltop,#00000000#
+mov iatcallend,$RESULT
+log iatcallend
+var iatfn
+var iattop
+var codeadd
+var antiadd
+bphwcall
+jmp codebegin
+
+findnext_1:
+sti
+find dllimg, #FFFFFFFFDDDDDDDD#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je notlb
+
+var iatcalltop      //加密表的首地址
+var iatcallend
+mov iatcalltop,$RESULT
+sub iatcalltop,10
+log iatcalltop
+find iatcalltop,#00000000#
+mov iatcallend,$RESULT
+log iatcallend
+var iatfn
+var iattop
+var codeadd
+var antiadd
+mov tmp,eax
+mov eax,iatcalltop
+mov eax,[eax]
+shr eax,10
+cmp ax,0
+jne iatbegin_2
+add iatcalltop,04
+iatbegin_2:
+mov eax,tmp
+
+codebegin:
+
+//all the code until here is ripped from the script by fxyang
+
+//check version~
+
+var temp11
+find eip,#83F9000F84#
+mov temp11, $RESULT
+sub temp11, eip
+cmp temp11, 2000
+ja farerror
+
+xor temp11, temp11
+find eip,#4B0F84#
+mov temp11, $RESULT
+cmp temp11, 0
+je v_old
+xor temp11, temp11
+find eip, #74??8B8D????????8B093B8D????????74??3B8D????????74??3B8D????????75??#
+mov temp11, $RESULT
+cmp temp11, 0
+je v_1950
+
+v_1970:
+msg "1970"
+ret
+
+v_old:
+msg "1910-1930"
+ret
+
+v_1950:
+msg "1950"
+ret
+
+farerror:
+msg "可能是大于1970的版本了~请搜索此脚本的新版本"
+ret

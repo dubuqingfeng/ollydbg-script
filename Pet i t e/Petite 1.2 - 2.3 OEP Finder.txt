@@ -1,0 +1,148 @@
+//////////////////////////////////////////////////
+//  FileName    :  Petite.V1.2-V2.3.osc
+//  Comment     :  OEP Find For Petite V1.2/V1.3/V1.4/V2.2/V2.3
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://www.unpack.cn
+//  Date        :  2005-10-04 18:00
+//////////////////////////////////////////////////
+#log
+
+MSGYN "Plz Clear All BreakPoints  And  Set Debugging Options : Events->Make First Pause at->WinMain !   "
+cmp $RESULT, 0
+je TryAgain
+
+
+//Petite V1.2————————————————————————————————
+1:
+
+/*
+0040E620    F3:A4           rep movs byte ptr es:[edi],byte ptr ds:[esi]
+0040E622    61              popad
+0040E623    66:9D           popfw
+0040E625    E9 A22AFFFF     jmp 004010CC
+*/
+
+find eip, #61669DE9#
+cmp $RESULT, 0
+log $RESULT
+je 2
+add $RESULT,3
+eob Petite V1.2
+bp $RESULT
+
+esto
+GoOn0:
+esto
+
+Petite V1.2:
+cmp eip,$RESULT
+jne GoOn0
+bc $RESULT
+sti
+jmp GetOEP
+
+
+//Petite V1.3/V1.4————————————————————————————————
+2:
+
+/*
+0040E5DF    8986 E4B50000   mov dword ptr ds:[esi+B5E4],eax
+0040E5E5    5E              pop esi
+0040E5E6    5B              pop ebx
+0040E5E7    C9              leave
+0040E5E8    C3              retn
+0040E5E9    E8 AE68FFFF     call 00404E9C
+*/
+/*
+00404F76    61              popad
+00404F77    66:9D           popfw
+00404F79    E9 4EC1FFFF     jmp 004010CC
+*/
+
+find eip, #5E5BC9C3E8#
+cmp $RESULT, 0
+je 3
+add $RESULT,4
+log $RESULT
+eob Petite V1.3/V1.4
+bp $RESULT
+
+esto
+GoOn1:
+esto
+
+Petite V1.3/V1.4:
+cmp eip,$RESULT
+jne GoOn1
+bc $RESULT
+sti
+jmp 1
+
+
+//Petite V2.X————————————————————————————————
+3:
+
+eob Petite V2.X
+gpa "GetProcAddress", "KERNEL32.dll"
+bp $RESULT
+
+esto
+GoOn2:
+esto
+
+Petite V2.X:
+cmp eip,$RESULT
+jne GoOn2
+
+bc $RESULT
+rtu
+find eip, #33C0B9????????E8#
+cmp $RESULT, 0
+je NoFind
+
+bp $RESULT
+eob Break2
+
+esto
+GoOn3:
+esto
+
+Break2:
+cmp eip,$RESULT
+jne GoOn3
+bc $RESULT
+log eip
+esti
+esti
+esti
+
+find eip, #83C4??E9#
+cmp $RESULT, 0
+je NoFind
+
+bp $RESULT
+eob Break3
+esto
+
+Break3:
+bc $RESULT
+sti
+sti
+
+
+//GetOEP————————————————————————————————
+
+log eip
+GetOEP:
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT.  Good Luck  "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not Petite V1.2/V1.3/V1.4/V2.2/V2.3 ! "
+ret
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret

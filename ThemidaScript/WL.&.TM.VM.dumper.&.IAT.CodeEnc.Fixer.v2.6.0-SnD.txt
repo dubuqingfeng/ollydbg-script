@@ -1,0 +1,1597 @@
+// Themida/Winlicense version 1.x/2.x dumper/fixer by Seek n Destroy
+// 
+// The script is XP only, VISTA has a different stack antidump. 
+// 
+// 
+// If you don't use VM (heap & stack) antidump redirector set the UseVM variable to 0.
+// If version retrieving fails, set version_check to zero
+// The script log holds vital information, always read it. 
+//
+// Exceptions must all be ticked and no other breakpoints must be available. 
+// Start the script at the system breakpoint.. Use Phantom.
+// EP breakpoint must be available. 
+// --------------------------------------------------------------------------------------
+// What does this script not fix:
+// -Custom memory loaded dll's (Doable in script but rarely used)
+// 
+////////////////////////////////-----Options-----////////////////////////////////////////
+
+mov version_check, 1				 //Use version retrieval?? 1=yes 0=no
+mov UseVM,1                          //Use VM antidumpredirector?? 1=yes 0=no
+mov kill_dd, 1						 //Disable the Oreans kernel32, user32 & advapi32 dll's?? 1=yes 0=no
+mov highv,1							 //Set to 1 to force detection of highversion, to fix the PE header antidump using a codecave and fix setevent antidumps.
+mov PE_anti_dis, 1					 //Set to one to disable PE header antdump, not compatible with 2.0.6.5
+mov allocsize, 200000                //Alloc for the VM, 100000 is usually enough WL main executable requires 300000
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+bphwcall
+LCLR
+var 1stdllbase
+var version
+
+alloc allocsize                
+mov lineair,$RESULT
+mov lineairmsg, lineair
+
+mov freecount,0
+mov eaxword, 0
+mov IATloc,0
+mov IATlocs,0
+mov amVM, 0
+mov 1stdllbase, 10000000              
+mov counterl,0
+mov once?,0
+mov ecounter,0
+mov dec_jump, 0
+mov no_alloc, 0
+mov end_loc, 0
+
+cmp UseVM,1
+jne check_1
+log "VM antidump redirector is used."
+jmp check_2
+check_1:
+log "VM antidump redirector is not used."
+
+check_2:
+cmp version_check,1
+jne check_3
+log "Version retriever is used."
+jmp check_4
+check_3:
+log "Version retriever is not used."
+
+check_4:
+cmp kill_dd,0
+jne check_5
+log "Oreans kernel32, user32 and advapi32 dll's are not disabled."
+jmp check_6
+check_5:
+log "Oreans kernel32, user32 and advapi32 dll's are disabled."
+check_6:
+log "-------------"
+
+/////////////////////////////////////////////////
+// Actual Script execution below.              //
+/////////////////////////////////////////////////
+
+GPA "VirtualProtect","kernel32.dll"
+cmp $RESULT,0
+je end
+mov virtualprot, $RESULT
+
+GPA "FreeLibrary","kernel32.dll"
+cmp $RESULT,0
+je end
+mov freelib, $RESULT
+
+GPA "SetEvent","kernel32.dll"
+cmp $RESULT,0
+je end
+mov setevent, $RESULT
+
+GPA "LoadLibraryA","kernel32.dll"
+cmp $RESULT,0
+je end
+mov loadlab, $RESULT
+
+GPA "GetVersion","kernel32.dll"
+cmp $RESULT,0
+je end
+mov getvers, $RESULT
+
+GPA "GetNativeSystemInfo","kernel32.dll"
+cmp $RESULT,0
+je end
+mov native, $RESULT
+
+GPA "Sleep","kernel32.dll"
+cmp $RESULT,0
+je end
+mov sleep, $RESULT
+
+GPA "RtlAllocateHeap","ntdll.dll"
+cmp $RESULT,0
+je end
+mov allocheap, $RESULT
+
+GPA "ZwAllocateVirtualMemory","ntdll.dll"
+cmp $RESULT,0
+je end
+mov allocmem, $RESULT
+
+GPA "GetProcAddress","kernel32.dll"
+cmp $RESULT,0
+je end
+mov procaddr, $RESULT
+
+GPA "VirtualAlloc","kernel32.dll"
+cmp $RESULT,0
+je end
+mov valloc, $RESULT
+
+mov temp, eip
+mov temp, [temp]
+and temp,ff
+cmp temp,c3
+jne LABEL_nC3
+esto
+
+LABEL_nC3:
+bphws valloc, "x" 
+mov stackanti, esp                     
+sub stackanti, 4
+
+mov SEH, stackanti
+add SEH, 20
+
+bc
+GMI eip, MODULEBASE
+log $RESULT, "Modulebase: "
+mov base, $RESULT                      // calculate first section size +location
+mov base1,$RESULT
+mov base2,$RESULT
+add base, 3c
+mov PEhead,base
+mov PEhead2,base
+add base1,[base]
+sub base, 3c
+add base1, 100                         // first section size location
+add base, 1000
+log base, "Code & IAT Section: "
+
+add PEhead2, [PEhead2]
+sub PEhead2, 3c
+add PEhead2, 148
+cmp PE_anti_dis, 0
+je PE_anti_disa
+mov [PEhead2+1], 70, 1               // remove in version 2.0.6.5, it truncates 90% of the PE header antidump in other versions.
+PE_anti_disa:
+add PEhead2, C
+add base2, [PEhead2]
+
+ask "If you wish you can change the antidump locations here else the third section is used." // Using the third section can be compatible with double protections.)
+cmp $RESULT, 0
+je NO_new_base
+mov base2, $RESULT
+NO_new_base:
+add base2,100
+mov esp4new, base2                   // New locations of the antidump (3 dwords)
+add base2,8
+mov heapnew, base2
+add base2,4
+mov heapnew2, base2
+add base2,4
+mov Checkprotnew, base2
+add base2,4
+mov SEHnew, base2
+sub base2, 114
+
+mov API_anti, base2	
+mov [SEH], SEHnew
+mov [SEHnew], -1
+mov temp, [SEH+4]
+mov [SEHnew+4], temp
+
+mov baceip,eip
+exec                                 // Make sure that section is not protected.. 
+pushad
+pushfd
+push eax
+push esp
+push 40
+push 0fff
+push {base2}
+call {virtualprot}
+pop eax
+popfd
+popad
+jmp {baceip}
+ende
+
+mov temp,eax
+exec                                 
+call {getvers}
+jmp {baceip}
+ende
+mov version, eax
+mov eax,temp
+and version, ff
+cmp version, 5
+je NO_XP
+cmp UseVM,1
+jne NO_XP
+
+mov $RESULT,0
+ask "No XP. Stack antidump differs, insert it manually. Cancel will disable the antidump redirector."
+cmp $RESULT, 0
+jne NO_XPa
+mov UseVM,1
+jmp NO_XP
+NO_XPa:
+mov stackanti, $RESULT
+
+NO_XP:
+esto
+cmp eip,valloc
+jne NO_valloc
+bphwc eip
+rtr
+bphws eip, "x" 
+cmp [esp+8], 2000
+jne LABEL_03a
+jmp LIN_alloc_vmb
+
+LIN_alloc_vm:                        // lineair alloc and redirect first 6 allocs
+esto
+LIN_alloc_vmb:
+free eax
+mov eax,lineair
+cmp 1000,[esp+8]
+jb LIN_alloc_vma
+mov [esp+8], 1000
+LIN_alloc_vma:
+add lineair, [esp+8]
+cmp counterl, 5
+inc counterl
+je LABEL_03
+
+jmp LIN_alloc_vm
+
+LABEL_03:
+eval "RISC VM was redirected, the VM is not located in the TM/WL section, the following section will be dumped to the program directory: {lineairmsg}, attach it to your dump."
+log lineairmsg, "RISC VM was redirected to the following section: " 
+mov VMloccheck,1
+msg $RESULT
+esto
+jmp LABEL_03c
+
+LABEL_03a:
+msg "Double dlls were detected before VM was written, the CISC VM is located in the TM/WL section"
+mov VMloccheck,0
+log "The CISC VM is located in the Themida/Winlicense section." 
+jmp LABEL_03c
+
+LABEL_03c:
+cmp kill_dd, 0
+je LABEL_03b
+
+cmp [esi], 52455355
+
+jne LABEL_03b
+mov eax, -1
+esto
+mov eax, -1
+esto
+
+LABEL_03b:
+BPHWC eip
+sti
+GMEMI eip, MEMORYBASE
+mov mbase, $RESULT
+
+cmp version_check, 0
+je NO_info_lock
+find mbase,#00063006D1C846#	
+cmp $RESULT,0
+jne NO_info_loca
+
+bphws native, "x"                         
+esto
+bphwc native
+rtr
+sti
+GMEMI eip, MEMORYBASE
+mov mbase, $RESULT
+find mbase,#00063006D1C846#	
+cmp $RESULT,0
+je NO_info_lock
+NO_info_loca:
+add $RESULT, F
+bphws $RESULT, "x"
+NO_info_locb:
+esto
+mov info, edi
+sub info, 4
+cmp [info], 000a0a0a
+jne NO_info_locb
+bphwc $RESULT
+jmp NO_info_loc
+
+NO_info_loc:
+log "---------------[Extracted info]-----------------"
+mov info, edi
+sub info, 0A0
+
+NO_info_locf:
+inc info
+cmp [info], 202d2d2d
+jne NO_info_locf
+mov info2,info
+mov info, [info2], 30
+log info, ""
+add info2, 10
+
+mov info, info2
+NO_info_loch:
+inc info
+cmp [info], 202d2d2d
+jne NO_info_loch
+mov info2,info
+mov info, [info2], 30
+
+log info, ""
+find mbase, #E9????000004000000??????????000000000000000000000000000000000000#
+cmp $RESULT,0
+je NO_info_lock1
+add $RESULT, 9
+mov $RESULT, [$RESULT], 5
+cmp $RESULT, #0000000000#
+jne NO_info_lock2
+log "          Version; 2.0.7.0 or above"
+mov highv, 1
+jmp NO_info_lock1
+NO_info_lock2:
+mov highv, 0
+log $RESULT, "               Version; "
+NO_info_lock1:
+log "------------------------------------------------"
+NO_info_lock:
+bphws base, "r"       
+esto
+BPHWC base
+mov Peanti,eip
+add Peanti, 24
+bp Peanti
+esto
+bc Peanti
+mov temp, eip
+mov temp, [temp]
+and temp, ffff
+cmp temp,008589
+jne LABEL_03g
+mov temp, ebp
+add Peanti,2
+mov Peanti, [Peanti]
+add temp,Peanti
+mov Peanti,temp
+mov PEa, base2
+add PEa, 200
+jmp LABEL_03h
+LABEL_03g:
+log eip, "PE header antidump base write mode differs. Do a manual edit at: "
+LABEL_03h:
+// dll??
+
+cmp highv, 1
+jne CH_protf
+bphws procaddr, "x" 					//fix Checkprotection macro antidump
+bphws base, "w"
+
+CH_prot:
+esto
+cmp eip, procaddr
+jne CH_protb
+mov temp_1, [esp+8]
+cmp [temp_1], 416c7452
+jne CH_prot
+
+bphwc eip
+rtr
+bphws eax, "x" 
+
+CH_prota:
+esto
+cmp eip, allocheap
+jne CH_protb
+cmp [esp+C],4
+jne CH_prota
+
+rtr
+mov eax, Checkprotnew
+log temp, "Check Protection Antidump redirected to: "
+jmp CH_protc
+
+CH_protb:
+log "Check Protection Antdump not redirected, version too low/high."
+jmp CH_protc
+
+CH_protf:
+log "Check Protection Antdump not redirected, version too low/high."
+bphws base, "w"
+
+CH_protc:
+bphwc procaddr
+bphwc allocheap
+
+/////////////// is_registered dwords;
+
+////////////////////////////////////
+
+mov temp, stackanti						//Find antidump pointer
+sub temp, 1C
+mov temp_1, mbase
+mov a_counter,0
+
+A_pnt:
+find temp_1, temp
+cmp $RESULT, 0
+je A_pnt_1
+mov temp_1, $RESULT
+mov stack_ad, $RESULT
+
+add temp_1,2
+inc a_counter
+jmp A_pnt
+
+A_pnt_1:
+cmp a_counter, 1
+jne REP_finder_1
+
+log stack_ad, "Stackantidump pointer located at: "
+jmp REP_finder_1
+
+REP_finder:
+esto
+REP_finder_1:
+mov temp, eip
+mov temp, [temp]
+and temp, ffff
+cmp temp,a4f3
+je REP_findera
+mov temp, base
+add temp, [base1]
+sub temp, 4
+cmp edx, temp
+je REP_findera
+cmp eax, temp
+je REP_findera
+cmp ebx, temp
+je REP_findera
+cmp edi, temp
+je REP_findera
+cmp esi, temp
+je REP_findera
+cmp ecx, temp
+je REP_findera
+jmp REP_finder
+
+REP_findera:
+mov temp,eip
+BPHWC base
+bphws allocmem, "x"
+esto
+esto
+esto
+esto
+BPHWC allocmem
+log "-------------"
+log "IAT fixing started."
+
+GMEMI temp, MEMORYBASE
+mov mbase, $RESULT
+find mbase,#3D000001000F83#	
+cmp $RESULT,0
+je NO_Nothting_loc
+bphws $RESULT, "x"
+esto
+BPHWC $RESULT
+cmp eax,10000
+JB NON_emu_first
+
+find mbase,#74??8B8D????????8B093B8D????????7410#	
+cmp $RESULT,0
+je EAX_LOCd
+log $RESULT, "ImageBase compare jumps found at: "
+bphws $RESULT, "x"
+esto
+BPHWC $RESULT
+
+EAX_LOCd:										 // Eaxapi location finder
+find eip,#4B0F84??0?0000#	
+cmp $RESULT,0
+je EAX_LOC
+log $RESULT, "Magic jumps detected at: "
+mov dec_jump, $RESULT
+
+msgyn "Do you want to use the magic jumps as eax is an API place??"
+cmp $RESULT,0
+jne EAX_LOCh
+
+EAX_LOC:
+cmp eip, dec_jump
+je EAX_LOCg
+cmp ecounter, 50
+je EAX_LOCl
+inc ecounter
+sti
+cmp 80000000, eax
+jb EAX_LOC
+cmp eax, 1stdllbase
+jb EAX_LOC
+GN eax
+cmp $RESULT_2,0
+jne EAX_LOCc
+cmp [eax], 4c44544e                                    // ntdll??
+je EAX_LOCc
+jmp EAX_LOC
+
+EAX_LOCl:
+cmp once?,1
+je EAX_LOCf
+find mbase,#3b020f84#	
+cmp $RESULT,0
+je EAX_LOCf
+mov calc, $RESULT
+add calc,4
+mov calc, [calc]
+add calc,8
+add calc, $RESULT
+cmp calc, eip
+log calc, "IAT loop detected and skipped at: "
+jb EAX_LOCla
+bp calc
+esto
+bc calc
+EAX_LOCla:
+mov once?,1
+mov ecounter, 0
+jmp EAX_LOC
+
+EAX_LOCf:
+cmp dec_jump, 0
+jne EAX_LOCh
+
+msg "We have hit a loop, a rep, or a lot of obfu, please find the place were eax holds an API manually. To do so skip the loop, and resume pressing f7 until eax holds an API-name. Then resume the script, it's probably not far."
+log "A loop, a rep, or a lot of obfu prohibited the execution of the IAT fixer, manual search was required."
+pause
+EAX_LOCo:
+GN eax
+cmp $RESULT_2,0
+jne EAX_LOCc
+cmp [eax], 4c44544e                                    
+je EAX_LOCc
+msg "Uhm there's no API in eax, do you know what you're doing?? Try again.."
+log "User was unable to obtain API in eax spot manually."
+pause
+jmp EAX_LOCo
+
+EAX_LOCh:
+bp dec_jump
+esto
+bc eip
+log "Magic jumps used as eax holds an api place, by choice or tracer failed."
+jmp EAX_LOCc
+
+EAX_LOCg:
+log "Unlinked dll detected, now using the magic jumps as eax holds an api point."
+
+EAX_LOCc:
+log eip, "Eax holds an API place detected at: "
+bphws eip, "x"
+bpwm base, [base1]
+
+EAX_LOCc_1:
+cmp UseVM, 1
+jne NOVMa
+bphws stackanti, "r"   
+mov stackantib, [stackanti]
+jmp NOVMb                          
+NOVMa:
+bphws allocheap, "x"   
+NOVMb:
+mov counter1,0
+
+cmp eaxword, 0
+jne EAXword
+mov temp, eip
+mov temp, [temp]
+and temp, 0ffff
+mov eaxword, temp     
+mov eaxapi, eip    
+                 
+EAXword:
+GMEMI eip, MEMORYBASE
+mov mbase, $RESULT
+find mbase,#83f8500f82#	
+cmp $RESULT,0
+je NO_IAT_loc
+log $RESULT, "Cmp eax,50 detected at: "
+bphws $RESULT, "x"
+mov eax50,$RESULT
+jmp LABEL_02a
+
+LABEL_02:
+esto
+cmp UseVM, 1
+jne LABEL_02y
+
+cmp [stackanti],stackantib                       
+jne END_01
+
+cmp IATloc,0
+je LABEL_02a
+cmp IATlocs,0
+jne LABEL_02w
+mov IATlocs, IATloc
+mov IATlocb, IATloc
+
+LABEL_02w:
+cmp IATloc, IATlocb
+jb LABEL_02q
+mov IATlocb, IATloc
+
+LABEL_02q:
+cmp IATlocs, IATloc
+jb LABEL_02a
+mov IATlocs, IATloc
+
+LABEL_02a:
+cmp UseVM,1
+je LABEL_02g
+cmp eip, allocheap
+je ENTRYa
+LABEL_02g:
+mov temp, eip
+mov temp, [temp]
+and temp, 0ffff
+cmp temp, eaxword                             // first two bytes of the instuction were eax = API
+jne LABEL_04
+mov IAT, eax
+jmp LABEL_02
+LABEL_04:
+cmp temp, 00f60                              // first two bytes of the instuction were eax = API (2)
+jne LABEL_02b
+mov IAT, eax
+jmp LABEL_02
+
+
+LABEL_02b:									// pretty much all methods of writing IAT's mod if neccesary
+//cmp temp, 0A4f3
+//je END_01
+cmp temp, 0008f
+je LABEL_06
+cmp temp, 0028f
+je LABEL_01
+cmp temp, 0038f
+je LABEL_08
+cmp temp, 0f883
+je LABEL_17
+cmp temp, 060AB
+je LABEL_05
+cmp temp, 0f9AB
+je LABEL_05
+cmp temp, 0f8AB
+je LABEL_05
+cmp temp, 0E9AB
+je LABEL_05
+cmp temp, 0f5AB
+je LABEL_05
+cmp temp, 0fcAB
+je LABEL_05
+cmp temp, 0ADAB
+je LABEL_05
+cmp temp, 00fAB
+je LABEL_05
+cmp temp, 00889
+je LABEL_12
+cmp temp, 01089
+je LABEL_12
+cmp temp, 02a89
+je LABEL_14
+cmp temp, 01889
+je LABEL_12
+cmp temp, 02889
+je LABEL_12
+cmp temp, 03889
+je LABEL_12
+cmp temp, 03b89
+je LABEL_13
+cmp temp, 03089
+je LABEL_12
+cmp temp, 00b89
+je LABEL_13
+cmp temp, 00a89
+je LABEL_14
+cmp temp, 02989
+je LABEL_15
+cmp temp, 01029
+je LABEL_07
+cmp temp, 02881
+je LABEL_07
+cmp temp, 03181
+je LABEL_22
+cmp temp, 03831
+je LABEL_19
+cmp temp, 03381
+je LABEL_20
+cmp temp, 03281
+je LABEL_18
+cmp temp, 01829
+je LABEL_19
+cmp temp, 00829
+je LABEL_19
+cmp temp, 01029
+je LABEL_19
+jmp LABEL_02
+
+
+LABEL_17:
+mov eax, 20
+GN ecx				
+cmp $RESULT_2,0
+jne LABEL_17a
+jmp LABEL_02
+LABEL_17a:
+mov IAT, ecx
+jmp LABEL_02
+
+/////////////////////////////////////////////////////////////////
+// API/FF15/25 Rewriters (nice)                                //
+/////////////////////////////////////////////////////////////////
+
+//-------
+
+LABEL_20:
+mov addr,ebx
+sti
+mov [addr], IAT
+jmp LABEL_02
+
+//-------
+
+LABEL_19:
+mov addr,eax
+sti
+mov [addr], IAT
+jmp LABEL_02
+
+//-------
+
+LABEL_18:
+mov addr,edx
+sti
+mov [addr], IAT
+jmp LABEL_02
+
+//-------
+
+LABEL_22:
+mov addr,ecx
+sti
+mov [addr], IAT
+jmp LABEL_02
+
+//-------
+
+LABEL_07:
+mov addr,eax
+inc eax
+sti
+dec eax
+inc addr
+mov [addr], IATloc
+jmp LABEL_02
+
+//-------
+
+LABEL_08:
+mov addr,ebx
+dec addr
+mov addr2,addr
+cmp [ebx], 0
+jne LABEL_08b
+sti
+sti
+mov IATloc, ebx
+GN [ebx]
+cmp $RESULT_2,0
+jne LABEL_08a
+mov [ebx],IAT
+LABEL_08a:
+jmp LABEL_02
+LABEL_08b:
+sti
+mov temp,[addr2]
+and temp, 0ff
+cmp temp,e8
+je LABEL_08d
+mov [addr],025ff
+jmp LABEL_08c
+LABEL_08d:
+mov [addr],015ff
+LABEL_08c:
+add addr, 2
+mov [addr], IATloc
+jmp LABEL_02
+
+//-------
+
+LABEL_05:
+sti
+mov addr, edi
+mov addr2, edi
+sub addr,5
+sub addr2,5
+mov addr2,addr
+cmp [edi], 0
+jne LABEL_05a
+sti
+mov IATloc, edi
+GN [edi]
+cmp $RESULT_2,0
+jne LABEL_05a
+mov [edi],IAT
+LABEL_05a:
+mov temp,[addr2]
+and temp, 0ff
+cmp temp,e8
+je LABEL_05b
+mov [addr],025ff
+jmp LABEL_05c
+LABEL_05b:
+mov [addr],015ff
+LABEL_05c:
+add addr, 2
+mov [addr], IATloc
+jmp LABEL_02
+
+//-------
+
+LABEL_01:
+GN ecx
+cmp $RESULT_2,0
+je LABEL_01g
+mov IAT, ecx
+LABEL_01g:
+mov addr,edx
+mov addr1, edx
+dec addr
+mov addr2,addr
+cmp [addr1], 0
+jne LABEL_01b
+sti
+sti
+sti
+sti
+sti
+sti
+mov IATloc, addr1
+GN [addr1]
+cmp $RESULT_2,0
+jne LABEL_01a
+mov [addr1],IAT
+LABEL_01a:
+jmp LABEL_02
+LABEL_01b:
+sti
+mov temp,[addr2]
+and temp, 0ff
+cmp temp,e8
+je LABEL_01d
+mov [addr],025ff
+jmp LABEL_01c
+LABEL_01d:
+mov [addr],015ff
+LABEL_01c:
+add addr, 2
+mov [addr], IATloc
+jmp LABEL_02
+
+//-------
+
+LABEL_06:
+GN ecx
+cmp $RESULT_2,0
+je LABEL_06g
+mov IAT, ecx
+LABEL_06g:
+mov addr, eax
+mov addr1, eax
+dec addr
+mov addr2,addr
+cmp [addr1], 0
+jne LABEL_06a
+sti
+sti
+sti
+sti
+sti
+mov IATloc, addr1
+GN [addr1]
+cmp $RESULT_2,0
+jne LABEL_06c
+mov [addr1],IAT
+LABEL_06c:
+jmp LABEL_02
+LABEL_06a:
+sti
+mov temp,[addr2]
+and temp, 0ff
+cmp temp,e8
+je LABEL_06e
+mov [addr],025ff
+jmp LABEL_06f
+LABEL_06e:
+mov [addr],015ff
+LABEL_06f:
+add addr, 2
+mov [addr], IATloc
+jmp LABEL_02
+
+//-------
+
+LABEL_13:
+cmp [ebx], 0
+jne LABEL_13b
+sti
+mov IATloc, ebx
+GN [ebx]
+cmp $RESULT_2,0
+jne LABEL_13a
+mov [ebx],IAT
+LABEL_13a:
+jmp LABEL_02
+LABEL_13b:
+sti
+mov oldaddr, IAT
+sub oldaddr, ebx
+sub oldaddr, 4
+mov [ebx],oldaddr
+jmp LABEL_02
+
+//-------
+
+LABEL_12:
+//cmp [eax], 0
+//jne LABEL_12a
+sti
+mov IATloc, eax
+GN [eax]
+cmp $RESULT_2,0
+jne LABEL_12b
+mov [eax],IAT
+LABEL_12b:
+jmp LABEL_02
+LABEL_12a:
+sti
+mov oldaddr, IAT
+sub oldaddr, eax
+sub oldaddr, 4
+mov [eax],oldaddr
+jmp LABEL_02
+
+//-------
+
+LABEL_14:
+cmp [edx], 0
+jne LABEL_14a
+sti
+mov IATloc, edx
+GN [edx]
+cmp $RESULT_2,0
+jne LABEL_14b
+mov [edx],IAT
+LABEL_14b:
+jmp LABEL_02
+LABEL_14a:
+sti
+mov oldaddr, IAT
+sub oldaddr, edx
+sub oldaddr, 4
+mov [edx],oldaddr
+jmp LABEL_02
+
+//-------
+
+LABEL_15:
+cmp [ecx], 0
+jne LABEL_15a
+sti
+mov IATloc, ecx
+GN [ecx]
+cmp $RESULT_2,0
+jne LABEL_15b
+mov [ecx],IAT
+LABEL_15b:
+jmp LABEL_02
+LABEL_15a:
+sti
+mov oldaddr, IAT
+sub oldaddr, ecx
+sub oldaddr, 4
+mov [ecx],oldaddr
+jmp LABEL_02
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Code Encrypt fixing, generic should just return when there's no CodeEncrypt.      //
+///////////////////////////////////////////////////////////////////////////////////////
+
+END:
+BPMC
+bphwcall
+log "-------------"
+mov repl,0
+mov reset,base
+mov oep,eip
+mov first, #E8????????0?000000??000000????000020#
+
+LABELcode_01:	
+find base, first
+cmp $RESULT,0
+je ENDcode_01
+mov base, $RESULT
+mov addr, $RESULT
+mov addr3,addr
+mov addr2,addr
+add addr3,9
+cmp [addr3],1
+je LABELcode_03
+mov eip, addr2
+inc repl
+log eip, "CodeEncrypt function fixed at: "
+add addr, 12
+bphws addr, "x"
+esto
+bphwc addr
+
+LABELcode_03:
+mov [addr2], 00eb
+inc addr2
+mov [addr2], 90909010
+add base,2
+jmp LABELcode_01
+
+ENDcode_01:
+cmp first, #E8????????0?000000??000000????000020#
+jne ENDcode_02
+mov base,reset
+mov first, #E8????????0?000000??000000????0000AA#
+jmp LABELcode_01
+
+ENDcode_02:
+mov base, reset
+log repl, "Total CodeEncrypt functions: "
+log "-------------"
+mov eip,oep
+
+log esp4new, "Stack Antidump located at: "
+log SEHnew, "SEH Antidump located at: "
+cmp no_alloc, 1
+je ENDcode_04
+log heapnew, "Heap Antidump(1) located at: "
+log heapnew2, "Heap Antidump(2) located at: "
+ENDcode_04:
+
+cmp UseVM, 1
+jne PE_anti_3
+
+//Fix pe header antidump differently.. 
+//Now you can use dump PE header and wipe EP. 
+
+sub base, 1000
+mov temp, [base], 500
+mov [PEa], temp, 500
+
+cmp highv, 1
+jne PE_anti_2
+
+mov PEb, PEa
+add PEb, 500
+
+find IATlocs, virtualprot
+cmp $RESULT,0
+je PE_anti_1
+mov temp_2, $RESULT
+
+mov temp, [eip], 4
+mov temp_1, [eip+4], 4
+
+eval "jmp {PEb}"
+asm eip, $RESULT
+
+asm PEb, "pushad"
+add PEb, $RESULT
+asm PEb, "pushfd"
+add PEb, $RESULT
+
+asm PEb, "push eax"
+add PEb, $RESULT
+asm PEb, "push esp"
+add PEb, $RESULT
+asm PEb, "push 4"
+add PEb, $RESULT
+asm PEb, "push 1000"
+add PEb, $RESULT
+eval "push {base}"
+asm PEb, $RESULT
+add PEb, $RESULT
+
+mov [PEb], 15FF, 2
+mov [PEb+2], temp_2, 4
+add PEb, 6
+
+asm PEb, "pop eax"
+add PEb, $RESULT
+
+eval "mov esi, {PEa}"
+asm PEb, $RESULT
+add PEb, $RESULT
+eval "mov edi, {base}"
+asm PEb, $RESULT
+add PEb, $RESULT
+asm PEb, "mov ecx, 500"
+add PEb, $RESULT
+mov [PEb], A4F3, 2
+add PEb, 2
+
+mov [PEb], 05C7
+mov [PEb+2],eip
+mov [PEb+6],temp
+
+mov temp_2, eip
+add temp_2, 4
+
+mov [PEb+A],05c7
+mov [PEb+C],temp_2
+mov [PEb+10],temp_1
+
+add PEb, 14
+
+asm PEb, "popfd"
+add PEb, $RESULT
+asm PEb, "popad"
+add PEb, $RESULT
+
+eval "jmp {eip}"
+asm PEb, $RESULT
+
+// loadlibraryantidump fixer;
+cmp highv, 1
+jne ENTRYb_3
+fill base2, 100, 00
+
+find mbase, loadlab
+cmp $RESULT, 0
+je ENTRYb_1
+
+mov [$RESULT], API_anti
+mov temp, [loadlab+16]
+mov [API_anti+16],temp
+
+log API_anti, "LoadLibraryA antidump redirected to: "
+jmp ENTRYb_2
+ENTRYb_1:
+log "LoadLibraryA in TM/WL section not found, thusly the antidump is not fixed. (Oreans kernel32, user32 & advapi32 dll's must be disabled)"
+ENTRYb_2:
+
+// Setevent fixer;
+
+find mbase, setevent
+cmp $RESULT, 0
+je ENTRYb_4
+
+mov [$RESULT], API_anti
+mov temp_1, [setevent+C],4
+mov [API_anti+C],temp_1,4
+
+log API_anti, "SetEvent antidump redirected to: "
+jmp ENTRYb_7
+
+ENTRYb_4:
+log "SetEvent in TM/WL section not found, thusly the antidump is not fixed. (Oreans kernel32, user32 & advapi32 dll's must be disabled)"
+
+ENTRYb_7:
+// FreeLibrary fixer;  (make looper)
+
+mov temp_1, [freelib], 30
+mov [API_anti+50], temp_1 ,30
+mov temp_2, 0, 4
+mov temp_2, mbase
+
+ENTRYb_6:
+find temp_2, freelib
+cmp $RESULT, 0
+je ENTRYb_5
+mov temp_2, $RESULT
+
+mov [$RESULT], API_anti
+add [$RESULT], 50
+log $RESULT, "FreeLibrary antidump pointer redirected, location: "
+inc freecount
+add temp_2, 2
+jmp ENTRYb_6
+
+ENTRYb_5:
+cmp 0, freecount
+jb ENTRYb_3
+
+log "FreeLibrary in TM/WL section not found, thusly the antidump is not fixed. (Oreans kernel32, user32 & advapi32 dll's must be disabled)"
+
+ENTRYb_3:
+log "PE header antidump was fixed using a codecave at the oep."
+jmp PE_anti_3
+
+PE_anti_2:
+mov [Peanti], PEa
+log PEa, "PE header antidump was fixed using a redirection to: "
+jmp PE_anti_3
+
+PE_anti_1:
+log "The VirtualProtect API was not detected and neither could be appended to the IAT, the PE header antidump fixer will not be coded."
+log PEa, "PE header antidump was not fixed, correct PE header located at: "
+
+PE_anti_3:
+log "-------------"
+log eip, "OEP located at: "
+cmt eip, "The (near) OEP, by quosego/SnD"
+msg "Script has finished, you are on the oep or near oep. Find the VM Antidump locations and other information in the log."
+ret
+
+/////////////////////////////////////////////////////////////////
+// Antidump Redirectors		                                   //
+/////////////////////////////////////////////////////////////////
+
+END_01:                                //Use when the VM is outside the themida section
+bphwc stackanti
+bphws allocheap, "x"
+
+END_01(2)t:
+esto
+cmp eip, allocheap
+jne NO_alloc
+cmp [esp+C],4
+jne END_01(2)t
+BPHWC eip
+rtr
+mov eax, heapnew
+
+mov temp,stackanti							//Secondary stackantidump fixing 
+sub temp, 1c
+mov temp_1, [temp+20]
+mov temp_2, mbase
+
+END_01(2)a:
+find temp_2, temp
+cmp $RESULT, 0
+je NO_Sec_Stackanti
+mov temp_2, $RESULT
+mov [$RESULT], esp4new
+mov [esp4new+20], temp_1
+add temp_2,2
+jmp END_01(2)a
+
+NO_Sec_Stackanti:							//Primary stackantidump fixing 
+mov temp, [stackanti]
+mov [esp4new], temp
+mov temp, [stackanti+4]
+mov [esp4new+4], temp
+
+xor stackanti, 8647A6B4
+find mbase, stackanti
+cmp $RESULT, 0
+je NO_Stackanti
+
+mov temp, esp4new
+xor temp, 8647A6B4
+mov [$RESULT], temp
+
+bphws allocheap, "x"
+END_01b:
+esto
+cmp eip, allocheap
+jne NO_alloc
+cmp [esp+C],4
+jne END_01b
+BPHWC eip
+rtr
+mov eax, heapnew2
+
+cmp highv, 1
+jne ENTRYj
+cmp IATlocs, base
+jb ENTRYj
+
+cmp [IATlocs], 0
+je ENTRYl
+
+sub IATlocs, 4
+cmp [IATlocs], 0
+jne ENTRYj
+
+ENTRYl:
+cmp [IATlocs-4], 0
+jne ENTRYj
+
+sub IATlocs, 4
+mov [IATlocs], virtualprot
+ENTRYj:
+log "IAT fixing finished."
+log "-------------"
+sub IATlocs, 4
+log IATlocs, "IAT start: " 
+add IATlocb, 4
+log IATlocb, "IAT end: " 
+sub IATlocb, IATlocs
+log IATlocb, "IAT Size: " 
+log "-------------"
+log "Heap antidump and Stack antidump are redirected.(1)"
+jmp ENTRY                  
+                
+ENTRYa:
+log "IAT fixing finished."
+log "-------------"
+sub IATlocs, 4
+log IATlocs, "IAT start: " 
+add IATlocb, 4
+log IATlocb, "IAT end: " 
+sub IATlocb, IATlocs
+log IATlocb, "IAT Size: " 
+rtr
+mov heapanti1, eax
+esto
+rtr
+mov heapanti2, eax
+BPHWC allocheap
+
+ENTRY:
+BPHWCall
+sti                                         // Find hardwareID
+find mbase, #00BB11EE00#
+cmp $RESULT,0
+je ENTRYn
+log "-------------"
+log $RESULT, "Encrypted Winlicense HardwareID found at: " 
+
+
+ENTRYn:
+log "-------------"
+mov temp,base
+ENTRYn_1:
+find temp, #E91E000000B8????????B8????????B8????????B8????????B8????????B8#
+mov temp, $RESULT
+cmp $RESULT,0
+je ENTRYp
+log $RESULT, "Check_protection/Check_Code_integrity Macro call found at: " 
+add temp,2
+jmp ENTRYn_1
+
+ENTRYp:
+mov temp,mbase
+ENTRYp_1:
+find temp, #833E000F85????????837E04000F85#
+cmp $RESULT,0
+je ENTRYx
+mov temp, $RESULT
+log $RESULT, "Check_Code_integrity Macro signature found at: " 
+add temp,2
+jmp ENTRYp_1
+
+ENTRYx:
+mov temp,base
+ENTRYu:
+find temp, #E8??????00????00000000000000????2020#
+mov temp, $RESULT
+cmp $RESULT,0
+je ENTRYt
+log $RESULT, "REGISTERED Macro call found at: " 
+add temp,2
+jmp ENTRYu
+
+ENTRYt:
+mov temp,mbase
+ENTRYt_1:
+find temp, #0006001E3026303E2806281E3026303E#
+mov temp, $RESULT
+cmp $RESULT,0
+je ENTRYx_3
+log $RESULT, "REGISTERED Macro function found at: " 
+add temp,2
+jmp ENTRYt_1
+
+ENTRYx_3:
+log "-------------"
+find mbase, #B8010000008985????????C785#
+cmp $RESULT,0
+je ENTRYx_1
+add $RESULT, B
+log $RESULT, "First is_registered dword retrieval point found at: "
+jmp ENTRYx_2
+ENTRYx_1:
+log "First is_registered dword retrieval point not found."
+
+ENTRYx_2:
+find mbase, #000000000000000081BD#
+cmp $RESULT,0
+je ENTRYx_4
+add $RESULT, 8
+log $RESULT, "Second is_registered dword retrieval point found at: "
+jmp ENTRYc
+ENTRYx_4:
+log "Second is_registered dword retrieval point not found."
+
+ENTRYc:
+log "-------------"
+mov temp,mbase
+find IATlocs, sleep
+cmp $RESULT,0
+je ENTRYg
+mov sleeploc, $RESULT
+
+ENTRYf:
+find temp, #606A00FF95????????61ebeb#
+cmp $RESULT,0
+je ENTRYd
+mov addr,$RESULT
+mov temp,$RESULT
+
+add addr, 3
+mov [addr], 0015ff
+add addr, 2
+mov [addr], sleeploc
+inc amVM
+ 
+add temp,2
+jmp ENTRYf
+
+ENTRYg:
+log "Your program doesn't use the sleep API, the multithreading sleep api's won't be fixed."
+jmp ENTRYb
+ENTRYd:
+log amVM, "All multithreading sleep api's fixed, number of VM entries: "
+
+ENTRYb:
+cmp VMloccheck,1
+jne ENDa
+eval "/TM.or.WL.VM.Area-SnD-[{lineairmsg}].mem"
+dm lineairmsg, allocsize, $RESULT
+ENDa:
+cmp no_alloc, 1
+je ENDc
+
+bprm base, [base1]
+mov base3,base
+add base3,[base1]
+
+cmp VMloccheck, 1
+je ENDb
+sti
+sti
+find eip, #619D#
+cmp $RESULT,0
+je ENDc
+bphws $RESULT, "x"
+mov end_loc, $RESULT
+jmp ENDb_2
+
+ENDb:
+mov countervm, 0
+mov temp, lineairmsg
+ENDb_1:
+cmp countervm, 4
+je ENDb_2
+find temp, #FF7770FF7774#
+cmp $RESULT,0
+je ENDb_2
+mov temp, $RESULT
+bphws $RESULT, "x"
+mov end_loc, $RESULT
+inc countervm
+add temp, 2
+jmp ENDb_1
+
+ENDb_2:
+esto
+cmp eip, base
+jb ENDb_3
+cmp base3,eip
+jb ENDb_3
+jmp ENDd
+
+ENDb_3:
+cmp eip, end_loc
+jne ENDb_2
+rtr
+sti
+
+mov temp, eip
+mov temp, [temp]
+and temp, ff
+cmp temp, 68
+jne ENDb_2
+
+mov temp, eip
+add temp, 5
+mov temp, [temp]
+and temp, ff
+cmp temp, e9
+jne ENDb_2
+jmp END
+
+ENDd:
+log "VM oep finder failed, near oep finder was executed instead."
+jmp END
+
+ENDc:
+log "VM oep finder failed, near oep finder was executed instead."
+ENTRYo:
+esto
+cmp eip, base
+jb ENTRYo
+cmp base3,eip
+jb ENTRYo
+jmp END
+
+NON_emu_first:
+msg "Non emulated api's are executed first,attempting to find magic jumps and starting adapted fixing. If it doesn't work, do it manually and resume script. "
+
+find eip,#4B0F84??0?0000#	
+cmp $RESULT,0
+je NON_emu_first_1
+log $RESULT, "DEC jumps detected at: "
+bphws $RESULT, "x"
+bpwm base, [base1]
+mov temp, $RESULT
+mov temp, [temp]
+and temp, 0ffff
+mov eaxword, temp   
+esto
+jmp EAX_LOCc_1
+
+NON_emu_first_1:
+msg "It didn't work, do it manually and resume script. "
+pause
+jmp EAX_LOCo
+
+No_VM_registers:
+msg "No VM_registers in edi?? "
+ret
+
+NO_valloc:
+msg "We're not breaking on VirtualAlloc, check breakpoints and exceptions."
+ret
+
+NO_alloc:
+msg "We're not breaking on AllocateHeap, the VM antidump redirector will not be executed. Attempting to resume script normally."
+mov no_alloc, 1
+jmp ENTRY
+
+NO_IAT_loc:
+msg "Cmp eax,50 wasn't found, exiting"
+ret
+
+NO_Nothting_loc:
+msg "No eax api's possible locations found, find it manually and resume script."
+pause
+jmp EAX_LOCo
+
+NO_Sec_Stackanti
+msg "Secondary stackantidump antidump redirecter failed. 
+pause
+ret
+
+NO_Stackanti
+msg "Stackantidump fixed XOR value changed, antidump redirecter failed. 
+pause
+ret

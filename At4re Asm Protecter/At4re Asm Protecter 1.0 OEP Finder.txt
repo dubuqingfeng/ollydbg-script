@@ -1,0 +1,5 @@
+findop eip, #FFE0#
+bp $RESULT
+run
+sti
+msg "OEP Found!"

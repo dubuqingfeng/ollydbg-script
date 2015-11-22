@@ -1,0 +1,22 @@
+//============================================================//
+// FileName    :  PECompact 2.x -> Jeremy Collake
+// Environment :  WinXP SP2 Notepad
+// Author      :  ºÚÒ¹²Êºç
+// WebSite    :  http://bbs.eastrise.net
+// Date        :  2006-08-18 11:55
+//============================================================//
+var addr 
+sto
+sto
+mov addr,esp
+bphws addr,"r" 
+run 
+run 
+run 
+run 
+run
+sto
+sto
+cmt eip, "This is the OEP! Found by ºÚÒ¹²Êºç!"
+MSG "Script by ºÚÒ¹²Êºç,Thank you for using my Scripts!"
+ret

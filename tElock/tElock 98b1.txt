@@ -1,0 +1,53 @@
+/*
+//////////////////////////////////////////////////////////////////////////////////////////////
+// tElock 0.98b1
+// Author : Ashraf Cracker                               
+// Email : AshraCracker@hotmail.com
+// OS : WinXP Pro, OllyDbg 1.10 Final, OllyScript 0.92
+// UnCheck ALL Debugging Exceptions
+/////////////////////////////////////////////////////////////////////////////////////////////
+*/
+var filename
+var Dumped
+cmp $VERSION, "1.47"
+jb odbgver
+var cbase
+var csize
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+gmi eip, CODEBASE
+mov cbase, $RESULT
+log cbase
+gmi eip, CODESIZE
+mov csize, $RESULT
+log csize
+bprm cbase, csize
+esto
+an eip
+GPI PROCESSNAME
+mov filename,$RESULT
+eval "de_{filename}.exe"
+mov Dumped,$RESULT
+dpe Dumped,eip
+msg "This is the OEP!  Found By Ashraf Cracker"
+msg "The File was dumped successfully don't close OllyDbg and try now to Fix IAT with ImportREC"
+cmt eip, "<== Original Entry Point"
+ret
+
+odbgver:
+msg "This script work with ODbgscript 1.47 or above"
+ret

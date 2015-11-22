@@ -1,0 +1,26 @@
+// Mr.David FSG1.33 OEP finder v0.1
+// This script will quickly put you at the OEP of an FSG1.33 EXE.
+// Just run it!
+// Implemented using hardware breakpoints (just for fun).
+
+findop eip, #FE0E#  //根据API断点找到这个特征语句
+bphws $RESULT, "x" //下断
+run               //运行
+bphwc $RESULT    //清除断点
+sto             
+sto
+sto           //单步四次
+sto 
+
+ask "请输入Je XXXXXXX的 XXXXXXXX"    //通过脱壳者输入看到的OEP
+  cmp $RESULT, 0
+  je lbl7      //取消提示相关消息
+  go $RESULT  //直接 go OEP
+  an eip     //分析代码
+  cmt eip,"OEP To Get,Please dumped it,Enjoy!"
+  ret
+
+  lbl7:
+  msg "你取消就得重新运行脚本了1!"
+
+

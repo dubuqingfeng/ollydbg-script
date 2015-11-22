@@ -1,0 +1,41 @@
+﻿/*
+LARP 2.0 IAT Repair
+
+Author: quosego
+*/
+
+var addr
+var addr2
+var addr3
+var addr7
+var oep
+
+
+mov addr,00401000
+mov oep,eip
+
+CALLS_01:                             
+find addr,#68????1600C3#           
+cmp $RESULT,0
+je END_01
+mov eip, $RESULT
+mov addr, $RESULT
+sti
+sti
+mov addr2,eip
+add addr2,2                            
+mov addr3, [addr2]                  
+//mov addr7,[addr3]                    
+
+mov addr7, addr
+mov [addr7], 25ff
+add addr7,2
+mov [addr7], addr3
+
+LABEL_01:
+add addr,2
+jmp CALLS_01
+
+END_01:
+mov eip,oep
+ret

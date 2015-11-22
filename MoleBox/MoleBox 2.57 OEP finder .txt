@@ -1,0 +1,22 @@
+/*
+////////////////////////////////////////////////////////////////////
+// MoleBox 2.57 OEP finder                                    //                                
+// Author: WaSt3d_ByTes                                         //
+// Email : wast3dbytes@gmail.com                               //
+// OS : WinXP Pro + SP2, OllyDbg 1.10 Final, OllyScript v0.92 //
+///////////////////////////////////////////////////////////////
+*/
+
+
+var x
+
+sti
+mov x,esp 
+bphws x,"r"
+run
+sti
+sti
+bphwc x
+cmt eip,"OEP found by WaSt3d_ByTes"
+msg "Dump & fix the IAT.Thank you for using my script..."
+ret

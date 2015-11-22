@@ -1,0 +1,170 @@
+﻿// execriptor v1+iat
+//  by Apuromafo        
+//  iat solutions exist as 3 form
+//  this change simply whit jump most easy--
+//  other form is in change..0046B669   8947 04          MOV DWORD PTR DS:[EDI+4],EAX
+//  other is 0046B669   8947 04          MOV DWORD PTR DS:[EDI+4],EAX
+//  0046B66C   8902             MOV DWORD PTR DS:[EDX],EAX
+//  but all need
+//  this line (see in script)
+//  find eip, #7408#
+//  fill $RESULT,1,eb
+//  for the crc? or pseudo crc that have this program
+//  well enjoy
+//  
+var addr
+var error
+var temp
+msg "Alert"
+msg "clear all hadware breackpoint"
+find eip, #e2c5??#
+mov temp, $RESULT
+bphws temp, "x"
+run
+//  0046B0DF   . F8             CLC
+//  0046B0E0   . 2C 39          SUB AL,39
+//  0046B0E2   . AA             STOS BYTE PTR ES:[EDI]
+//  0046B0E3 --->  .^E2 C5          LOOPD SHORT UnPackMe.0046B0AA
+//  0046B0E5   . 39F0           CMP EAX,ESI
+//  0046B0E7   . 46             INC ESI
+//  0046B0E8   . 40             INC EAX
+//  0046B0E9   . 3168 3E        XOR DWORD PTR DS:[EAX+3E],EBP
+//  0046B0EC   . 38A1 CC188BEE  CMP BYTE PTR DS:[ECX+EE8B18CC],AH
+//  0046B0F2   . 128D C804876A  ADC CL,BYTE PTR SS:[EBP+6A8704C8]
+//  
+//msg temp
+bphwc temp
+add temp,2
+//  
+//  0046B0E3   .^E2 C5          LOOPD SHORT UnPackMe.0046B0AA
+//  0046B0E5--->   . 8BF0           MOV ESI,EAX
+//  
+bphws temp, "x"
+run
+//  
+//  0046B0E3   .^E2 C5          LOOPD SHORT UnPackMe.0046B0AA
+//  0046B0E5->>   . 8B4424 20      MOV EAX,DWORD PTR SS:[ESP+20]           ;  kernel32.7C816D4F
+//  now is decoded
+//  
+//msg temp
+bphwc temp
+//  start iat change n*º1----------------------
+//  0046B643   . 81FB 00000070  CMP EBX,70000000
+//  0046B649     72 08          JB SHORT UnPackMe.0046B653
+//  to
+//  0046B643   . 81FB 00000070  CMP EBX,70000000
+//  0046B649     ->eb 08        Jmp SHORT UnPackMe.0046B653
+//  
+var iat1
+find eip, #7208#
+fill $RESULT,1,eb
+find eip, #83f801#
+mov iat1, $RESULT
+bp iat1
+//now go to other way
+find eip, #e841??#
+//
+//  
+//  0046B119   > 8D85 C9274000  LEA EAX,DWORD PTR SS:[EBP+4027C9]
+//  0046B11F   . B9 AC060000    MOV ECX,6AC
+//  0046B124--->   . E8 41020000    CALL UnPackMe.0046B36A
+//  0046B129   . 8985 D22F4000  MOV DWORD PTR SS:[EBP+402FD2],EAX
+//  now bp
+//  
+mov temp, $RESULT
+bphws temp, "x"
+//msg temp
+run
+bphwc temp
+mov addr,esp
+//  
+//  now in esp
+//  EAX 0046B060 UnPackMe.<ModuleEntryPoint>
+//  ECX 000006AC
+//  EDX 7C91EB94 ntdll.KiFastSystemCallRet
+//  EBX 7FFD6000
+//  ESP -->0012FFA4
+//  EBP 00068897
+//  ESI 0046BD7B UnPackMe.0046BD7B
+//  EDI 0046BD7B UnPackMe.0046BD7B
+//  EIP 0046B124 UnPackMe.0046B124
+//  folow in dump esp..bp access dword
+//  
+bphws addr,"r"
+//msg addr
+run
+//  
+//  0046B7DF-->   50               PUSH EAX                                ; UnPackMe.0046B78E
+//  0046B7E0   33C0             XOR EAX,EAX
+//  0046B7E2   64:FF30          PUSH DWORD PTR FS:[EAX]
+//  0046B7E5   64:8920          MOV DWORD PTR FS:[EAX],ESP
+//  0046B7E8   EB 01            JMP SHORT UnPackMe.0046B7EB
+//  
+//  push eax..
+//  
+//  
+//  now in iat. remember
+//  
+bc iat1
+find eip, #7408#
+fill $RESULT,1,eb
+run
+bphwc addr
+mov addr,eax
+//  
+//  EAX --> 0046B78E UnPackMe.0046B78E
+//  ECX 0012FFB0
+//  EDX 7C91EB94 ntdll.KiFastSystemCallRet
+//  EBX 600084E3
+//  ESP 0012FFC4
+//  EBP 0012FFF0
+//  ESI FFFFFFFF
+//  EDI 7C920738 ntdll.7C920738
+//  EIP 0046B7DF UnPackMe.0046B7DF
+//  
+bphws addr,"x"
+run
+bphwc addr
+//  
+//  0046B78E   55               PUSH EBP
+//  0046B78F   8BEC             MOV EBP,ESP
+//  0046B791   57               PUSH EDI
+//  0046B792   8B45 10          MOV EAX,DWORD PTR SS:[EBP+10]
+//  0046B795   8BB8 C4000000    MOV EDI,DWORD PTR DS:[EAX+C4]
+//  0046B79B   FF37             PUSH DWORD PTR DS:[EDI]
+//  0046B79D   33FF             XOR EDI,EDI
+//  0046B79F   64:8F07          POP DWORD PTR FS:[EDI]
+//  0046B7A2   8380 C4000000 08 ADD DWORD PTR DS:[EAX+C4],8
+//  0046B7A9   8BB8 A4000000    MOV EDI,DWORD PTR DS:[EAX+A4]
+//  0046B7AF   C1C7 07          ROL EDI,7
+//  0046B7B2  >edi have mi oep here is 0 and change to oep-> 89B8 B8000000    MOV DWORD PTR DS:[EAX+B8],EDI
+//  0046B7B8  >edi have oep now is ok> B8 00000000      MOV EAX,0
+//  0046B7BD   5F               POP EDI
+//  0046B7BE   C9               LEAVE
+//  0046B7BF   C3               RETN
+//  
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+//
+mov addr,edi
+//  
+//  0046B7B8 edi reach my oep
+//  
+bp addr
+//msg "the oep is"
+//msg addr
+run
+bc addr
+an eip
+cmt eip,"<- this is the OEP, dump and fix the iat(iat is resolved..)"
+ret

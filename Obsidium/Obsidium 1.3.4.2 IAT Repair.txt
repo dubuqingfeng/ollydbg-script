@@ -1,0 +1,92 @@
+
+/*
+    -=================================================================-
+                           .:[CracksLatinoS]:.                       
+        Script realizado por :       Solid                                
+        Script para :            Obsidium 1.3.4.2.a                                    
+        Configuracion:                                               
+        Fecha : 02/11/2007                                           
+                                                                     
+                    -=[ Comentario del Script ]=-                    
+                                                                     
+                                                                     
+                                                                     
+    -=================================================================-
+*/
+var oep
+var inicio
+var final
+var dir
+var check
+var memo
+
+mov oep, 4271b0
+mov inicio, 460818
+mov final, 460f28
+
+
+start:
+
+find 9b0000, #FF5354EB0395#
+cmp $RESULT,0
+je mensaje
+mov dir, $RESULT
+add dir, 3
+bp dir
+
+
+
+find 9b0000, #EB028816F3A5#
+cmp $RESULT,0
+je mensaje
+mov memo, $RESULT
+add memo, 4
+bp memo
+
+trabajo:
+mov check, [inicio]
+cmp [check], BE669C60
+jne repite
+add check, 4
+cmp [check], C6B1340D
+je repite
+cmp [check], C6b1340f
+je repite
+cmp [check], CFB13481
+je repite
+cmp [check], C5B1340D
+je repite
+
+cmp inicio, 460ba4
+je repite
+mov eip,[inicio]
+eob arranca
+run
+
+arranca:
+cmp eax,0
+je repite
+cmp [inicio],eax
+je repite
+
+mov [inicio],eax
+add inicio, 4
+cmp inicio, final
+je fin
+jmp trabajo
+
+
+repite:
+add inicio,4
+jmp trabajo
+
+
+mensaje:
+msg "direccion no encontrada"
+ret
+
+
+
+fin:
+mov eip,oep
+ret

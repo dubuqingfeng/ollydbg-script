@@ -1,0 +1,18 @@
+// UPXShit 0.x oep finder 
+// by Mr.David        
+// www.chinadfcg.com
+
+var a
+
+mov  a, esp
+sub a, 20
+
+bphws a,"r"
+
+run
+run
+
+bphwc a
+sto
+
+cmt eip,"OEP To Get,Please dumped it,Enjoy!"

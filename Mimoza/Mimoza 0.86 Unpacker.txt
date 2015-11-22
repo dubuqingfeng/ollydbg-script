@@ -1,0 +1,29 @@
+var v_alloc
+var rep_movs
+var addres_of_region
+var size_
+gpa "VirtualAlloc","kernel32.dll"
+mov v_alloc,$RESULT
+cmp v_alloc,0
+je final_
+bphws v_alloc,"x"
+run
+bphwc v_alloc
+mov addres_of_region,[esp+4]
+mov size_,[esp+8]
+rtr
+esti
+findop eip,#F3A4#
+mov rep_movs,$RESULT
+cmp rep_movs,0
+je final_
+bphws rep_movs,"x"
+run
+mov ecx,size_
+sto
+sto
+bphwc rep_movs
+DM addres_of_region,size_,"unpacked_exe.exe"
+msg "Done! Unpacked exe in unpacked_exe.exe file"
+final_:
+ret

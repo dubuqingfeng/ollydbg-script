@@ -1,0 +1,26 @@
+dbh
+eoe LABEL               
+eob BABEL               
+run                    
+
+LABEL: 
+esto                   
+jmp LABEL
+
+BABEL:
+cmp eip,  011F6A2E
+jne AIM 
+cmp  eax, 1              
+jne SIGPAS              
+msgyn "To continue"       
+cmp $RESULT, 1          
+je SIGPAS               
+pause                
+
+SIGPAS: 
+mov !ZF, 1             
+run                    
+jmp BABEL
+
+AIM: 
+ret                    

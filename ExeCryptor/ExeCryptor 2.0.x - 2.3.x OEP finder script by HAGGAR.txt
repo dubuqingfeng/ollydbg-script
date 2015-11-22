@@ -1,0 +1,141 @@
+/*
+==========================================================
+ExeCryptor 2.0.x - 2.3.x OEP finder script by HAGGAR
+==========================================================
+
+Features:
+
+- Script bypass all anti-debug tricks in ExeCryptor;
+- Script attempt to find OEP of protected file or, in
+such case, STOLEN_OEP_CODE start address.
+
+
+
+
+Instructions:
+
+1. You need to have NT based operating system;
+
+2. Configure OllyDbg in "Debugging Options"->"Events" to
+"Make first pause at - System breakpoint";
+
+3. Ignore all exceptions and add to custom this one
+C000001E (INVALID LOCK SEQUENCE)
+
+4. Remove or disable all plugins which purpose is to hide
+OllyDbg from protecors. ExeCryptor detects modified
+imports and by that most such plugins are detected.
+
+5. Now load target in OllyDbg. Remove all breakpoints
+(hardware, memory, software). OllyDbg sets one bp
+on OEP by default and ExeCryptor checks that. Hit
+Alt+B to see is that breakpoint listed there. If
+it is, remove it.
+
+6. Now, run this script .
+
+===========================================================
+*/
+
+var bak_eip
+var bak_1
+var bak_2
+var EP
+var addr
+var temp
+var proc
+
+log " "
+log "------------------------------------------------------"
+log " ExeCryptor 2.0.x - 2.3.x OEP finder script by HAGGAR"
+log "------------------------------------------------------"
+
+//-------------- Patch what can be patched -----------------
+gpa "FindWindowA","user32.dll"
+mov [$RESULT],#8BFF5533C05DC20800#
+
+gpa "OutputDebugStringA","kernel32.dll"
+mov [$RESULT],#8BFF5533C05DC20400#
+
+gpa "ReadProcessMemory","kernel32.dll"
+mov [$RESULT],#8BFF5533C05DC21400#
+
+gpa "CreateThread","kernel32.dll"
+mov [$RESULT],#8BFF555DC21800#
+
+gpa "CloseHandle","kernel32.dll"
+mov [$RESULT],#8BFF555DC20400#
+
+gpa "CheckRemoteDebuggerPresent","kernel32.dll"
+mov [$RESULT],#8BFF5533C05DC20800#
+
+
+//--------- Find block with process information ------------
+mov bak_eip,eip //Backup current EIP (SYSTEM_BP).
+
+mov bak_1,eip //Backup original bytes at SYSTEM_BP.
+mov bak_2,bak_1
+add bak_2,4
+mov bak_1,[bak_1]
+mov bak_2,[bak_2]
+
+mov [eip],#5064A11800000058# //Little hack to obtain data block.
+sti
+sti
+mov addr,eax //Take pointer.
+sti
+
+mov eip,bak_eip //Restore original EIP.
+mov [eip],bak_1 //Restore original bytes.
+add eip,4
+mov [eip],bak_2
+sub eip,4
+
+add addr,30
+mov addr,[addr]
+
+
+//---------------------- Erase debug bits ------------------------
+mov temp,[addr] //BeingDebugged
+and temp,0ff00ffff
+mov [addr],temp
+
+mov temp,addr //HeapFlag
+add temp,18
+mov temp,[temp]
+add temp,10
+mov [temp],0
+
+mov temp,addr //NtGlobalFlag
+add temp,68
+mov [temp],0
+
+
+//---------- Erase EP bp that OllyDbg sets by default ------------
+mov temp,addr
+add temp,8
+mov temp,[temp] //Module base.
+log " "
+log "Module base of protected file is:"
+log temp
+add temp,3C
+add temp,[temp] //PE signature offset.
+sub temp,3C
+add temp,28
+mov temp,[temp] //EP offset.
+add addr,8
+add temp,[addr] //Virtual offset.
+sub addr,8 
+log " "
+log "EntryPoint of protected file is:"
+log temp
+
+bp temp //Set bp.
+bc temp //Erase bp. That erases default OllyDbg bp on EP.
+
+
+
+ret
+ERROR:
+msg "ERROR! Error in my script (haggar)!"
+ret

@@ -1,0 +1,16 @@
+var x
+mov x , eip
+loop:
+find x, #0000000000000000000000000000000000000000000000000000000000000000#
+cmp $RESULT , 0
+je end
+mov x , $RESULT 
+cmt x , "free space"
+msg "Right click 'Search for->User-defined comment' for free space address"
+MSGYN "Continue?"
+add x , 40
+cmp $RESULT , 1
+je loop
+end:
+ret
+

@@ -1,0 +1,15 @@
+//NsPack 3.4 OEP Finder
+//Made by: GaBoR {RES}
+var t
+sti
+sti
+mov t,esp
+bphws t,"r"
+run
+bphwc t
+sti
+sti
+cmt eip,"OEP"
+msg "Dump & fix IAT!"
+ret
+ 

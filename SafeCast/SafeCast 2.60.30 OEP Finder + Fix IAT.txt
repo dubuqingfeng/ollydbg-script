@@ -1,0 +1,65 @@
+//////////////////////////////////////////////////
+//  FileName    :  SafeCast 2.60.30
+//  Comment     :  SafeCast 2.60.30 FixedImportingFunction
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  Original by fly modified by Human
+//  WebSite     :  http://www.unpack.cn
+//  Date        :  2006-06-10 22:00
+//////////////////////////////////////////////////
+#log
+dbh
+
+var EP
+var CreateEventA
+var MagicJmp
+
+find eip,#6113600DE9#
+add $RESULT,4
+mov EP,$RESULT
+bphws EP, "x"
+
+gpa "CreateEventA", "KERNEL32.dll"
+mov CreateEventA,$RESULT
+eob CreateEventA
+bphws CreateEventA, "x"
+
+GoOn:
+esto
+
+CreateEventA:
+cmp eip,CreateEventA
+jne GoOn
+rtu
+
+find eip, #D3E223C285C0752C8B45F8#
+cmp $RESULT, 0
+je GoOn
+add $RESULT,4
+mov MagicJmp,$RESULT
+bphwc CreateEventA
+eob FixedImportingFunction
+bphws MagicJmp, "x"
+
+GoOn2:
+esto
+
+FixedImportingFunction:
+cmp eip,MagicJmp
+je MagicJmp
+cmp eip,EP
+je EP
+jmp GoOn2
+
+MagicJmp:
+add eip,4
+jmp GoOn2
+
+EP:
+bphwc EP
+bphwc MagicJmp
+sti
+
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT/Reloction.  Good Luck  "
+ret

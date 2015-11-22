@@ -1,0 +1,29 @@
+////////////////////////////////////////////////////////
+//			    AORE TEAM
+//
+//                 script by TallfaZ  24/03/2007
+//     This script unpacks eiter VPacker_0.02.10 and Pack_4.0
+//
+//			www.alalme.com\vb
+//////////////////////////////////////////////////////////
+
+var tmp1
+
+msg "Please ignore the INT3 and all CUSTOM EXCEPTIONS then click OK"
+
+gmemi 401000, MEMORYSIZE
+mov tmp1, $RESULT
+
+run
+
+bprm 401000, tmp1
+
+esto
+an eip
+
+msg "File is already dumped to same dir, just fireup ImpRec 'n fix IAT"
+dpe "Dump.exe", eip
+
+abort:
+ret
+

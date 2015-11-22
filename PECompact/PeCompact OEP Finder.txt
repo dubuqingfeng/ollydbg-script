@@ -1,0 +1,24 @@
+var helper					//set variables for use
+var csection
+var csize
+
+gmi eip, CODEBASE		// get base of code
+mov csection,$RESULT	// save base of code to csection
+gmi eip, CODESIZE		// get code-size
+mov csize,$RESULT		// mov code-size to csize
+
+mov helper,eip				// set helper-variable to eip
+inc helper						// increase helper-variable
+mov helper,[helper]		// mov helper-variable to the eax-value (B8XXXXXX)
+go helper						// execute Olly till we reach this adress
+rtr								// step till we hit a ret-instruction
+bprm csection,csize		// set a memory-breakpoint on code-section
+cob								// break if we hit breakpoint
+run								// run
+bpmc							// clear memory-breakpoint
+sto								// step to next instruction
+findop eip,#FFE0#		// find "JMP EAX"
+go $RESULT					// execute till "JMP EAX"
+sto								// step to OEP (EAX-value)
+msg "OEP found!"		// print message
+ret								// end script

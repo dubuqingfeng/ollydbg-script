@@ -1,0 +1,12 @@
+﻿var sz 
+var rgn 
+GPA "VirtualAlloc","kernel32.dll" 
+bp $RESULT 
+erun 
+rtu 
+mov sz,[esp] 
+go eip+20 
+mov rgn,esi 
+dm rgn, sz, "dump.exe" 
+Msg "File Unpacked!Если необходимо примените LordPe RebuildPe с Опциями Status Window & Validate Pe" 
+ret

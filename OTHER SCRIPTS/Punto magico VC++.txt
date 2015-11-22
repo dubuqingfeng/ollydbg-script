@@ -1,0 +1,77 @@
+/*
+/////////////////////////////////////////////////////////////////////////////////
+/       		.:[CracksLatinoS]:.                                     /
+/       Script para obtener El punto magico en los programas VC++               /
+/               Siempre que el programa utilice la Dll MFC42                    /
+/                                                                               /
+/                Script realizado by Lisa && Alquimista                         /
+/                                                                               /
+/////////////////////////////////////////////////////////////////////////////////
+
+               !!!!!!!!!!!!!!!! MUY  IMPORTANTE   !!!!!!!!!!!!!!!!!!!!!!!
+
+        Para su correcto funcionaminto es necesario:
+
+              Ejecutar el script  parado en cualquier sirtio del EXE poe ejemplo el OEP
+              , ha partir de hay el Script lo hace todo lo muestra en la pantalla,
+                  lo escribe en el LOG y pone un BP alli. y ejecuta el programa.
+
+
+
+*/
+var dir_BP
+var imagen_base
+var Punto_VC
+var modu_base
+
+
+gpa "CallWindowProcA", "user32.dll" // obtenemos la dirección de CallWindowProcA
+mov dir_BP, $RESULT    // Movemos el resultado a la variable
+bp dir_BP              // Ponemos un BP en CallWindowProcA
+run
+bc dir_BP
+rtr
+rtr
+mov modu_base, eip
+
+
+gmi modu_base,MODULEBASE
+mov modu_base, $RESULT
+add modu_base,00001000
+
+eval "la imagen Base de MFC42.DLL es: {modu_base}"
+mov imagen_base, $RESULT
+log " "
+log imagen_base
+log " "
+
+
+find modu_base,#FF5514EBA1#    // Punto VC  en antiguas
+mov Punto_VC,$RESULT
+cmp Punto_VC,0
+   jne final_bueno
+
+find modu_base,#FF5514EB7F#    // Punto VC en nuevas
+mov Punto_VC,$RESULT
+cmp Punto_VC,0
+   jne final_bueno
+
+jmp final__malo:
+
+final__malo:
+msg "Este programa no usa MFC42.DLL"
+run
+ret
+
+
+final_bueno:
+bp Punto_VC
+eval "El punto magico es VC++ :  {Punto_VC}"
+mov Punto_VC, $RESULT
+msg Punto_VC
+log Punto_VC
+run
+ret
+
+
+

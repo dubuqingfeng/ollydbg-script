@@ -1,0 +1,93 @@
+var addr
+var srh
+var vzv
+var if
+var fn
+var iat
+var adrjm
+var chk
+var ifb
+var cb
+ask "Enter start iat"
+cmp $RESULT,0
+je quit
+mov iat,$RESULT
+gmi eip,CODEBASE
+mov srh,$RESULT
+mov cb,$RESULT
+loop:
+find srh,#90E8????7?00#
+cmp $RESULT,0
+je nextr
+mov addr,$RESULT
+mov adrjm,$RESULT+2
+mov vzv,$RESULT+6
+mov if,[adrjm]
+add if,adrjm+4
+mov chk,if
+and chk,F00000
+cmp chk,B00000
+jne ns
+mov ifb,if
+buf ifb
+find iat,ifb
+cmp $RESULT,0
+je manual
+wr:
+mov fn,$RESULT
+mov [addr],#FF15#
+add addr,2
+mov [addr],fn
+mov srh,vzv
+jmp loop
+manual:
+ask "enter manual"
+cmp $RESULT,0
+je quit
+mov fn,$RESULT
+jmp wr
+ns:
+mov srh,vzv
+jmp loop
+
+nextr:
+mov srh,cb
+loop2:
+find srh,#90E9????7800#
+cmp $RESULT,0
+je quit
+mov addr,$RESULT
+mov adrjm,$RESULT+2
+mov vzv,$RESULT+6
+mov if,[adrjm]
+add if,adrjm+4
+mov chk,if
+and chk,F00000
+cmp chk,B00000
+jne ns2
+mov ifb,if
+buf ifb
+find iat,ifb
+cmp $RESULT,0
+je manual
+wr2:
+mov fn,$RESULT
+mov [addr],#FF25#
+add addr,2
+mov [addr],fn
+mov srh,vzv
+jmp loop2
+manual:
+ask "enter manual"
+cmp $RESULT,0
+je quit
+mov fn,$RESULT
+jmp wr2
+ns2:
+mov srh,vzv
+jmp loop2
+
+
+quit:
+msg "The End :)"
+ret

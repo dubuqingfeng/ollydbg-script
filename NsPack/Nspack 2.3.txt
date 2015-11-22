@@ -1,0 +1,22 @@
+
+/*
+Find target's OEP [ Nspack 2.3 ]
+---------------------------------------
+Author: marcus
+Contacts : KingSuperFly@gmail.com
+OS : Win XP SP2,OllyDbg 1.10,OllyScript v0.92
+Date : 16 June 2005
+*/
+
+//Lame OEP finder
+
+sti
+sti
+findop eip, #61#
+findop eip, #9D#
+findop eip, #E9#
+go $RESULT
+sto
+cmt eip, "This is the OEP Fix the iat self pls Greetz KingSuperFly"
+an eip
+ret

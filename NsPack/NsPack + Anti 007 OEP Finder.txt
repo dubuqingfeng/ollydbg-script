@@ -1,0 +1,38 @@
+//nspack && anti 007 ????
+//code by skylly
+msg "??????"
+var VirtualProtect
+var VirtualFree
+gpa "VirtualFree","kernel32.dll"
+cmp $RESULT,0
+je err
+mov VirtualFree,$RESULT
+
+gpa "VirtualProtect","kernel32.dll"
+cmp $RESULT,0
+je err
+mov VirtualProtect,$RESULT
+
+bp VirtualFree
+esto
+esto
+bc VirtualFree
+var temp
+mov temp,[esp]
+bp temp
+esto
+bc temp  //?????
+
+find eip,#9DE9# //popfd;jmp
+cmp $RESULT,0
+je err
+add $RESULT,1
+go $RESULT
+sto
+OEP:
+cmt eip,"OEP!"
+msg "OEP or Next Shell"
+ret
+err:
+msg "Error"
+ret

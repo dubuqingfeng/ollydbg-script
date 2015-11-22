@@ -1,0 +1,28 @@
+g*/
+var GetProcessHeap
+var E languageAddr
+mov E languageAddr,401000
+gpa "GetProcessHeap", "kernel32.dll"
+cmp $RESULT,0
+je err
+bp $RESULT
+run
+run
+run
+bc $RESULT
+rtu
+find 10001000,#FF55FC5F5E895D??8945#
+bp $RESULT
+find eip,#FFE0#
+bp $RESULT
+je err
+bp $RESULT
+run
+bc $RESULT
+sto
+MSG "按纽事件查找完毕！"
+ret
+
+err:
+MSG "脚本运行错误！请检查错误后再继续运行脚本！"
+ret

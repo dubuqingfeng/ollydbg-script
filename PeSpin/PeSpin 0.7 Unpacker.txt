@@ -1,0 +1,99 @@
+/*
+=====================================================================
+   PESpin v0.7 unpacker script for OllyScript plugin (by SHaG)
+=====================================================================
+
+    Script requires Windows XP.
+    Script works good only with ASM and BC++ programs. Delphi
+    and VC++ will not be properly fixed using OllyDump plugin.
+    For those programs check my other scripts and read tutorial.
+    Script will fix IAT redirection, code redirection and find
+    stolen OEP code. Before use, ignore ALL exceptions!
+
+    [ haggar ]
+=====================================================================
+*/
+
+
+var x
+var A
+var B
+var C
+
+msg "Script runs on Win XP only. Ignore ALL exceptions!"
+
+//Break on GetTickCount
+gpa "GetTickCount","kernel32.dll"
+findop $RESULT,#C3#
+bp $RESULT
+esto
+bc eip
+rtu
+
+
+//Find killer timer - last thing in packer
+mov A,eip
+sub A,0B77
+find A,#F?720D8D853B56271E2D8417E71DFFD0EB01#
+add $RESULT,1
+bp $RESULT
+
+//Find IAT redirection jump
+mov B,$RESULT
+sub B,79
+findop B,#FF6424FC#
+bp $RESULT
+esto
+bc eip
+
+
+
+finding:
+sti
+mov C,[eip]
+and C,0FF
+cmp C,60
+jne finding
+sti
+findop eip,#61#
+mov C,eip
+
+noping:
+fill C,1,90
+inc C
+cmp C,$RESULT
+jne noping
+
+esto
+bc eip
+mov A,eip
+add A,2
+fill A,0D,90
+
+
+add A,0DD
+fill A,1,90
+inc A
+bp A
+esto
+bc eip
+sto
+cmt eip,"Start of stolen OEP mixed with junk."
+
+
+exit:
+ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+

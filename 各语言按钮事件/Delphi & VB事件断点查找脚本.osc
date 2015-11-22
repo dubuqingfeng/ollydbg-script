@@ -1,0 +1,33 @@
+/*
+Script written by  ~icy~学习班
+Script            : Delphi & VB事件断点查找脚本
+Date              : 2007-04-20
+Test Environment  : OllyDbg 1.1, ODBGScript 1.51, Winxp Win2003
+*/
+var DelphiAddr
+mov DelphiAddr,401000
+Delphiloop:
+find DelphiAddr,#740E8BD38B83????????FF93????????#
+cmp $RESULT,0
+je VB
+add $RESULT,0A
+bp $RESULT
+add $RESULT,1
+mov DelphiAddr,$RESULT
+jmp Delphiloop
+VB:
+var VBAddr
+mov VBAddr,401000
+VBloop:
+find VBAddr,#816C2404??000000#
+cmp $RESULT,0
+je Exit
+add $RESULT,08
+bp $RESULT
+add $RESULT,1
+mov VBAddr,$RESULT
+jmp VBloop
+Exit:
+eval "Delphi & VB事件断点设置完毕!"
+msg $RESULT
+ret

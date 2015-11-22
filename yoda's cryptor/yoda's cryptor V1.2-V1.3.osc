@@ -1,0 +1,133 @@
+//////////////////////////////////////////////////
+//  FileName    :  yoda's cryptor V1.2-V1.3.osc
+//  Comment     :  yoda's cryptor V1.2/V1.3 UnPacK
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://fly2004.163.cn.com
+//  Date        :  2005-10-05 18:00
+//////////////////////////////////////////////////
+#log
+
+dbh
+var T0
+var T1
+var T2
+var T3
+
+
+gpa "GetProcAddress", "KERNEL32.dll"
+eob GetProcAddress
+bp $RESULT
+
+esto
+GoOn0:
+esto
+
+GetProcAddress:
+cmp eip,$RESULT
+jne GoOn0
+bc $RESULT
+rtu
+
+
+//yC Some Modified Version！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+/*
+004042E6    FFD1            call ecx  ; kernel32.GetCurrentThread
+004042E8    6A 00           push 0
+004042EA    6A 00           push 0
+004042EC    6A 11           push 11
+004042EE    50              push eax
+004042EF    FFD7            call edi  ; ntdll.ZwSetInformationThread
+*/
+
+find eip, #FFD16A006A006A1150FFD78CC932C9E302#
+cmp $RESULT, 0
+je 7ror
+mov T3,$RESULT
+mov [T3],#FFD16A016A006A1150FFD78CC932C99090#
+log $RESULT
+//Pass ZwSetInformationThread
+
+
+//OepRVA！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+7ror:
+find eip, #C1CB07#
+cmp $RESULT, 0
+je NoFind
+mov T0,$RESULT
+eob Break0
+bp T0
+log T0
+
+esto
+GoOn1:
+esto
+
+Break0:
+cmp eip,$RESULT
+jne GoOn1
+cmp T3, 0
+je OepRVA
+mov [T3],#FFD16A006A006A1150FFD78CC932C9E302#
+
+OepRVA:
+bc T0
+mov T1,ebx
+log ebx
+
+
+//Fixed Import Table！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+find eip, #89322BC683E805#
+cmp $RESULT, 0
+log $RESULT
+je NoFind
+
+mov T2,$RESULT
+log T2
+asm T2,"MOV DWORD PTR [EDX],EAX"
+//Fixed Importing Function
+
+
+find eip, #740261C3#
+cmp $RESULT, 0
+je NoFind
+
+eob Break1
+bp $RESULT
+esto
+GoOn2:
+esto
+
+Break1:
+cmp eip,$RESULT
+jne GoOn2
+bc $RESULT
+asm T2,"MOV DWORD PTR [EDX],ESI"
+//Revert Code
+
+
+//GetOep！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+eob Break2
+bphws T1,"x"
+
+esto
+GoOn3:
+esto
+
+Break2:
+cmp eip,T1
+jne GoOn3
+bphwc T1
+
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT.  Good Luck  "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not yoda's cryptor V1.2/V1.3 ! "
+ret

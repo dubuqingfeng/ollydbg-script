@@ -1,0 +1,305 @@
+/*Acprotect unpacker V1.2
+To find the oep and fix the IAT
+  by zpunpack
+*/
+BPHWCALL
+bpmc
+
+
+
+
+var eipaddr1 
+var esiadd   
+var ebxadd   
+var cbase
+var csize
+var imgbase 
+var iatrva
+var add1
+var count
+var bp1
+var foepaddr1
+var fopeaddr2
+GMI eip, MODULEBASE 
+cmp $RESULT,0
+je lblabort
+mov imgbase,$RESULT
+gmi eip,CODEBASE     //Get code base
+cmp $RESULT,0
+je lblabort
+mov cbase,$RESULT
+mov cbase,$RESULT
+gmemi cbase,MEMORYsize
+cmp $RESULT,0 
+je lblabort
+mov csize,$RESULT
+gpa "GetModuleHandleA","kernel32.dll"
+cmp $RESULT,0
+je lblabort
+mov add1,$RESULT
+bprm add1,ff 
+esto 
+bpmc
+rtu 
+findop eip,#F3AA# //rep stos byte ptr es:[edi]
+cmp $RESULT,0
+je lblabort   
+repl $RESULT,#F3AA#,#9090#,2 
+bp $RESULT
+run
+bc $RESULT
+sto 
+sto 
+sto
+bprm add1,ff
+esto
+bpmc
+rtu
+mov eipaddr1,eip
+mov eipaddr1,eipaddr1-30
+mov esiadd,esi+0c 
+mov ebxadd,ebx-imgbase
+mov [esiadd],ebxadd
+mov iatrva,esi-imgbase
+findop eipaddr1,#83660c00# //and dword ptr ds:[esi+C],0
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#83660C00#,#90909090#,4
+find eipaddr1,#2BC08803# //find:sub eax,eax mov byte ptr ds:[ebx]
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#2BC08803#,#90909090#,4
+find eipaddr1,#2BC08803#
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#2BC08803#,#90909090#,4
+find eipaddr1,#80BD16564100007457# //Magic Jump
+je lblabort
+repl $RESULT,#80BD16564100007457#,#80BD1656410000eb57#,9 //jmp
+find eipaddr1,#8DBD????400033c0#
+cmp $RESULT,0
+je lblabort
+bp $RESULT
+esto
+bc $RESULT
+bpmc
+
+
+MSGYN "Does it has code replace or Obfuscation ?"
+cmp $RESULT,"1"
+je codereplace
+
+
+bprm cbase,csize
+esto
+allend:
+cmt eip,"OEP found!please dumped it!"
+eval "OEP found!please dump it ,Reference IAT RVA:{iatrva}!"
+BPHWCALL 
+bpmc 
+msg $RESULT
+ret
+codereplace:
+find eipaddr1,#6161E8????????C3#
+cmp $RESULT,0
+je lblabort
+bp $RESULT
+esto
+bpmc
+sto
+sto
+sto
+sto
+ask "Please Input the FOEP address:"
+cmp $RESULT,0 
+je cancel
+mov foepaddr1,$RESULT
+cmt eip,"please wait a minute ! ...."
+msg "please wait a minute ! ...."
+bprm $RESULT, FF
+run
+bpmc
+findnext:
+mov eipaddr1,eip
+find eipaddr1,#0f85??ffffff#
+cmp $RESULT,0
+je cont2
+mov eipaddr1,$RESULT+6
+mov foepaddr2,foepaddr1-$RESULT
+cmp foepaddr2,50 //设code replace只有50h字节
+ja cont2
+bp eipaddr1 //found code :jnz XXXX
+esto
+bc eipaddr1
+bpmc
+msg "please press F7 until FOEP is Found ,Then continue the script !"
+pause
+MSGYN "Try to patch code ?"
+cmp $RESULT,"1"
+je  patchcode
+ret
+
+patchcode:
+eoe err1 //may be jmp short error !
+eob err1 
+//sti
+var redi
+var resi
+var rebp
+var resp
+var rebp
+var rebx
+var redx
+var recx
+var reax
+var rr1
+var rr2
+var rr3
+var newcode //新代码地址
+var code1
+mov newcode,1013500
+var fOPCODE1
+var fopcode1l //指令长度
+var faddr
+var f1
+var f2
+var f3
+var f5 //找不到次数
+
+mov faddr,cbase
+fm1:
+inc f5
+cmp f5,100
+ja noerea
+find faddr,#000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+mov f1,$RESULT
+cmp f1,0
+je noerea
+mov newcode,f1
+mov faddr,faddr+3c
+fm2:
+find faddr,#000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+mov f2,$RESULT
+cmp f2,0
+je noerea
+mov f3,f2-f1
+cmp f3,14
+ja fm1
+mov newcode,newcode+a
+mov eipaddr1,eip //到了FOEP
+opcode eipaddr1
+mov fopcode1,$RESULT_1 //保存opcode
+mov fopcode1l,$RESULT_2
+mov resp,esp
+mov redi,[resp]
+mov resi,[resp+4]
+mov rebp,[resp+8]
+//mov resp,[resp+c]
+mov rebp,[resp+10]
+mov rebx,[resp+14]
+mov redx,[resp+18]
+mov recx,[resp+20]
+mov reax,[resp+24]
+mov rr1,[resp+28]
+mov rr2,[resp+2c]
+mov rr3,[resp+30]
+eval "jmp {newcode}"
+mov code1,$RESULT
+asm eipaddr1,code1
+eval "mov eax,{redi}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{resi}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+4],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{rebp}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+8],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{rebx}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+10],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{redx}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+14],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{recx}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+18],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{reax}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+1c],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{rr1}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+20],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{rr2}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+24],eax"
+mov newcode,newcode+$RESULT
+eval "mov eax,{rr3}"
+mov code1,$RESULT
+asm newcode,code1
+mov newcode,newcode+$RESULT 
+asm newcode,"mov dword ptr ss:[esp+28],eax"
+mov newcode,newcode+$RESULT
+cmt newcode,fopcode1
+asm newcode,fopcode1
+mov newcode,newcode+fopcode1l
+mov fopcode1l,fopcode1l+eipaddr1
+eval "jmp {fopcode1l}"
+mov code1,$RESULT
+asm newcode,code1
+msg "Get Foep ! Dumped it and write down all data in the strack !"
+ret //到了Foep
+cont2:
+sto
+jmp findnext
+
+err1: 
+msg "may be jmp short XXXX error !,fix code to jmp XXXX by yourself !"
+ret
+
+
+
+
+
+
+
+
+lblabort:
+msg "Script aborted !"
+ret
+
+cancel:
+msg "has not anything Input !" 
+bprm cbase,csize
+esto
+jmp allend
+
+noerea:
+No memory to patch code !
+ret

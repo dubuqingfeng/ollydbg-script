@@ -1,0 +1,27 @@
+/*
+  ------------------------------------------------------------------------
+
+                     Dual's eXe v1.0 - FindOEP Script by ARN
+
+                           coded by +NCR/CRC! [ReVeRsEr]
+
+  ------------------------------------------------------------------------
+*/
+
+
+
+var dirOEP              // Variable para la direccion del OEP
+
+find eip,#ffe0#         // Buscamos el JMP EAX
+mov dirOEP,$RESULT      // Colocamos la direccion del JMP EAX en dirOEP
+bp dirOEP               // Colocamos un BPX en el JMP EAX
+eob break               // Al romper el BPX saltamos a "break"
+run                     // Dejamos correr el programa
+
+break:
+bc dirOEP               // Borramos el BPX
+sto                     // F7 para llegar al OEP
+msg "Estas en el OEP =)" // Un mensajito de aviso ;)
+msg "Script por ARN Team"
+ret                      // Terminamos el script
+

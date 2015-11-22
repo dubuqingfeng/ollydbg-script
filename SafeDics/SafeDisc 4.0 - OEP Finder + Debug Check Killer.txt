@@ -1,0 +1,58 @@
+//======================= START ================================
+/*
+==============================================================
+    SafeDisc v4.0 - Kill debug checks and find OEP script
+==============================================================
+*/
+
+var OEP
+
+find eip,#E9????????CCCC81ECE802000053555657#
+mov OEP,$RESULT
+
+find eip,#751A8B4C243C8B5424348B44242C51525350#
+bp $RESULT
+esto
+bc eip
+
+add eip,1c
+
+gpa "IsDebuggerPresent","kernel32.dll"
+bp $RESULT
+esto
+bc eip
+rtr
+sti
+sti
+sti
+sti
+sti
+fill eip,1,0c3
+
+gpa "SetEvent","kernel32.dll"
+bphws $RESULT,"x"
+esto
+bphwc $RESULT
+rtr
+sti
+
+sti
+sti
+add eip,9
+
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+add eip,9
+
+bp OEP
+esto
+bc eip
+sti
+ret
+//=========================== END ==============================

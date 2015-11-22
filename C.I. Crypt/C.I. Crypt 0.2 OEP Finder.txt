@@ -1,0 +1,17 @@
+// C.I. Crypt 0.2 OEP Finder Script by LaFarge/ICU
+
+msg "If u get any messages like "Bad executable..." just click on OK!"
+msg "If u get any messages about bytes being changed, just click on NO!"
+rtr
+rtu
+rtu
+find eip, #8B4DF45E5F5BC9C20C00#
+go $RESULT
+rtr
+sti
+bp eip+f
+run
+sti
+cmt eip, "This is OEP"
+
+

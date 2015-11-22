@@ -1,0 +1,58 @@
+// ----------- ExeCryptor 2.2.50 - for VC++ IAT ------------------
+var oep
+var thunk
+var pointer
+var ref_esp
+var temp
+
+mov oep,eip
+mov thunk,0040A000      // INDIRIZZO IAT RICERCARE CON FF 25 VEDI JUMP [00406A00] ETC.
+
+LABEL_01:                //Examne thunks label.
+ cmp thunk,0040B000      //Is it end of IAT? Then finish.
+je END_01
+ cmp [thunk],0           //Is thunk empty? Then go to next.
+ add thunk,4
+je LABEL_01
+ sub thunk,4
+ cmp [thunk],10000000    //Does thunk holds API? Go to next again.
+ add thunk,4
+ja LABEL_01
+ sub thunk,4             //Thunk holds redirected import.
+ mov pointer,[thunk]
+ 
+ mov eip,pointer
+ mov ref_esp,esp         //Stack reference (start ESP value).
+ mov temp,0
+ LABEL_02:               //Trace untill return ESP value is decrypted.
+  sti
+  add temp,1
+  cmp temp,30            //Trace first 30 opcodes.
+ jne LABEL_02
+
+ mov temp,esp
+ LABEL_03:              //Find referenced stack value.
+  add temp,4
+  cmp temp,ref_esp
+ jne LABEL_03
+  sub temp,4
+
+ mov temp,[temp]        //Get "Magic return address".
+ bp temp
+ esto
+ bc eip
+
+ cmp eax,10000000       //Is EAX<10000000 (EAX<IMPORT) ?
+ add thunk,4
+jb LABEL_01             //Then it is self-fixed import.
+
+ sub thunk,4            //If not self-fix, fix it!
+ mov [thunk],eax
+ add thunk,4
+
+jmp LABEL_01
+
+END_01:
+mov eip,oep        //Restore OEP.
+ret
+//------------------------ End of script ------------------------------

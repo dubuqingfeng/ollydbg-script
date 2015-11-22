@@ -1,0 +1,23 @@
+var oep
+
+
+
+gpa  "LoadLibraryA","kernel32.dll"
+bp $RESULT
+run
+bc eip
+rtu
+mov oep,eip
+sub oep,D
+bp oep
+run
+bc eip
+sti
+sti
+cmt eip,"OEP"
+MSG "Oep Faund"
+ret
+
+quit:
+MSG "Not apk2_v018"
+ret

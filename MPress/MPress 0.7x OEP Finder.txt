@@ -1,0 +1,25 @@
+/*
+
+mpress unpacking script
+Author: SnD
+
+*/
+
+var temp1
+
+find eip, #E9????????#
+mov temp1, $RESULT
+bp temp1
+run
+bc temp1
+sti
+sti
+find eip, #61E9????????#
+mov temp1, $RESULT
+inc temp1
+bp temp1
+run
+bc temp1
+sti
+cmt eip, "OEP"
+ret

@@ -1,0 +1,23 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//  OEP Find Script for PKlite32 1.1
+//  Coded by: PiONEER {RES}
+//  TEAM: TEAM RESURRECTiON
+//  Greetz to: {RES},ICU,ARTeam,SnD,CiM,RLD,AGN,trainer-paradies.de,TMG,uCF,sEby,Sonny27
+//  Anorganix,gORDon,dR.oLLe,XeonByte,starzboy,Till.CH,Oxy87,Orthodox,ALiEN
+//  Data: 14:48 06.04.2007
+//  Environment : WinXP SP1,OllyDbg V1.10,ODbgScript V1.48
+//  Contact: http://www.appzclub.tk - or - admin@appzclub.tk
+//////////////////////////////////////////////////////////////////////////////////////////
+
+start:
+#log
+find eip, #E9AB0FFFFF#
+bp $RESULT
+run
+bc $RESULT
+sto
+cmt eip, "This is the OEP! Found by PiONEER/TEAM {RES}"
+msg "Dumped !!! fix the IAT now! Thanx for using my Script...!"
+dpe "dumped_.exe",eip
+ret
+end:

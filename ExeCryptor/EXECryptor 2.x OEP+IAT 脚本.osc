@@ -1,0 +1,281 @@
+//////////////////////////////////////////////////////////////////////
+// EXECryptor 2.x OEP+IAT 
+// -------------------------------------------------------------
+// 声明：该脚本代码来自okdodo、PE_Kill二位大侠！
+// 本人只是合并成一个脚本，一次完成OEP+IAT。
+// 感谢他们的劳动。
+//
+//Test Environment : Ollyice v1.1 + HideOD v0.17    
+//                   ODBGScript v1.53 under WINXP
+//Thanks :
+//         kanxue     - author of HideOD v0.17      
+//         hnhuqiong  - author of ODbgScript v1.53
+//////////////////////////////////////////////////////////////////////
+*/
+
+data:
+    var hInstance
+    var codeseg
+    var vmseg
+    var ep
+    var oep
+    var esptmp
+    var _esp
+    var iat_start
+    var iat_end
+    var iat_cur
+    var counter
+    var flag
+    var addr
+    var c_gpa
+    var ibase
+    var iend
+    var temp
+    var gmh
+    var ll
+    var tmp
+    var SBM
+    var TOA
+    var mbase
+    var msize
+
+code:
+    bphwcall
+
+    gpa "SetBkMode","GDI32.dll"
+    mov SBM,$RESULT
+    REV SBM
+    mov SBM,$RESULT
+    itoa SBM
+    gpa "TextOutA","GDI32.dll"
+    mov TOA,$RESULT
+    REV TOA
+    mov TOA,$RESULT
+    itoa TOA
+
+    gpa "VirtualFree","kernel32.dll"
+    bphws $RESULT,"x"
+    run
+    bphwc $RESULT
+    rtu
+    gmi eip,MODULEBASE
+    mov hInstance,$RESULT
+    mov temp,$RESULT
+    add temp,3c
+    mov temp,[temp]
+    add temp,hInstance
+    add temp,28
+    mov temp,[temp]
+    add temp,hInstance
+    mov ep,temp
+
+    bc ep
+
+    gmemi eip,MEMORYBASE
+    mov codeseg,$RESULT
+
+    find codeseg,#E9??????????CC9D#
+    mov tmp, $RESULT
+    add tmp,7
+    mov [tmp],#90#
+
+    gpa "EnumWindows","user32.dll"
+    mov [$RESULT],#8BC09C85C09D0578563412C20800#
+
+    gpa "CreateThread","kernel32.dll"
+    find $RESULT,#FF7518#
+    mov [$RESULT],#6A0490#
+
+    gpa "LdrLoadDll","ntdll.dll"
+    bp $RESULT
+
+loop1:
+    esto                  //run?
+    cmp eip,$RESULT
+    jne loop1
+    bc $RESULT 
+    bp ep
+
+bpep:
+    esto
+    cmp eip,ep
+    je loop2
+    jmp bpep
+
+loop2:
+    bc ep
+    mov esptmp,esp
+
+    mov temp,codeseg
+    sub temp,1
+    gmemi temp,MEMORYBASE
+    mov vmseg,$RESULT
+    gmemi temp,MEMORYSIZE
+    bprm vmseg,$RESULT
+
+loop3:    
+    esto
+    find eip,#8A002C99#
+    cmp $RESULT,eip
+    je savedoep
+    find eip,#8A00E9#
+    cmp $RESULT,eip
+    jne loop5
+    mov tmp,eip
+    add tmp,3
+    mov tmp,[tmp]
+    add tmp,eip
+    add tmp,7    
+    mov tmp,[tmp]
+    and tmp,0FFFF
+    cmp tmp,992C
+    jne loop5    
+savedoep:
+    mov oep,eax
+    bpmc
+    bprm oep,1
+
+loop4:
+    esto
+    cmp eip,oep
+    jne loop4
+    
+loop5:
+    cmp esp,esptmp
+    jne loop3
+    bpmc
+    mov oep,eip
+    cmt eip,"True or fake OEP!"
+   
+    msg "请修改脚本中的IAT地址!" 
+
+//================================================
+mov iat_start,004DD168
+mov iat_end,004DD984
+//================================================
+
+mov addr,eip
+and addr,FFFFF000
+add addr,1000
+@get_base:
+sub addr,1000
+mov temp,[addr]
+and temp,0000FFFF
+cmp temp,00005A4D
+jne @get_base
+
+mov ibase,addr
+mov temp,addr
+add temp,3C
+mov temp,[temp]
+add temp,ibase
+add temp,50
+mov iend,[temp]
+eval "ImageSize = {iend} ???"
+msgyn $RESULT
+cmp $RESULT,1
+je @run
+ask "Enter real ImageSize!"
+mov iend,$RESULT
+@run:
+add iend,ibase
+
+gpa "GetModuleHandleA","kernel32.dll"
+mov gmh,$RESULT
+gpa "LoadLibraryA","kernel32.dll"
+mov ll,$RESULT
+
+mov _esp,esp
+mov iat_cur,iat_start
+sub iat_cur,4
+mov c_gpa,0                
+@imprec:
+add iat_cur,4
+cmp iat_cur,iat_end         
+ja @end
+mov addr,[iat_cur]
+cmp addr,0                
+je @imprec
+cmp addr,ibase
+jb @imprec
+cmp addr,iend
+ja @imprec
+
+mov esp,_esp                
+mov eip,addr                
+mov [esp],eip                
+mov counter,25                
+mov flag,0                
+@chk_run:
+dec counter
+cmp counter,0                
+je @find_gpa                
+sti                        
+mov temp,[eip]         
+cmp flag,0                
+and temp,0000FFFF         
+cmp temp,0000C009
+jne @chk_run                
+jmp @chk_run                
+and temp,0000FFFF         
+cmp temp,0000850F
+jne @chk_run                
+@find_gpa:
+cmp c_gpa,0                
+jne @trace                
+bphws gmh,"x"                
+bphws ll,"x"                
+ticnd "WORD [eip]==453Bh" 
+bphwc ll                
+bphwc gmh
+cmp eip,gmh                
+jne @chk_ll                
+bp [esp]                
+run
+bc eip
+jmp @find_gpa                
+@chk_ll:
+cmp eip,ll                
+jne @f_jnz                
+bp [esp]                
+run
+bc eip
+jmp @find_gpa                
+@f_jnz:
+sti
+mov temp,[eip] 
+and temp,0000FFFF
+cmp temp,0000850F
+jne @f_jnz
+mov !ZF,1                
+mov counter,2                
+@f_add:
+sti
+mov temp,[eip]
+and temp,00FFFFFF
+cmp temp,00FC4503
+jne @f_add
+sti
+dec counter
+cmp counter,0
+jne @f_add 
+mov c_gpa,eip                
+sub iat_cur,4                
+jmp @imprec                
+@trace:
+bphws c_gpa,"x"
+run
+bphwc c_gpa
+cmp eip,c_gpa
+jne @error
+mov [iat_cur],eax
+jmp @imprec
+@end:
+msg "OK!" 
+pause
+ret
+
+@error:
+msg "error!!!"
+pause
+ret

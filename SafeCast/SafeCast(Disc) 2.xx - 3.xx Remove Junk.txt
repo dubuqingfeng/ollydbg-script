@@ -1,0 +1,161 @@
+/*
+=====================================================================
+         SafeCast - script for removing junk from temp DLLs
+=====================================================================
+*/
+var start
+var addr
+var count
+mov start,00882000
+
+mov addr,start
+mov count,0
+LABEL_01:
+ find addr,#EB078B????0690??03EBF7#
+ cmp $RESULT,0
+je END_01
+ mov addr,$RESULT
+ mov [addr],#909090909090909090909090#
+ add count,1
+jmp LABEL_01
+END_01:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_02:
+ find addr,#87????0987????05??00??F3#
+ cmp $RESULT,0
+je END_02
+ mov addr,$RESULT
+ mov [addr],#90909090909090909090909090#
+ add count,1
+jmp LABEL_02
+END_02:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_03:
+ find addr,#76??9090??????????????????????76F17413??7F09#
+ cmp $RESULT,0
+je END_03
+ mov addr,$RESULT
+ mov [addr],#90909090909090909090909090909090909090909090#
+ add count,1
+jmp LABEL_03
+END_03:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_04:
+ find addr,#7C??9090??????????????740287??7CF17713??7809#
+ cmp $RESULT,0
+je END_04
+ mov addr,$RESULT
+ mov [addr],#90909090909090909090909090909090909090909090#
+ add count,1
+jmp LABEL_04
+END_04:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_05:
+ find addr,#75??8B??909074????????????????75F187????#
+ cmp $RESULT,0
+je END_05
+ mov addr,$RESULT
+ mov [addr],#9090909090909090909090909090909090909090#
+ add count,1
+jmp LABEL_05
+END_05:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_06:
+ find addr,#??0B??0787????0387??90EB03??F3??#
+ cmp $RESULT,0
+je END_06
+ mov addr,$RESULT
+ mov [addr],#90909090909090909090909090909090#
+ add count,1
+jmp LABEL_06
+END_06:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_07:
+ find addr,#??11??0F??0F000000??????????????????????EE??EC??#
+ cmp $RESULT,0
+je END_07
+ mov addr,$RESULT
+ mov [addr],#909090909090909090909090909090909090909090909090#
+ add count,1
+jmp LABEL_07
+END_07:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_08:
+ find addr,#76??9090??????????????????????76F17413??#
+ cmp $RESULT,0
+je END_08
+ mov addr,$RESULT
+ mov [addr],#9090909090909090909090909090909090909090#
+ add count,1
+jmp LABEL_08
+END_08:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_09:
+ find addr,#7B??8B??909077??????????7401907BF187????#
+ cmp $RESULT,0
+je END_09
+ mov addr,$RESULT
+ mov [addr],#9090909090909090909090909090909090909090#
+ add count,1
+jmp LABEL_09
+END_09:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_10:
+ find addr,#7B??8B??909077??????????7401907BF187????#
+ cmp $RESULT,0
+je END_10
+ mov addr,$RESULT
+ mov [addr],#9090909090909090909090909090909090909090#
+ add count,1
+jmp LABEL_10
+END_10:
+ msg count
+
+mov addr,start
+mov count,0
+LABEL_11:
+ find addr,#7C??909077??87????????????????7CF17713??#
+ cmp $RESULT,0
+je END_11
+ mov addr,$RESULT
+ mov [addr],#9090909090909090909090909090909090909090#
+ add count,1
+jmp LABEL_11
+END_11:
+ msg count
+
+
+
+
+ret
+
+
+
+

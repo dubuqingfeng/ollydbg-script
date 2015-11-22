@@ -1,0 +1,38 @@
+============================
+/*
+Fatmike MUPme IAT resolver script
+********************
+nick_name
+TEAM RESSURRECTiON
+********************
+*/
+
+DEFINE_BEFORE_EXECUTION:
+dbh
+mov iat_start,10010c0
+mov iat_end,10010c8
+mov bp_addr,901698
+
+lc
+lclr
+bp bp_addr
+
+LOOP:
+mov iat_entry,[iat_start]
+cmp iat_entry,00
+je INCR
+mov eip,iat_entry
+run
+mov [iat_start],edx
+gn edx
+eval "{iat_start} :: {edx}={$RESULT}"
+log $RESULT,""
+
+INCR:
+add iat_start,4
+cmp iat_start,iat_end
+jbe LOOP
+
+FIN:
+ret
+============================

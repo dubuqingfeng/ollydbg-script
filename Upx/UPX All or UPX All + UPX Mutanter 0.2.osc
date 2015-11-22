@@ -1,0 +1,36 @@
+//UPX + UPX Mutanter 0.2 OEP finder by Flashback/Team-X
+//script version: 1.1
+//Site: www.team-x.ru
+//Email: Flashback@mail15.com
+//Date: 1o.o5.2oo8
+//Tested on UPX 1.25w
+MSGYN "This UPX + UPX Mutanter 0.2?('No' if simple UPX)"
+CMP $RESULT, 0
+je upx
+
+FIND eip, #FFE0# 
+BP $RESULT 
+RUN 
+BC $RESULT 
+STO 
+FIND eip, #FFE0# 
+BP $RESULT 
+RUN 
+BC $RESULT 
+STO 
+jmp upx
+
+upx:
+FIND eip, #61# 
+BP $RESULT 
+RUN 
+BC $RESULT 
+FIND eip, #E9# 
+BP $RESULT 
+RUN 
+BC $RESULT 
+STO 
+cmt eip, "OEP"
+MSG "OEP! Script by Flashback/Team-X [www.team-x.ru/Flashback]"
+an eip
+ret

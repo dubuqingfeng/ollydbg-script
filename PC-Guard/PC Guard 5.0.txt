@@ -1,0 +1,23 @@
+/*
+//////////////////////////////////////////////////////////////////////////////////////////////
+// PC-Guard 5.0 
+// Author : Ashraf Cracker                               
+// Email : AshraCracker@hotmail.com
+// OS : WinXP Pro, OllyDbg 1.10 Final, OllyScript 0.92
+// Check ALL Debugging Exceptions
+/////////////////////////////////////////////////////////////////////////////////////////////
+*/
+var cbase
+var csize
+gmi eip, CODEBASE
+mov cbase, $RESULT
+log cbase
+gmi eip, CODESIZE
+mov csize, $RESULT
+log csize
+bprm cbase, csize
+run
+msg "This is the OEP!  Found By Ashraf Cracker"
+msg "The File was dumped successfully don't close OllyDbg and try now to Fix IAT with ImportREC"
+cmt eip, "<== Original Entry Point"
+ret

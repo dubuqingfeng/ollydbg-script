@@ -1,0 +1,63 @@
+
+/*
+    -=================================================================-
+                           .:[CracksLatinoS]:.                       
+        Script realizado por :         Solid                              
+        Script para :                OBSIDIUM 1.3.4.2.a                                
+        Configuracion:                                               
+        Fecha : 02/11/2007                                           
+                                                                     
+                    -=[ Comentario del Script ]=-                    
+                                                                     
+                                                                     
+                                                                     
+    -=================================================================-
+*/
+var vprot
+var param
+var cont
+
+start:
+
+
+gpa "VirtualProtect", "kernel32.dll"
+cmp $RESULT,0
+je abort
+mov vprot, $RESULT
+add vprot, 13
+bp vprot
+
+
+eob arranca
+run
+
+arranca:
+cmp cont,8
+je oep
+
+
+mov param,esp
+add param, 0c
+mov [param],40
+inc cont
+run
+
+oep:
+
+bprm 401000, 6c000
+eob llegamos
+run
+
+llegamos:
+cmp eip, vprot
+je arranca
+
+bc vprot
+bpmc
+msg "OEP ENCONTRADO"
+ret
+
+abort:
+msg "Breakpoint no encontrado"
+ret
+

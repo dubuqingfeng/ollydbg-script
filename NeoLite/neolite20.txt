@@ -1,0 +1,10 @@
+eob Break 
+findop eip, #FFE0# 
+bphws $RESULT, "x" 
+run 
+
+Break: 
+bphwc $RESULT 
+sti 
+log eip 
+ret

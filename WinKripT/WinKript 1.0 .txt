@@ -1,0 +1,45 @@
+/*
+//////////////////////////////////////////////////////////////////////////////////////////////
+// WinKript 1.0 
+// Author : Ashraf Cracker                               
+// Email : AshraCracker@hotmail.com
+// OS : WinXP Pro, OllyDbg 1.10 Final, OllyScript 0.92
+// Check ALL Debugging Exceptions
+/////////////////////////////////////////////////////////////////////////////////////////////
+*/
+var OEP
+var filename
+var Dumped
+cmp $VERSION, "1.47"
+jb odbgver
+find eip,#61E9??????????#
+cmp $RESULT,0
+je Exit
+mov OEP,$RESULT
+cmp $RESULT,1
+je Resume
+
+Resume:
+bp OEP
+run
+bc OEP
+sto
+sto
+an eip
+GPI PROCESSNAME
+mov filename,$RESULT
+eval "de_{filename}.exe"
+mov Dumped,$RESULT
+dpe Dumped,eip
+msg "This is the OEP!  Found By Ashraf Cracker"
+msg "The File was dumped successfully don't close OllyDbg and try now to Fix IAT with ImportREC"
+cmt eip, "<== Original Entry Point"
+ret
+
+odbgver:
+msg "This script work with ODbgscript 1.47 or above"
+ret
+
+Exit:
+msg "this Program isn't Packed With WinKript"
+ret

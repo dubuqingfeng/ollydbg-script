@@ -1,0 +1,204 @@
+var x
+var y
+var addr
+var Imp
+var masc
+var bprot
+var findm
+var findm2
+var chkimpr
+
+
+GMI eip, CODEBASE
+mov x,$RESULT
+GMEMI x, MEMORYSIZE
+mov y,$RESULT
+GMEMI eip, MEMORYBASE
+mov bprot,$RESULT
+
+mov espval,esp-4
+gpa  "LoadLibraryA","kernel32.dll"
+bp $RESULT
+erun
+erun
+
+bc eip
+rtu
+mov chkimpr,[eip]
+cmp chkimpr,840FC085
+je noip
+find bprot,#60EB0?#
+cmp $RESULT,0
+je quit
+mov addr,$RESULT                                    
+bp addr
+erun
+bc eip
+sti
+mov Imp,eip
+Fill Imp,e8,90
+mov [Imp],#8902#
+jmp impproc
+
+noip: 
+/*
+0046C118    807FFF00      CMP BYTE PTR DS:[EDI-1],0
+0046C11C    74 60           JE SHORT UnPackMe.0046C17E
+0046C11E    E8 03000000     CALL UnPackMe.0046C126
+0046C123    EB 04           JMP SHORT UnPackMe.0046C129
+*/
+find bprot,#807FFF00#
+cmp $RESULT,0
+je quit
+fill $RESULT+4,2,90
+mov addr,$RESULT                                    
+bp addr
+
+find bprot,#60EB0?#
+cmp $RESULT,0
+je quit
+Fill $RESULT+1,e8,90
+mov [$RESULT+1],#8902#
+
+erun
+bc eip
+impproc:
+var dw
+var func
+var new
+mov findm,edx
+
+buf findm
+find bprot,findm
+cmp $RESULT,0
+je quit
+mov findm,$RESULT
+and findm,FFFFF000
+div findm, 1000
+mov findm2,findm
+and findm,FF0
+and findm2,F
+eval "{findm2}?"
+mov findm2,$RESULT
+eval "{findm}0"
+mov findm,$RESULT
+eval "#??????{findm2}{findm}#"
+
+mov masc,$RESULT
+cmt Imp,"Fixing imports! Please wait for some time ..."
+
+loop:
+Find x,masc 
+cmp $RESULT,0
+je next
+mov sr, $RESULT+6
+mov dw,$RESULT+2
+mov func,[dw]
+
+mov new,[func]
+mov [dw],new
+mov x,sr
+jmp loop
+
+next:                                                                          
+bphws espval,"r" 
+run
+MSGYN  "Stolen oep yes? no?"
+ cmp $RESULT,1
+cmp $RESULT,0
+je nostol
+pause
+bphwc  espval
+cmt eip, " OEP stolen faund"
+MSGYN  "OEP stolen faund Чистить мусор?"
+ cmp $RESULT,1
+Je Dl
+jmp repr
+nostol:
+erun
+bphwc  espval
+jmp repr
+Dl:
+var sz
+var top
+mov top, eip
+find eip,#00000000000000000000000000#
+mov sz,$RESULT
+sub sz,top
+repl eip, #EB01??#, #909090#,sz
+repr:
+MSGYN "OEP найдено Восстановить редирект в хидер  (OEP is found To restore a redirect code ?)"
+ cmp $RESULT,1
+Je Redir
+ret
+
+Redir:
+
+var stolen
+var addr
+var Redir
+var buffer
+var temp
+var Value
+var szc
+var dif
+mov serh,401000
+mov stolen,0
+
+search:
+findop serh,#E???????FF#
+cmp $RESULT,0
+je exit
+mov addr,$RESULT
+mov dif,$RESULT+5
+mov Redir,$RESULT+1
+mov Redir,[Redir]
+mov serh,$RESULT+5
+add Redir,dif
+mov buffer,addr
+ 
+cmp Redir,401000
+jae search
+
+inc stolen
+
+
+mov Value,[Redir]    
+and Value,0FF
+cmp Value,0E9
+je JumpsCalls       
+
+
+GCI Redir,SIZE
+mov szc,$RESULT
+MEMCPY addr,Redir,szc
+jmp search
+
+
+JumpsCalls:
+
+mov temp,[addr]
+cmp temp,0E9
+je Jump
+fill addr,1,0E8
+jmp Call
+Jump:
+fill addr,1,0E9
+Call:
+add Redir,1
+add addr,1
+mov Value,[Redir]
+add Value,Redir
+add Value,4
+sub Value,addr
+sub Value,4
+mov [addr],Value
+mov addr,buffer
+jmp search
+
+
+exit:
+ret
+
+quit:
+ret

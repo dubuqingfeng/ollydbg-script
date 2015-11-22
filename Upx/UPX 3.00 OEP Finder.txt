@@ -1,0 +1,41 @@
+/*
+	============================
+	                
+	      Author: Goldocrack 6 mai 2007
+	      Packer: upx3.00
+	      Script for: upx3.00
+	      Level: Easy
+	      Date: Dimanche 6 mai 2007
+                  
+                  http://xtx.free.fr/forum/
+                  Merci à tous 
+	 ============================
+						*/
+
+
+/*
+Avant d'utiliser ce script, vous devez aller dans les options de olly, 
+dans -> debugging options et cocher toutes les erreurs!
+*/
+
+
+
+
+
+
+
+
+find eip,#83ec80#
+add $RESULT,1
+bp $RESULT
+sto
+run
+AN eip
+CMT eip, " Tu es a l'entry point  ! You are at entry point !"
+msgyn " Veux-tu enregistrer un fichier dumpe nomme dump.exe sur c:\   !                  Goldocrack 2007  !"
+cmp $RESULT,1 
+je label
+
+label:
+dpe "c:\dump.exe",eip
+ret

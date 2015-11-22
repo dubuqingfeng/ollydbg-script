@@ -1,0 +1,38 @@
+var iat
+var len
+var patch
+var iat_start
+var iat_VA
+
+
+ask "Введите адрес секции .idata для делфи, .rdata - для C++(Enter the address of section .idata , .rdata - for C ++)  ."
+cmp $RESULT, 0
+je quit
+mov iat,$RESULT
+ask "Введите размер секции.(Enter the size of section)"
+cmp $RESULT, 0
+je quit
+mov len,$RESULT
+bprm iat,len
+run
+bpmc
+mov iat_VA,esi
+mov patch,eip
+add patch,B
+fill patch, 4, 90
+add patch,6B 
+fill patch, 9, 90
+add patch,A8
+fill patch, 9, 90
+add patch,F6
+fill patch, 2, 90
+add patch,66
+bp patch
+run
+bc patch
+eval " ИАТ востановлена! бинарно скопируйте и вставте в дамп,(IAT repair, bnary copy $ paste in dump IAT Start: {iat_VA}"
+msg $RESULT
+ret
+
+quit:
+ret

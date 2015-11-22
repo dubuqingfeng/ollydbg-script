@@ -1,0 +1,226 @@
+var Vir_All
+var counter
+var address
+var x
+
+msg "Ignore ALL exceptions EXCEPT 'Memory access violation' , that is important !!!"
+dbh
+//Place breakpoint on VirtualAlloc
+
+gpa "VirtualAlloc","kernel32.dll"
+cmp $RESULT,0
+je error
+find $RESULT,#C21000#
+cmp $RESULT,0
+je error
+bp $RESULT
+mov Vir_All,$RESULT
+
+
+mov counter,0
+check1:
+esto
+cmp eip,Vir_All
+jne check1
+inc counter
+cmp counter,3
+jne check1
+bc eip
+
+sti
+mov address,eip
+and address,00FF0000
+findop address,#C21000#
+cmp $RESULT,0
+je error
+mov address,$RESULT
+bphws address,"x"
+
+
+check2:
+esto
+cmp eip,address
+jne check2
+bphwc address
+
+
+SearchTest:
+sti
+mov x,[eip]
+and x,00FFFFFF
+cmp x,0080C1F6
+jne SearchTest
+cmt eip,"Fixing imports! Please wait for some time ..."
+mov x,eip
+bphws x,"x"
+
+jmp ImpFix1
+
+ImpFix:
+esto
+cmp eip,x
+jne SearchOEP
+ImpFix1:
+mov ecx,80
+jmp ImpFix
+
+
+SearchOEP:
+bphwc x
+
+find eip,#0F85??FFFFFF#
+cmp $RESULT,0
+je error
+bp $RESULT
+esto
+bc eip
+add $RESULT,6
+bp $RESULT
+esto
+cmt eip,"Removing junk from stolen OEP! Please wait ..."
+bc eip
+
+
+
+var addr
+var counter1
+mov counter1,0
+
+//=================================
+// 1. Removing obfuscation CALL's
+//=================================
+
+
+repl eip,#E801000000??8D642404#,#90909090909090909090#,500
+repl eip,#E801000000??8F4424FC#,#90909090909090909090#,500
+
+
+next2:
+//=============================
+// 2. Removing useless JMP's
+//=============================
+
+mov addr,eip
+Jumps1:
+findop addr,#EB01#
+cmp $RESULT,0
+je next3
+fill $RESULT,3,90
+mov addr,$RESULT
+jmp Jumps1
+
+
+next3:
+mov addr,eip
+Jumps2:
+findop addr,#EB02#
+cmp $RESULT,0
+je next4
+fill $RESULT,4,90
+mov addr,$RESULT
+jmp Jumps2
+
+
+next4:
+mov addr,eip
+Jumps3:
+findop addr,#EB03#
+cmp $RESULT,0
+je next5
+fill $RESULT,5,90
+mov addr,$RESULT
+jmp Jumps3
+
+
+next5:
+//=============================================
+// 3. Removing junk pairs of conditional jumps
+//=============================================
+
+
+mov addr,eip
+CJumps1:
+find addr,#7?037?01#
+cmp $RESULT,0
+je next6
+fill $RESULT,5,90
+mov addr,$RESULT
+jmp CJumps1
+
+
+next6:
+//====================================
+// 4. Removing junky shift constants
+//====================================
+
+
+mov addr,eip
+ShiftC1:
+findop addr,#C1F?00#
+cmp $RESULT,0
+je next7
+fill $RESULT,3,90
+mov addr,$RESULT
+jmp ShiftC1
+
+
+
+next7:
+//==============================
+// 5. Removing junky prefixes
+//==============================
+
+
+mov addr,eip
+Prefix1:
+findop addr,#F3#
+cmp $RESULT,0
+je next8
+fill $RESULT,1,90
+mov addr,$RESULT
+jmp Prefix1
+
+
+next8:
+mov addr,eip
+Prefix2:
+findop addr,#F2#
+cmp $RESULT,0
+je next9
+fill $RESULT,1,90
+mov addr,$RESULT
+jmp Prefix2
+
+
+next9:
+inc counter1
+cmp counter1,2
+jne next2
+
+findop eip,#5D#
+cmp $RESULT,0
+je error
+bp $RESULT
+esto
+bc eip
+
+cmt eip,"Junk removed. Scroll down to find stolen code."
+findop eip,#C3#
+cmt $RESULT,"<--- This return leads to false OEP!"
+
+var LastPush
+SearchPush:
+dec $RESULT
+mov LastPush,[$RESULT]
+and LastPush,0FF
+cmp LastPush,68
+jne SearchPush
+cmt $RESULT,"<--- Not stolen, false OEP value."
+
+
+dbs
+ret
+error:
+msg "ERROR! Some error ocured! Sorry for that :("
+dbs
+ret

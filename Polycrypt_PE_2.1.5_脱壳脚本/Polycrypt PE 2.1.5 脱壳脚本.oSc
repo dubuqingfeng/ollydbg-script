@@ -1,0 +1,112 @@
+////////////////////////////////////////////////////////////
+/// Polycrypt PE 2.1.5 脱壳脚本                          ///
+/// by 徐超(ximo) QQ:178911980                           ///
+/// http://www.54soft.com.cn                             ///
+///	http://www.52pojie.net                               ///
+///                                                      ///
+///                             2008.9.01                ///
+////////////////////////////////////////////////////////////
+
+sto
+sto                                                       //先单步走2次，等待解码
+
+
+find eip,#E2EEC3#                                         //寻找loop代码                
+cmp $RESULT,0                        
+je error
+add $RESULT,2                                             
+bp $RESULT                                                //在retn处F2下断
+esto
+bc $RESULT
+sti
+
+
+find eip,#E8????????90#                                   
+cmp $RESULT,0
+je error
+add $RESULT,5
+bp $RESULT                                               //运行到下一解码处，也就是nop处
+esto
+bc $RESULT
+
+find eip,#C3CC8D85#
+cmp $RESULT,0
+je error
+inc $RESULT    
+mov [$RESULT],#90#                                       //NOP掉垃圾int 3语句
+
+find eip,#66C74206FFFF#  
+cmp $RESULT,0
+je error 
+mov [$RESULT],#90909090909090909090909090909090909090909090909090909090909090909090#
+                                                         //NOP掉34个字节的垃圾语句，此垃圾在PE头中写入了垃圾东西
+
+
+find eip,#B0FFF3AA#                                      //继续查找垃圾
+cmp $RESULT,0
+je error 
+add $RESULT,2
+mov [$RESULT],#9090#                                     //NOP掉垃圾，汗，垃圾真不是一般的多                                 
+
+
+find eip,#6A006A006A046A006A006800000080#
+cmp $RESULT,0  
+je error 
+mov [$RESULT],#909090909090909090909090909090909090909090909090909090#
+                                                          //NOP掉27个字节的垃圾 
+//mov [$RESULT],#EB19#                                    //或者直接跳过这段语句，目的都是饶开CreateFile
+
+
+gpa "GetModuleHandleA", "kernel32.dll"                    //查找GetModuleHandleA
+cmp $RESULT,0
+je error
+bp $RESULT                                                //下断
+esto                                                      //运行2次
+esto
+bc $RESULT
+rtu                                                       //ALT+F9返回
+
+
+
+
+find eip,#CC#                                             //继续清除垃圾             
+cmp $RESULT,0
+je error
+mov [$RESULT],#90#
+
+
+
+find eip,#80BD????????01755E#                              //寻找magic jump，跳过IAT的加密
+cmp $RESULT,0
+je err
+add $RESULT,7
+mov [$RESULT],#EB#                                         //修改为magic jmp
+
+
+
+find eip,#5D9D6168????????C3#                              //寻找OEP
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+sto                                                        //单步5次，就到OEP
+sto
+sto
+sto
+sto
+
+cmt eip,"这里就是OEP！fonder BY 徐超"                      //在EIP处，也就是现在OD停留了位置加注释
+MSG "感谢使用此脚本，现在可以脱壳了"                       //加个对话框，给出一些提示信息
+ret                                                        //结束脚本
+
+
+error:                                                     //设置错误提示，可以自定义
+MSG "运行错误，请检查错误后再继续执行脚本"
+ret
+
+
+
+
+
+

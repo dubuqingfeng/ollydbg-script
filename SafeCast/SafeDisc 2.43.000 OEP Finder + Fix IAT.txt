@@ -1,0 +1,226 @@
+//////////////////////////////////////////////////
+//  FileName    :  SafeDisc V2.43.000.osc
+//  Comment     :  SafeDisc V2.43.000 FixedImportingFunction
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://www.unpack.cn
+//  Date        :  2005-11-23 22:00
+//////////////////////////////////////////////////
+#log
+dbh
+
+
+var EP
+var Temp
+var IsDebuggerPresent
+var GetCurrentProcess
+var ZwQueryInformationProcess
+var CreateEventA
+var MagicJmp
+var FixedOver
+
+
+//IsDebuggerPresent?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a
+
+mov EP,eip
+log EP
+
+gpa "IsDebuggerPresent", "KERNEL32.dll"
+mov IsDebuggerPresent,$RESULT
+eob IsDebuggerPresent
+bp IsDebuggerPresent
+
+esto
+GoOn0:
+esto
+
+IsDebuggerPresent:
+log eip
+cmp eip,IsDebuggerPresent
+jne GoOn0
+bc IsDebuggerPresent
+
+
+//ZwQueryInformationProcess?a?a?a?a?a?a?a?a?a?a?a?a
+
+/*
+00879889     FF15 B4208C00      call dword ptr ds:[8C20B4] ; kernel32.GetCurrentProcess
+0087988F     50                 push eax
+00879890     FFD7               call edi                   ; ntdll.ZwQueryInformationProcess
+00879892     8B4424 0C          mov eax,dword ptr ss:[esp+C]
+00879896     85C0               test eax,eax
+00879898     75 02              jnz short 0087989C
+*/
+
+gpa "GetCurrentProcess", "KERNEL32.dll"
+mov GetCurrentProcess,$RESULT
+eob GetCurrentProcess
+bp GetCurrentProcess
+
+esto
+GoOn1:
+esto
+
+GetCurrentProcess:
+cmp eip,GetCurrentProcess
+jne GoOn1
+bc GetCurrentProcess
+rtu
+
+find eip, #8B44240C85C0#
+cmp $RESULT, 0
+je NoFind
+
+mov ZwQueryInformationProcess,$RESULT
+log ZwQueryInformationProcess
+eob ZwQueryInformationProcess
+bp ZwQueryInformationProcess
+esto
+
+ZwQueryInformationProcess:
+bc ZwQueryInformationProcess
+mov Temp,esp
+add Temp,0C
+mov [Temp],0000
+
+
+//CreateEventA?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a
+
+gpa "CreateEventA", "KERNEL32.dll"
+mov CreateEventA,$RESULT
+eob CreateEventA
+bphws CreateEventA, "x"
+
+esto
+GoOn2:
+esto
+
+CreateEventA:
+log eip
+cmp eip,CreateEventA
+jne GoOn2
+bphwc CreateEventA
+rtu
+
+
+//EP?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a
+
+add EP,1
+mov Temp, [EP]
+add Temp,4
+add EP,Temp
+add EP,6
+log EP
+mov Temp, [EP]
+and Temp,0FF
+log Temp
+add EP,1
+add EP,Temp
+log EP
+
+
+//jmp Second
+
+//FixedImportingFunction?a?a?a?a?a?a?a?a?a?a?a?a?a
+
+/*
+008BF088     8B45 F4            mov eax,dword ptr ss:[ebp-C]
+008BF08B     40                 inc eax
+008BF08C     8945 F4            mov dword ptr ss:[ebp-C],eax
+008BF08F     8B45 F4            mov eax,dword ptr ss:[ebp-C]
+008BF092     3B45 14            cmp eax,dword ptr ss:[ebp+14]
+008BF095     73 55              jnb short 008BF0EC
+008BF097     8B45 F4            mov eax,dword ptr ss:[ebp-C]
+008BF09A     C1E8 03            shr eax,3
+008BF09D     8B4D F8            mov ecx,dword ptr ss:[ebp-8]
+008BF0A0     8B15 DCEC8D00      mov edx,dword ptr ds:[8DECDC]
+008BF0A6     8B0C8A             mov ecx,dword ptr ds:[edx+ecx*4]
+008BF0A9     0FB60401           movzx eax,byte ptr ds:[ecx+eax]
+008BF0AD     8B4D F4            mov ecx,dword ptr ss:[ebp-C]
+008BF0B0     83E1 07            and ecx,7
+008BF0B3     6A 01              push 1
+008BF0B5     5A                 pop edx
+008BF0B6     D3E2               shl edx,cl
+008BF0B8     23C2               and eax,edx
+008BF0BA     85C0               test eax,eax
+008BF0BC     75 2C              jnz short 008BF0EA
+008BF0BE     8B45 F8            mov eax,dword ptr ss:[ebp-8]
+008BF0C1     69C0 8D000000      imul eax,eax,8D
+008BF0C7     8B0D E0EC8D00      mov ecx,dword ptr ds:[8DECE0]
+008BF0CD     8B4401 4C          mov eax,dword ptr ds:[ecx+eax+4C]
+008BF0D1     8B4D F4            mov ecx,dword ptr ss:[ebp-C]
+008BF0D4     FF3488             push dword ptr ds:[eax+ecx*4]
+008BF0D7     FF75 F8            push dword ptr ss:[ebp-8]
+008BF0DA     E8 DB000000        call 008BF1BA
+008BF0DF     59                 pop ecx
+008BF0E0     59                 pop ecx
+008BF0E1     8B4D F4            mov ecx,dword ptr ss:[ebp-C]
+008BF0E4     8B55 18            mov edx,dword ptr ss:[ebp+18]
+008BF0E7     89048A             mov dword ptr ds:[edx+ecx*4],eax
+008BF0EA     EB 9C              jmp short 008BF088
+008BF0EC     EB 07              jmp short 008BF0F5
+*/
+
+eob FixedImportingFunction
+find eip, #D3E223C285C0752C8B45F8#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,4
+mov MagicJmp,$RESULT
+bphws MagicJmp, "x"
+
+find MagicJmp, #EB9CEB07#
+cmp $RESULT, 0
+je NoFind
+add $RESULT,2
+mov FixedOver,$RESULT
+bphws FixedOver, "x"
+
+bphws EP, "x"
+
+esto
+GoOn3:
+esto
+
+FixedImportingFunction:
+cmp eip,MagicJmp
+je MagicJmp
+cmp eip,FixedOver
+je MagicJmp
+cmp eip,EP
+je EP
+
+MagicJmp:
+bphwc MagicJmp
+asm MagicJmp, "xor eax,eax"
+
+esto
+
+FixedOver:
+asm MagicJmp, "test eax,eax"
+bphws MagicJmp, "x"
+jmp GoOn3
+
+Second:
+bphws EP, "x"
+eob EP
+esto
+
+EP:
+log EP
+bphwc MagicJmp
+bphwc FixedOver
+bphwc EP
+sti
+
+
+//GameOver?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a
+
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT/Reloction.  Good Luck  "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not SafeDisc V2.43.000 !  "
+ret

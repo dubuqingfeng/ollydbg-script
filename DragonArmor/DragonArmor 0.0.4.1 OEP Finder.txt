@@ -1,0 +1,24 @@
+///////////////////////////////////////////////////////////////////////
+//  OEP Finder Script for DragonArmor 0.0.4.1 --> Orient
+//  Coded by: Sonny27 {TeaM SnD}
+//  My greetz and thanks to everyone at:
+//  SnD, gRn, RfN, iCU, CiP, ARTeam, eXeTools and UnPacKcN
+//  Data: 2007-03-29
+//  Environment :  WinXP SP2,OllyDbg V1.10,ODbgScript V1.51
+//  Contact: http://tuts4you.com/forum/ or http://snd.astalavista.ms/
+///////////////////////////////////////////////////////////////////////
+
+MSGYN "Are all set breakpoints deleted? Otherwise script will fail!"
+cmp $RESULT,0
+je breakpoint
+find eip, #F3ABC3#
+bp $RESULT
+run
+bc $RESULT
+sto
+sto
+msg "This should be OEP :-)"
+ret
+
+breakpoint:
+ret

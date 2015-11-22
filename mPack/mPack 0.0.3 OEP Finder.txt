@@ -1,0 +1,23 @@
+/*
+//////////////////////////////////////////////////////////////////////////////
+	mPack 0.0.3 Main OEP finder
+	Author: KuNgBiM
+	Email : kungbim@163.com
+	OS    : Winxp sp1,OllyDbg 1.1,ODbgScript1.53
+	Date  : 2007-06-12
+	Config: N/A
+	Note  : If you have one or more question, email me please,thank you!
+//////////////////////////////////////////////////////////////////////////////
+*/
+
+dbh
+sti
+sto
+mov addr,esp
+bphws addr,"r"
+run
+sti
+an eip
+cmt eip, "This is OEP! Find by KuNgBiM"
+msg "Script by KuNgBiM, Thank you for using my script!"
+ret

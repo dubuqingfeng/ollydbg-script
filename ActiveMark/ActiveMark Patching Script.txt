@@ -1,0 +1,23 @@
+/*
+Activemark  "Everything OK!" patching script
+Made by: GaBoR {RES}
+Thanks to CONDZERO for the good tuts on Activemark!
+Note: run this script on the unpacked file!
+*/
+var x
+gpa "GetModuleHandleA","kernel32.dll"
+bp $RESULT
+run
+run
+bc $RESULT
+rtu
+sto
+sti
+find eip,#837DD800#
+mov x,$RESULT
+cmt x,"modified code"
+add x,3
+fill x,1,01
+msg "Right click on 'modified code' line & select 'Copy to executable->Selection'"
+ret
+

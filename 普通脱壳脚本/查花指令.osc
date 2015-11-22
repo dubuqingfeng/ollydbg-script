@@ -1,0 +1,95 @@
+/*
+							FindJunk.idc
+
+							code by oddness
+							12-07-2005
+*/
+#include <idc.idc>
+static FindingJunk(StartsourEa,EndsourEa,JunkArrayID,nJunk)
+{
+	auto	nSour,j,k,vReturn,bID,NextArrayID;
+	nSour = EndsourEa - StartsourEa;
+	if ((StartsourEa+nJunk) > EndsourEa)
+		return -1;
+	if (nJunk == 0)
+		return StartsourEa;
+	
+	
+	
+	
+	bID = GetArrayId("NextArray");
+	if (bID == -1)
+	{
+		Message("\n没有这个数组，这里创建，但是请注意查找下一个花指机器码时请先替换掉这个数组的内容");
+		bID= CreateArray("NextArray");
+	}
+	else
+	{
+		DeleteArray(bID);
+		bID= CreateArray("NextArray");
+	}
+	{
+		nJunk--;
+		j = 0;
+		k = -1;
+		SetArrayLong(bID,0,-1);
+		while (j < nJunk)
+		{
+			if (k == -1 || GetArrayElement(AR_LONG,JunkArrayID,k) == 0xcc  || GetArrayElement(AR_LONG,JunkArrayID,j) == GetArrayElement(AR_LONG,JunkArrayID,k) )
+			{
+				j++;
+				k++;
+				SetArrayLong(bID,j,k);
+			}
+			else
+				k = GetArrayElement(AR_LONG,bID,k);
+		}
+		nJunk++;
+	}
+	j = 0;
+	while (StartsourEa < EndsourEa && j < nJunk)
+	{
+		if (j == -1 || GetArrayElement(AR_LONG,JunkArrayID,j) == 0xcc || Byte(StartsourEa) == GetArrayElement(AR_LONG,JunkArrayID,j) ) 
+		{
+			StartsourEa++;
+			j++;
+		}
+		else
+			j = GetArrayElement(AR_LONG,bID,j);
+	}
+	
+	
+	
+	if (j >= nJunk)
+		return StartsourEa-nJunk;
+	else
+		return -1;
+	
+}
+
+static	main()
+{	
+	auto	bID,nJunk,bReturn;
+	bID = GetArrayId("JunkArray");
+	if (bID == -1)
+	{
+		Message("\n没有这个数组，这里创建");
+		bID= CreateArray("JunkArray");
+	}
+	else
+	{
+		DeleteArray(bID);
+		bID= CreateArray("JunkArray");
+	}
+	SetArrayLong(bID,0,0x7D);
+	SetArrayLong(bID,1,0x7D);
+	SetArrayLong(bID,2,0x7C);
+	SetArrayLong(bID,3,0x01);
+	SetArrayLong(bID,4,0xcc);
+	nJunk = GetLastIndex(AR_LONG,bID)+1;
+	bReturn = FindingJunk(0x401000,0x401029,bID,nJunk);
+	if (bReturn == -1)
+		Message("\n没有找到");
+	else
+		Message("\n找到:%x",bReturn);
+}

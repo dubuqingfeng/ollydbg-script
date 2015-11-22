@@ -1,0 +1,92 @@
+
+/////////////////////////////////////////////////////////////////////////////////////
+//                Thinstall 2.521 IAT Magic Jump finder and Fixer
+//                By : Magic_h2001  -  Date : 2006/01/18
+//                magic_h2001@yahoo.com - http://magic.shabgard.org  
+/////////////////////////////////////////////////////////////////////////////////////
+var GetModule
+var success
+gpa "GetModuleHandleA", "kernel32.dll"
+mov GetModule, $RESULT
+mov success,0
+
+bphws GetModule,"x"
+rep:
+esto
+rtu
+find eip, #74??8B45F48945F08B45F48B400C8945BC8B450C8B008945C0FF75BCFF75C0#
+cmp $RESULT,0
+je rep
+repl $RESULT, #74#, #eb#, 1
+mov success,1
+find eip, #74??8B45088B008945EC8B45FC8B400C8945F0FF75ECFF75F0#
+cmp $RESULT,0
+je NoF
+repl $RESULT, #74#, #eb#, 1
+NoF:
+bphwc GetModule
+cmp success,0
+je ends
+msg "IAT Magic Jump Found and Fixed by : .:: Magic_h2001 ::. Click OK to Continue..."
+ends:
+/////////////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+//                Thinstall 2.521 OEP Finder by : GaBoR [RES]
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+
+var GetEnvironmentVariableA
+var v
+gpa "GetEnvironmentVariableA","kernel32.dll"
+mov GetEnvironmentVariableA,$RESULT
+bp GetEnvironmentVariableA
+//run
+run
+run
+rtu
+bc GetEnvironmentVariableA
+find eip,#83BDE4FEFFFF00#
+bp $RESULT
+run
+bc $RESULT
+sto
+sto
+sto
+sto
+sto
+sti
+find eip,#0F84#
+bphws $RESULT,"x"
+run
+bphwc $RESULT
+cmp eax,0
+jne change
+cont:
+rtr
+
+//uncomment the following line if you don't have "After Executing till RET, step over RET" enabled in "Debugging Options->Trace'"
+
+//sto
+
+find eip,#5968FA000000#
+bp $RESULT
+run
+bc $RESULT
+find eip,#83601000#
+mov v,$RESULT
+add v,24
+bp v
+run
+bc v
+sti
+cmt eip,"OEP reached"
+msg "Dump & fix IAT"
+ret
+change:
+repl eip,#0F84#,#0F85#,2
+jmp cont
+///////////////////////////////////////////////////////////////////////////////////////////

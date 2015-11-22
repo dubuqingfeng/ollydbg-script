@@ -1,0 +1,22 @@
+// Crunch 5.0 OEP Finder
+// Made by: GaBoR {RES}
+findop eip, #60#
+bphws $RESULT, "x"
+run
+bphwc $RESULT
+sto
+var t
+mov t,esp
+bphws t, "r"
+run
+bphwc t
+sto
+sto
+sto
+sto
+sto
+cmt eip,"This is the OEP! Found by GaBoR {RES}"
+MSG "Dump & fix IAT"
+ret
+
+

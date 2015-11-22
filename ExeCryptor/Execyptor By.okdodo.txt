@@ -1,0 +1,291 @@
+/*
+Script written by okdodo  2007/03
+Tested for execryptor v2.24/v2.25
+
+Ollyice: Ignore all exceptions (add 0EEDFADE,C0000005,C000001E)
+HideOD : Check HideNtDebugBit and ZwQueryInformationProcess(method2)
+
+Test Environment : Ollyice 1.1 + HideOD    
+                   ODBGScript 1.51 under WINXP
+Thanks :
+         kanxue     - author of HideOD       
+         hnhuqiong  - author of ODbgScript 1.51
+*/
+
+data:
+    var hInstance
+    var codeseg
+    var vmseg
+    var ep
+    var oep
+    var esptmp
+    var _esp
+    var iat_start
+    var iat_end
+    var iat_cur
+    var addr
+    var c_gpa
+    var ibase
+    var iend
+    var temp
+    var tmp
+    var SBM
+    var TOA
+    var mbase
+    var msize
+
+code:
+    bphwcall
+    gpa "SetBkMode","GDI32.dll"
+    mov SBM,$RESULT
+    REV SBM
+    mov SBM,$RESULT
+    itoa SBM
+    gpa "TextOutA","GDI32.dll"
+    mov TOA,$RESULT
+    REV TOA
+    mov TOA,$RESULT
+    itoa TOA
+
+    gpa "VirtualFree","kernel32.dll"
+    bphws $RESULT,"x"
+    run
+    bphwc $RESULT
+    rtu
+    gmi eip,MODULEBASE
+    mov hInstance,$RESULT
+    mov temp,$RESULT
+    add temp,3c
+    mov temp,[temp]
+    add temp,hInstance
+    add temp,28
+    mov temp,[temp]
+    add temp,hInstance
+    mov ep,temp
+
+    bc ep
+
+    gmemi eip,MEMORYBASE
+    mov codeseg,$RESULT
+
+    find $RESULT,#2ECC9D#
+    mov [$RESULT],#2ECC90#
+
+    gpa "EnumWindows","user32.dll"
+    mov [$RESULT],#8BC09C85C09D0578563412C20800#
+
+    gpa "CreateThread","kernel32.dll"
+    find $RESULT,#FF7518#
+    mov [$RESULT],#6A0490#
+
+    gpa "ZwCreateThread","ntdll.dll"
+    bp $RESULT
+
+loop1:
+    esto
+    cmp eip,$RESULT
+    jne loop1
+    bc $RESULT
+    bp ep
+
+bpep:
+    run
+    cmp eip,ep
+    je loop2
+    jmp bpep
+
+loop2:
+    bc ep
+    mov esptmp,esp
+    sub esptmp,4    
+
+    mov temp,codeseg
+    sub temp,1
+    gmemi temp,MEMORYBASE
+    mov vmseg,$RESULT
+    gmemi temp,MEMORYSIZE
+    bprm vmseg,$RESULT
+
+loop3:    
+    esto
+    mov tmp,eip
+    mov tmp,[tmp]
+    cmp tmp,992C008A
+    jne loop5
+    mov oep,eax
+    sti
+    bprm oep,1
+
+loop4:
+    esto
+    cmp eip,oep
+    jne loop4
+    jmp iat
+
+loop5:
+    cmp esp,esptmp
+    jne loop3
+
+iat:
+    bpmc
+    mov oep,eip
+    cmt eip,"OEP?" 
+    gmi eip, MODULEBASE
+    mov ibase, $RESULT
+    mov temp,ibase
+    add temp,3C
+    mov temp,[temp]
+    add temp,ibase
+    add temp,50
+    mov iend,[temp]
+    add iend,ibase
+    
+    mov count,0
+    mov iatbase,0
+    mov mbase,codeseg 
+hwloop: 
+    sub mbase,1 
+    cmp mbase,ibase
+    jb @iatinit
+    gmemi mbase,MEMORYBASE
+    mov mbase,$RESULT
+    gmemi msize,MEMORYSIZE
+    mov msize,$RESULT
+    mov temp,mbase
+
+    cmp iatbase,0
+    jne vmsegloop
+    eval #{SBM}#
+    find temp,$RESULT,msize
+    cmp 0,$RESULT
+    je findTextOutA
+    gmemi $RESULT,MEMORYBASE
+    mov iatbase,$RESULT
+    jmp vmsegloop
+
+findTextOutA:
+    cmp iatbase,0
+    jne vmsegloop
+    eval #{TOA}#
+    find temp,$RESULT,msize
+    cmp 0,$RESULT
+    je vmsegloop
+    gmemi $RESULT,MEMORYBASE
+    mov iatbase,$RESULT
+
+vmsegloop:
+    find temp,#03C28B000345FC#
+    mov tmp, $RESULT
+    cmp tmp,0
+    je check239
+    add tmp,7
+    bphws tmp,"x"
+    mov temp,tmp
+    mov c_gpa,tmp 
+    inc count
+    jmp vmsegloop
+
+check239:
+    cmp count,0
+    jne hwloop
+
+    mov mbase,codeseg 
+hwloop1: 
+    sub mbase,1 
+    cmp mbase,ibase
+    jb @iatinit
+    gmemi mbase,MEMORYBASE
+    mov mbase,$RESULT
+    mov temp,mbase
+
+    cmp iatbase,0
+    jne vmsegloop1
+    eval #{SBM}#
+    find temp,$RESULT,msize
+    cmp 0,$RESULT
+    je findTextOutA1
+    gmemi $RESULT,MEMORYBASE
+    mov iatbase,$RESULT
+    jmp vmsegloop1
+
+findTextOutA1:
+    cmp iatbase,0
+    jne vmsegloop1
+    eval #{TOA}#
+    find temp,$RESULT,msize
+    cmp 0,$RESULT
+    je vmsegloop1
+    gmemi $RESULT,MEMORYBASE
+    mov iatbase,$RESULT
+
+vmsegloop1:
+    find temp,#8B000345FC8945#
+    mov tmp, $RESULT
+    cmp tmp,0
+    je hwloop1
+    add tmp,5
+    bphws tmp,"x"
+    mov temp,tmp
+    mov c_gpa,tmp 
+    jmp vmsegloop1
+
+
+@iatinit:
+    cmp iatbase,0
+    je @error
+    gmemi iatbase,MEMORYSIZE
+    mov iat_end,$RESULT
+    add iat_end,iatbase
+    sub iat_end,4
+    mov _esp,esp
+    mov iat_cur,iatbase
+    sub iat_cur,4
+    mov count,0
+
+@imprec:  
+    add iat_cur,4
+    cmp iat_cur,iat_end
+    ja @end
+    mov addr,[iat_cur]
+    cmp addr,0
+    je @imprec
+    cmp addr,ibase
+    jb @imprec
+    cmp count,0
+    jne @next
+    mov iat_start,iat_cur
+    log iat_start
+
+@next: 
+    cmp addr,iend
+    inc count
+    mov temp,iat_cur
+    ja @imprec
+    cmp addr,iatbase
+    jae next1
+    jmp next2
+next1: 
+    cmp addr,iat_end
+    jbe @end
+next2:  
+    mov esp,_esp
+    mov eip,addr
+    mov [esp],eip  
+    esto    
+    mov [iat_cur],eax    
+    jmp @imprec
+
+@end:
+    bphwcall
+    mov iat_end,temp
+    log iat_end
+    mov eip,oep 
+    eval "IAT Start Address: {iat_start}   IAT End Address: {iat_end}"
+    msg $RESULT   
+    msg "Script ends ok!  Find the OEP manually and dump it~"
+    ret
+
+@error:
+    bphwcall
+    msg "ERROR!"
+    ret

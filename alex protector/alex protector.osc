@@ -1,0 +1,150 @@
+//code by skylly
+//code for alex protector 1.0 & 2.0
+#log
+var cb
+var cs
+gmi eip,CODEBASE
+cmp $RESULT,0
+je err
+mov cb,$RESULT
+gmi eip,CODESIZE
+cmp $RESULT,0
+je err
+mov cs,$RESULT
+
+var LoadLibraryA
+gpa "LoadLibraryA","kernel32.dll"
+cmp $RESULT,0
+je err
+mov LoadLibraryA,$RESULT
+bphws LoadLibraryA,"x"
+esto
+bphwc LoadLibraryA
+rtu
+var tmp
+mov tmp,eip
+sub tmp,100
+
+find tmp,#61FFE0#
+cmp $RESULT,0
+je maybever1
+inc $RESULT
+go $RESULT
+go eax
+
+atoep:
+cmt eip,"OEP"
+msg "dump with loadpe now,and imprec option ->  'Create New IAT' only"
+ret
+
+maybever1:
+var tmp
+mov tmp,[eip]
+and tmp,FFFF
+cmp tmp,F88B
+jne err
+
+var VirtualAlloc
+gpa "VirtualAlloc","kernel32.dll"
+cmp $RESULT,0
+je err
+find $RESULT,#C2??00#
+cmp $RESULT,0
+je err
+mov VirtualAlloc,$RESULT
+bp VirtualAlloc
+lpva:
+esto
+rtu
+var tmp
+mov tmp,[eip]
+and tmp,FFFF
+
+cmp tmp,8589
+jne lpva
+mov tmp,eip
+sub tmp,8
+mov tmp,[tmp]
+and tmp,FFFF
+cmp tmp,006A
+jne lpva
+bc VirtualAlloc
+
+//下面开始补丁处理输入表
+mov tmp,eip
+and tmp,FFFF0000
+var baseaddr
+mov baseaddr,tmp
+killflow1:
+find baseaddr,     #60EB03EB03??EBFBE801000000??83C4040F318BD8EB03EB03??EBFBE801000000??83C4048BCAEB03EB03??EBFBE801000000??83C4040F312BC3EB03EB03??EBFBE801000000??83C4041BD10F3103C3EB03EB03??EBFBE801000000??83C40413D10F312BC3EB03EB03??EBFBE801000000??83C404EB05??????????EB03EB03??EBFBE801000000??83C4041BD1EB03EB03??EBFBE801000000??83C40485D275D661#
+cmp $RESULT,0
+je killflow2
+mov [$RESULT],#909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090909090#
+jmp killflow1
+
+killflow2:
+var addr1
+var addr2
+mov addr1,0A61
+add addr1,baseaddr
+mov addr2,0A7A
+add addr2,baseaddr
+mov addr2,[addr2]
+log addr1
+//第一次patch 用于保存dll基地址
+mov [addr1],#57FF95#
+add addr1,3
+mov [addr1],addr2
+mov addr2,0A77
+add addr2,baseaddr
+mov [addr2],#8305D00F410004#
+
+add addr2,2
+mov [addr2],baseaddr
+
+var virtualmem
+alloc 3000
+cmp $RESULT,0
+je err
+mov virtualmem,$RESULT
+mov [baseaddr],virtualmem
+log virtualmem
+
+var addr3
+mov addr3,0BD0
+add addr3,baseaddr
+var addr4
+mov addr4,0C0C
+add addr4,tmp
+//第二次patch 用于修复跳转表
+mov [addr3],#58538B1DD00F4100890389198305D00F4100045B90909090909090#
+mov [addr4],#90#
+mov addr4,0C05
+add addr4,tmp
+mov [addr4],#9090#
+
+add addr3,4
+mov [addr3],baseaddr
+add addr3,A
+mov [addr3],baseaddr
+
+find tmp,#61FFE0#
+cmp $RESULT,0
+je err
+inc $RESULT
+bp $RESULT
+esto
+bc $RESULT
+go eax
+find eip,#E9????????0000#
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+sti
+jmp atoep
+ret
+err:
+msg "error"
+ret

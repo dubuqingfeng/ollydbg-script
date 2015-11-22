@@ -1,0 +1,109 @@
+/*
+==============================================================
+    PESpin Code Fixer script for SHaG's OllyScript plugin
+==============================================================
+
+    This script will fix simple code redirection to PE
+    header that is used in PESpin versions 1.0 - 1.3.
+    Run this script when you find OEP, or if you see
+    this kind of code redirection (for example, after
+    you decrypt CLEAR markers in 1.1 - 1.3). Check log
+    window for information.
+
+    [ haggar ]
+==============================================================
+*/
+
+
+
+var stolen
+var addr
+var Redir
+var buffer
+var temp
+var Value
+mov addr,401000
+mov stolen,0
+
+log "[ Simple Code Fixing - number of stolen opcodes ]"
+
+//Find posible CALL/JMP to PEheader.
+search:
+findop addr,#E???????FF#
+cmp $RESULT,0
+je exit
+mov addr,$RESULT
+mov buffer,addr
+add addr,1
+
+//Check does it realy jumps to PEheader.
+mov Redir,[addr]
+add Redir,addr
+and Redir,4FF000
+cmp Redir,400000
+jne search
+
+inc stolen
+
+mov Redir,[addr]      //Find that redirected address.
+add Redir,addr
+add Redir,4
+mov Value,[Redir]     //Check is there JMP (E9) opcode.
+and Value,0FF
+cmp Value,0E9
+je JumpsCalls        //If not, just copy all bytes. If yes, goto jumps fixing.
+
+
+
+//Copy bytes, PUSH opcodes.
+add Redir,1
+mov Value,[Redir]
+sub addr,1
+//cmt addr,"Fixed PUSH opcode."
+fill addr,1,68
+add addr,1
+mov [addr],Value
+mov addr,buffer
+jmp search
+
+
+
+//Fix jumps/calls.
+JumpsCalls:
+sub addr,1
+//cmt addr,"Fixed JMP or CALL opcode."
+mov temp,[addr]
+cmp temp,0E9
+je Jump
+fill addr,1,0E8
+jmp Call
+Jump:
+fill addr,1,0E9
+Call:
+add Redir,1
+add addr,1
+mov Value,[Redir]
+add Value,Redir
+add Value,4
+sub Value,addr
+sub Value,4
+mov [addr],Value
+mov addr,buffer
+jmp search
+
+
+exit:
+
+log stolen
+
+ret
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,33 @@
+// PECompact 1.84 OEP Finder v0.1 !unstable edition! 
+
+eob Break1 
+findop eip, #F3A58BFBC3# 
+bphws $RESULT, "x" 
+run 
+
+Break1: 
+bphwc $RESULT 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+sto 
+findop eip, #5068# 
+bphws $RESULT, "x" 
+eob endl 
+run 
+
+endl: 
+sto 
+bphwc $RESULT 
+sto 
+sto 
+log eip 
+
+ret 

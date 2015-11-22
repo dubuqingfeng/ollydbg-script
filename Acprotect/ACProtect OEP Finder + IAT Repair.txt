@@ -1,0 +1,93 @@
+/*Acprotect unpacker 
+To find the oep and fix the IAT
+  by zpunpack
+*/
+
+var eipaddr1 
+var esiadd   
+var ebxadd   
+var cbase
+var csize
+var imgbase 
+var iatrva
+var add1
+
+GMI eip, MODULEBASE 
+cmp $RESULT,0
+je lblabort
+mov imgbase,$RESULT
+
+gmi eip,CODEBASE     //Get code base
+cmp $RESULT,0
+je lblabort
+mov cbase,$RESULT
+gmemi cbase,MEMORYsize
+cmp $RESULT,0 
+je lblabort
+mov csize,$RESULT
+
+gpa "GetModuleHandleA","kernel32.dll"
+cmp $RESULT,0
+je lblabort
+mov add1,$RESULT
+bprm add1,ff 
+esto 
+bpmc
+rtu 
+findop eip,#F3AA# //rep stos byte ptr es:[edi]
+cmp $RESULT,0
+je lblabort   
+repl $RESULT,#F3AA#,#9090#,2 
+bp $RESULT
+run
+bc $RESULT
+sto 
+sto 
+sto
+
+bprm add1,ff
+esto
+bpmc
+rtu
+mov eipaddr1,eip
+mov eipaddr1,eipaddr1-30
+mov esiadd,esi+0c 
+mov ebxadd,ebx-imgbase
+mov [esiadd],ebxadd
+mov iatrva,esi-imgbase
+findop eipaddr1,#83660c00# //and dword ptr ds:[esi+C],0
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#83660C00#,#90909090#,4
+find eipaddr1,#880343# //find:mov byte ptr ds:[ebx],al and inc ebx
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#8803#,#9090#,2
+find eipaddr1,#880343#
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#8803#,#9090#,2
+find eipaddr1,#80BD16564100007457# //Magic Jump
+je lblabort
+repl $RESULT,#80BD16564100007457#,#80BD1656410000eb57#,9 //jmp
+find eipaddr1,#89078385#      //mov dword ptr ds:[edi],eax
+cmp $RESULT,0
+je lblabort
+repl $RESULT,#8907#,#9090#,2
+find eipaddr1,#8DBDEBEC400033c0#
+cmp $RESULT,0
+je lblabort
+bp $RESULT
+esto
+bc $RESULT
+bpmc
+bprm cbase,csize
+esto
+cmt eip,"OEP found!please dumped it!"
+eval "OEP found!please dump it and fix IAT RVA:{iatrva}!"
+msg $RESULT
+ret
+
+lblabort:
+msg "Script abort !"
+ret

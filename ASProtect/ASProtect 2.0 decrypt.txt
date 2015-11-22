@@ -1,0 +1,130 @@
+// find & decrypt all crypted codepart ('call 004FF370')
+/*
+Example codesnipped
+  FF35 808C4000   PUSH    [DWORD 408C80]
+  5A              POP     EDX
+  68 808C4000     PUSH    00408C80	<-Start of data
+  5A              POP     EDX
+  68 318D4000     PUSH    00408D31	<-End of data
+  58              POP     EAX
+  8955 F4         MOV     [EBP-C], EDX
+  2BC2            SUB     EAX, EDX
+  8945 FC         MOV     [EBP-4], EAX
+  8B4D FC         MOV     ECX, [EBP-4]
+  51              PUSH    ECX
+  8B55 F4         MOV     EDX, [EBP-C]
+  52              PUSH    EDX
+  B9 50125A00     MOV     ECX, 005A1250 <- Decryptionkey - comes from filechecksumproc 
+  E8 05670F00     CALL    <004FF370>
+  8945 F0         MOV     [EBP-10], EAX
+  837D F0 00      CMP     [DWORD EBP-10], 0
+  7D 05           JGE     SHORT 00408C79
+  E9 C3000000     JMP     00408D3C			;Skip enc data
+  B8 808C4000     MOV     EAX, 00408C80	;useless data start
+  EB 0B           JMP     SHORT 00408C8B
+  13FF            ADC     EDI, EDI
+  2A66 9E         SUB     AH, [ESI-62]
+  883D 99ACBFFF   MOV     [FFBFAC99], BH
+  2E:90           NOP                   	;useless data end
+  04 D2           ADD     AL, 0D2			;encrypted data...
+  51              PUSH    ECX
+*/
+
+
+//#log
+
+
+var reladr
+var bytedata
+var ASPRCall
+	mov ASPRCall, 004FF370
+
+
+
+var oldIP
+	mov oldIP,eip
+
+
+	GMI eip, CODEBASE
+	sub ASPRCall,5
+loop:	
+
+
+//B9 50125A00     MOV     ECX, 005A1250
+		find $RESULT, #B950125A00E8#
+		cmp $RESULT,0	
+	je done
+
+		add $RESULT,5
+		
+		mov reladr,ASPRCall
+		sub reladr,$RESULT
+		inc $RESULT
+		cmp [$RESULT], reladr
+	je found1
+
+	
+	continue:
+//		sub $RESULT,5
+		jmp loop
+
+	done:
+		eval "Done! - {count} chunks fixed."
+		log $RESULT
+		mov eip,oldIP
+		jmp eof1
+
+//------------------------	
+// Recover Call
+	found1:
+	var i
+		mov i,$RESULT
+
+	var count
+	inc count
+
+	var start
+		mov start,i
+		sub start,40
+	// FF35 0AD64100   PUSH    [DWORD 41D60A]		
+		find start, #FF35??????005a#
+		mov start,$RESULT
+		mov eip,start
+	 
+	 var ende
+	 	mov ende, i
+		add ende, 4
+// execute
+		sto
+		sto
+		
+		sto
+		sto
+
+	var pre
+		mov pre,edx
+		sto
+		sto
+	var post		
+		mov post,eax
+		go ende
+	
+	var fixed
+		mov fixed,ende
+		log fixed
+
+		sub ende,start
+		fill start, ende, 90
+		
+		mov [start],#33c040#		
+		
+		sub pre,7
+		fill pre, 12, 90
+		
+		sub post,7
+		fill post, 12, 90
+	
+		mov $RESULT,i
+jmp continue
+
+eof1:

@@ -1,0 +1,27 @@
+// EXE32Pack 1.3X oep 
+// by Mr.David        
+// www.chinadfcg.com
+
+var addr1
+
+dbh  //隐藏调试器
+
+gpa "IsDebuggerPresent","kernel32.dll"
+mov addr1,$RESULT                    //捷径 API断点IsDebuggerPresent
+bp addr1
+run
+
+bc addr1    //Clear break point  //取消断点
+rtu        //Alt+F9
+sto
+
+find eip,#FFE0#    //特征花指令 jmp eax
+mov addr1,$RESULT         
+bp addr1   
+
+run
+BC addr1
+
+sto
+
+cmt eip,"OEP1 Or Next Shell To Get,Please dumped it,Enjoy!" 

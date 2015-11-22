@@ -1,0 +1,75 @@
+/*
+¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ô¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ 
+          ***SafeDisc v4.x - Debug Check / OEP script****
+¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ô¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+  - fixes debug checks in safedisc
+  - detects and sets HW breakpoint on OEP for you
+  - tested with safedisc4
+  - this script was made only to help you get to OEP fast
+¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ô¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+  when u load a safedisc4 protected file, just run the script
+
+  the script will bypass both debug checks used in any safedisc4
+  the script will detect OEP, and set a HW breakpoint on it
+
+  MAKE SURE no other breakpoints are set! 
+  (unless its BP on OEP or afterwards..)
+  cl0ud/mephist0
+¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ô¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+*/
+
+var isdebugger
+var dbcheck
+var oep
+var extra
+
+START:
+dbh
+gpa "IsDebuggerPresent", "kernel32.dll"
+mov isdebugger,$RESULT
+
+mov oep,eip
+
+FIND_MAINDEBUG_CHECK:
+bp isdebugger
+esto
+rtr
+sti
+rtr
+sti
+mov dbcheck,[eip]
+and dbcheck,00FFFFFF
+cmp dbcheck,0004C483 //check if [eip] = ADD ESP,4
+bc isdebugger
+jne FIND_MAINDEBUG_CHECK
+
+FIX_MAINDEBUG_CHECK:
+sti
+mov dbcheck,[eip]
+and dbcheck,00FFFFFF
+cmp dbcheck,00C08566 //check if [eip] = TEST AX,AX
+jne FIND_MAINDEBUG_CHECK
+sti
+find eip,#5E5BC3#
+mov eip,$RESULT
+sto
+
+FIX_Second_DBCHECK:
+find eip,#558BEC81EC10020000E8#
+mov dbcheck,$RESULT
+find dbcheck,#85C00F84#
+repl $RESULT, #85C00F84#, #85C090e9#, 4
+
+GET_OEP:
+add oep,1
+mov extra,[oep]
+add extra,oep
+add extra,4
+mov oep,extra
+bphws oep, "x"
+esto
+
+msg "Debug Check fixed - you should be at OEP now!"
+
+pause
+ret

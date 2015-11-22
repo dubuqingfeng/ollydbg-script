@@ -1,0 +1,40 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//  
+//  AsCrypt 0.1 OEP Finder
+//  Coded by: 0x87k/ICU
+//  Special greetz fly out to: TEAM ICU,SnD,TSRh,{RES},ARTeam,REVENGE,my friends
+//  Data: 21.05.2007
+//  Test: WinXP SP2, OllyDbg V1.10, ODbgScript V1.53 or OllyScript v0.92, OllyDump
+//  Contact: oxy87k@gmail.com
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+
+//.v4r
+var bk
+
+//.c0de
+_start:
+	findop eip, #C3#	// searches for retn
+	go $RESULT		// go over it	
+	cmp eip, $RESULT	// if it find it
+	je _continue		// continue, else...
+   	msg "Error, maybe target isn't packed with AsCrypt v0.1!"
+   	ret			// exit
+
+_continue:
+	sto			// step over
+	sto			// step over
+	bphws esp,"r"		// set hardware breakpoint on ESP value
+	mov bk, esp
+	run			// run appz
+	cob			// wait until break
+	sto			// step over
+	sto			// step over
+	sto			// step over
+	log eip
+	an eip			// Analysis
+   	cmt eip, "This is the OEP! Found by 0x87k/ICU"
+   	msg "File was dumped, now you have to fix the IAT! Regards!"
+	dpe "dumped.exe", eip
+	bphwc bk		// clean the breakpoint
+   	ret

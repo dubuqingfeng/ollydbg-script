@@ -1,0 +1,203 @@
+//code by skylly
+//for csdsjkk
+msg "忽略所有异常"
+gpa "CreateThread","kernel32.dll"
+cmp $RESULT,0
+je err
+var CreateThread
+mov CreateThread,$RESULT
+
+#log
+gpa "OpenEventA","KERNEL32.DLL"
+bphws $RESULT,"x"
+esto
+bphwc $RESULT
+
+exec
+push eax
+push 0
+push 0
+push 0
+call CreateEventA
+ende
+rtu
+
+//去垃圾异常
+find eip,#CDF5#
+cmp $RESULT,0
+je pipi
+mov [$RESULT],#9090#
+
+find eip,#CDF7#
+cmp $RESULT,0
+je err
+mov [$RESULT],#33C0#
+
+find eip,#CDF7#
+cmp $RESULT,0
+je err
+mov [$RESULT],#33C0#
+
+pipi:
+
+find eip,#E9????0000#
+cmp $RESULT,0
+je err
+var start
+mov start,$RESULT
+
+find eip,#F783#  //test dword ptr ds:[ebx+40213F],2
+cmp $RESULT,0
+je err
+var loping
+mov loping,$RESULT
+
+
+
+var temp
+//开始创建副线程
+bphws CreateThread,"x"
+esto
+bphwc CreateThread
+mov temp,esp
+add temp,c
+mov temp,[temp]
+bp temp
+esto
+bc temp
+//进入副线程
+
+//1号子线程 检测代码完整性
+bphws CreateThread,"x"
+esto
+bphwc CreateThread
+mov temp,esp
+add temp,14
+mov [temp],4      //让其挂起
+rtu
+
+//2号子线程 解压代码
+bphws CreateThread,"x"
+esto
+bphwc CreateThread
+mov temp,esp
+add temp,c
+var newep
+mov newep,[temp]
+rtu
+
+find eip,#81A3#
+cmp $RESULT,0
+je err
+mov eip,$RESULT
+
+//3号子线程 检测API 让其死在摇篮里
+find CreateThread,#FF7518#
+mov [$RESULT],#6A0490#
+
+//到解码线程开始处
+bp newep
+esto
+bc newep
+cmp eip,newep
+jne err
+
+//去掉无聊异常
+find newep,#CDF7#
+cmp $RESULT,0
+je err
+mov [$RESULT],#33C0#
+
+find newep,#CDF7#
+cmp $RESULT,0
+je haoxi            //有的程序没有这个异常
+mov [$RESULT],#33C0#
+
+haoxi:
+find eip,#83A3#
+cmp $RESULT,0
+je err
+go $RESULT
+add $RESULT,1
+
+find $RESULT,#83A3#
+cmp $RESULT,0
+je err
+mov eip,$RESULT
+
+find eip,#C20400#
+cmp $RESULT,0
+je err
+dec $RESULT
+
+go $RESULT
+//解码完毕
+
+
+//继续主线程路线
+bp loping
+esto
+bc loping
+mov eip,start         //新建EIP
+sti
+sti
+var temp
+mov temp,eip
+sub temp,1000
+
+kill:
+find temp,#CDF7#
+cmp $RESULT,0
+je final
+mov [$RESULT],#33C0#       //这个eax会被用来破坏正常代码
+jmp kill
+
+final:
+find eip,#6A005250#   //解码完毕
+cmp $RESULT,0
+je err
+find $RESULT,#8B93#
+cmp $RESULT,0
+je err
+go $RESULT
+
+find eip,#83FE00#
+cmp $RESULT,0
+je err
+go $RESULT
+var iidstart
+mov iidstart,esi
+eval "dump now,iidstart:{iidstart}"
+msg $RESULT
+
+find eip,#8BBB#
+cmp $RESULT,0
+je err
+go $RESULT       //iat解码完毕
+
+find eip,#3383#     //此时计算oep
+cmp $RESULT,0
+je err
+go $RESULT
+var oep
+mov oep,eax
+log oep
+
+find eip,#3507000080#
+cmp $RESULT,0
+je err
+mov [$RESULT],#33C0909090# //死循环
+
+find eip,#C3#
+cmp $RESULT,0
+je err
+go $RESULT
+sti           //跳oep
+
+OEP:
+cmt eip,"OEP"
+ret
+
+err:
+msg "error"
+ret

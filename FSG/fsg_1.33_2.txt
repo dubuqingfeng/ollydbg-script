@@ -1,0 +1,57 @@
+/* 
+//////////////////////////////////////////// 
+FSG V1.33 OEP Finder v0.1 
+
+Author:loveboom 
+Email :bmd2chen@tom.com 
+OS :Win2k ADV sp2?OllyDbg1.1B.OllyScript v0.6 
+Date :2004-2-27 
+Config:N/A 
+Other :If you have one or more question 
+email me please,Thank you! 
+///////////////////////////////////////////// 
+*/ 
+var baddr 
+var aeip 
+
+gpa "GetModuleHandleA","kernel32.dll" 
+bphws $RESULT,"x" 
+run 
+
+lbl1: 
+eob lbl2 
+bphwc $RESULT 
+rtu 
+
+lbl2: 
+eob lbl3 
+gpa "GetProcAddress","kernel32.dll" //GetProcAddress 
+bphws $RESULT,"x" 
+run 
+
+lbl3: 
+eob lbl4 
+bphwc $RESULT 
+rtu 
+
+lbl4: 
+eob lbl5 
+mov baddr,eip 
+sub baddr,B 
+bphws,baddr,"x" 
+run 
+
+lbl5: 
+sto 
+mov aeip,eip 
+sub aeip,6 
+cmp aeip,baddr 
+je lbl6 
+bphwc baddr 
+cmt eip,"OEP,please dump it :>" 
+msg "Script by loveboom[DFCG],Thank you for using my script!" 
+ret 
+
+lbl6: 
+run 
+jmp lbl5 

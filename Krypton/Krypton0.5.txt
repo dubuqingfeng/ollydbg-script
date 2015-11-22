@@ -1,0 +1,34 @@
+/*
+//////////////////////////////////////////////////////////////////
+★	Krypton0.5 OEP Finder v1.0				★
+★	Author: loveboom					★
+★	Email :	bmd2chen@tom.com				★	
+★	Date  :	2004-2-17					★
+★	Note  : 我只用我自己写的程序试了一下			★
+★	如果不能脱的话，请把不能脱的东东发到我信箱。谢谢!	★
+★	设置时请不要把内存异常项选上，其它的选上.		★
+//////////////////////////////////////////////////////////////////
+*/
+var cbase
+var csize
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+eob lbl1
+eoe lbl1
+run
+
+lbl1:
+eoe lbl2		//如果异常就执行lbl2
+esto
+
+lbl2:
+eoe lbl3
+bprm cbase,csize
+esto
+
+lbl3:
+bpmc
+cmt eip,"OEP,Remove analysis->Dump full"
+ret

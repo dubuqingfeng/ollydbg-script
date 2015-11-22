@@ -1,0 +1,77 @@
+//simplepack 1.x  version by apuromafo
+var addr
+mov addr,eax
+cmp addr,0
+je mio
+//msg "i can not try in system breackpoint but wana try"
+bp 400000
+go 400000
+sti
+bc 400000
+sti
+jmp loop
+ret
+
+mio:
+//msg "starting whit eax ==0"
+find eip,#5B8D5BFA??#
+cmp $RESULT,0
+JE EER1
+find eip,#6168????????C3#
+cmp $RESULT,0
+JE EER3
+bphws $RESULT, "x"
+run
+bphwc $RESULT
+sti
+sti
+sti
+an eip
+ret
+
+EER1:
+msg "are sure that is simplepack? err1"
+ret
+
+EER3
+MSG "are sure that is simplepack? err 3"
+ret
+
+loop:
+sti
+jmp find
+
+find:
+find eip,#a9????????74#
+cmp $RESULT,0
+JE EER5
+find eip,#FFE083C8FFC3#
+cmp $RESULT,0
+JE NOOEP
+BP $RESULT
+GO $RESULT
+sti
+bc $RESULT
+an eip
+msg "oep?"
+ret
+
+NOOEP:
+jmp EER5
+
+EER5:
+sti
+sti
+sti
+//now find the big bug "int 2e"
+find eip,#CD2E#
+fill $RESULT,2,90
+//now to..emm jmp eax..
+find eip,#EB01CDFFE0EB01#
+bp $RESULT
+go $RESULT
+bc $RESULT
+sti
+sti
+an eip
+ret

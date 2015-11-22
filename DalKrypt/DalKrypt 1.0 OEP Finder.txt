@@ -1,0 +1,8 @@
+// DalKrypt v1.0 OEP Finder Script by LaFarge/ICU
+bp eip+25
+run
+bc eip
+sti
+cmt eip, "This is OEP"
+msg "OEP reached, dump here and fix imports!"
+ret

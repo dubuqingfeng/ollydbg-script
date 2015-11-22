@@ -1,0 +1,23 @@
+/ The amazing [url="http://anonym.to/?http://www.tuts4you.com/download.php?view.1915"]http://www.tuts4you.com/download.php?view.1915[/url]
+// This script will quickly put you at the OEP of an packed EXE.
+// Just run it!
+// Implemented using hardware breakpoints (just for fun).
+
+eob Break
+findop eip, #6168#
+//search popad-calltooep
+bphws $RESULT, "x"
+run
+
+Break:
+sto
+sto
+bphwc $RESULT
+cmt eip, "<-- OEP found ! now dump and fix iat"
+msgyn "analize?? analizo?"
+cmp $RESULT,0
+je analiza
+analiza:
+log "analized!"
+an eip
+ret

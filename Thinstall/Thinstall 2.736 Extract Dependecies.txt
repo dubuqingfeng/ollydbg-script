@@ -1,0 +1,59 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Thinstall 2.736 Extract Dependecies (DLL's)
+//  Note: This script is used for extracting dependencies, such as those found here:
+//  http://tuts4you.com/download.php?view.1679
+//  Coded by: Pavka
+//  
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
+Var mod
+var _isBad
+var addr_dll
+var size_dll
+var img_dll
+
+
+gpa "SetEnvironmentVariableA","kernel32.dll"
+bp $RESULT
+run 
+bc $RESULT
+rtu
+mov oep,eip
+add oep,6F
+bp oep
+run
+bc oep
+sti
+find eip,#51E8??????0083C4088B55C4899528FBFFFFC78578FEFFFF00000000C645FC058B8528FBFFFF#
+
+cmp $RESULT,0
+je quit
+mov mod,$RESULT
+bp mod
+
+run
+gpa "IsBadWritePtr","kernel32.dll"
+mov _isBad,$RESULT
+run
+l:
+bp _isBad
+run
+rtu
+mov addr_dll,eip
+add addr_dll,1E
+bc _isBad
+go addr_dll
+mov img_dll,edx
+mov size_dll,edx
+add size_dll,90
+mov size_dll,[size_dll]
+eval "Name dll in ebx, damp partial address:{img_dll} , size:{size_dll}"
+msg $RESULT
+pause
+run
+jmp l
+
+quit
+ret

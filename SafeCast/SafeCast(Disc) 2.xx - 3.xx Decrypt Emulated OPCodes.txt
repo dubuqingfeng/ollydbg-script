@@ -1,0 +1,48 @@
+/*
+=============================================================
+    SafeCast - script for decrypting emulated opcodes
+=============================================================
+*/
+
+var addr
+var pointer
+var stack
+var destination
+var counter
+
+mov addr,12ec1000
+
+FIND_CALLS:
+ find addr,#e8??????ff#
+ cmp $RESULT,0
+je END
+ mov addr,$RESULT
+ add addr,1
+ mov pointer,[addr]
+ add pointer,addr
+ add pointer,4
+ cmp pointer,12ec41c9
+jne FIND_CALLS
+
+ sub addr,1
+ mov eip,addr
+ mov stack,esp
+ sti
+ sti
+ sti
+ sti
+ sti
+ sti
+ sti
+ sti
+ sti
+ rtr
+ sti
+ cmp stack,esp
+je NEXT_01
+ add esp,4
+NEXT_01:
+add addr,1
+jmp FIND_CALLS
+END:
+ret

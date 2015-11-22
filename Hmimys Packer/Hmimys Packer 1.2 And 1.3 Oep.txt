@@ -1,0 +1,24 @@
+// Hmimys Packer 1.?
+//  by Apuromafo        
+var temp
+//01011CD8 > $ E8 95000000    CALL Hmimys_P.01011D72
+sti
+//01011D72  /$ 5E             POP ESI
+//01011D73  |. AD             LODS DWORD PTR DS:[ESI]
+//01011D74  |. 50             PUSH EAX
+find eip, #c3#
+//find 1rst ret
+mov temp, $RESULT
+bphws temp, "x"
+run
+bphwc temp
+//in "ret"
+sti
+//oep
+//01006420   . 55             PUSH EBP
+//01006421   . 8BEC           MOV EBP,ESP
+//01006423   . 6A FF          PUSH -1
+//01006425   . 68 88180001    PUSH Hmimys_P.01001888
+an eip
+cmt eip,"<- this is the OEP, dump and fix the iat"
+ret

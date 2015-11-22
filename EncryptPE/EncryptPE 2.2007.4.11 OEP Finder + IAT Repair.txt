@@ -1,0 +1,379 @@
+var  newmem1
+var  tmpmem
+
+var  codebase
+var  ImportTableRVA
+var  ImportTableSIZE
+var  DLLimage
+var  RelocationTableRVA
+var  RelocationTableSize
+var  findoepadd
+var  OEP
+
+
+var  tmp
+var  tmp2
+var  tmp3
+
+var  patch1orgadd
+var  patch1add
+var  patch1orgcode
+var  patch1call1orgadd
+var  patch1call1add
+var  patch2orgadd
+var  patch2orgcode
+var  patch3orgadd
+var  patch3add
+var  patch3orgcode
+var  patch4orgadd
+var  patch4orgcode
+var  patch5orgadd
+var  patch5orgcode
+var  patch6orgadd
+var  patch6orgcode
+var  patch7orgadd
+var  patch7add
+var  patch7orgcode
+var  patch8orgadd
+var  patch8orgcode
+var  patch9orgadd
+var  patch9add
+var  patch9orgcode
+var  patch10orgadd
+var  patch10add
+var  patch10orgcode
+var  patch11orgadd
+var  patch12orgadd
+var  patch12orgcode
+var  patch13orgadd
+var  patch13orgcode
+var  patch14orgadd
+var  patch14orgcode
+
+var  CodeReplaceadd
+
+
+
+
+var  CodeReplacebp1
+var  CodeReplacebp2
+
+start:
+gpa "IsDebuggerPresent","kernel32.dll"
+
+ISDEBUGGER:
+bp $RESULT
+esto
+bc $RESULT
+rtu
+cmp eip,70000000
+jb ISDEBUGGER
+
+find eip,#8B90800000008955C88B9084000000# 
+bphws $RESULT,"x"
+run
+bphwc $RESULT
+mov ImportTableRVA,[eax+80]                  //原始的Import Table RVA
+find eip,#8B9084000000#
+bphws $RESULT,"x"
+run
+bphwc $RESULT
+mov ImportTableSIZE,[eax+84]                //原始的Import Table SIZE
+
+PATCH1:
+find eip,#e8????????50e8????????8945fc837dfc00#
+bphws $RESULT,"x"
+run
+bphwc $RESULT
+mov patch1orgadd,eip
+mov patch1orgcode,[patch1orgadd],5          //保存原始代码，到后面效验前还原
+
+alloc 1000
+mov newmem1,$RESULT
+mov patch1add,newmem1
+eval "jmp {patch1add}"
+asm patch1orgadd,$RESULT
+mov [patch1add],#609C8B7E0C81C7000040008BF08B4EFCF3A49D61#
+mov tmp2,patch1add
+add tmp2,14
+
+find eip,#E8????????50E8????????#
+mov patch1call1orgadd,$RESULT
+OPCODE patch1call1orgadd                           
+mov tmp,$RESULT_1
+alloc 1000
+mov tmpmem,$RESULT
+mov [$RESULT],tmp  
+mov tmp,$RESULT
+find tmp,#20#                   //这几句有点技巧
+mov tmp,$RESULT
+add tmp,1                                
+mov patch1call1add,[tmp],8 
+eval "call {patch1call1add}"
+asm  tmp2,$RESULT
+mov tmp,patch1orgadd
+add tmp,$RESULT_2
+
+eval "jmp {tmp}"
+add tmp2,5
+asm tmp2,$RESULT
+           
+
+PATCH2:
+find eip,#8BD6E8????????837DFC00#
+mov patch2orgadd,$RESULT
+add patch2orgadd,2
+mov patch2orgcode,[patch2orgadd],5
+mov [patch2orgadd],#9090909090#
+
+
+
+PATCH3:
+find eip,#33C089038B45C4#
+mov patch3orgadd,$RESULT
+add patch3orgadd,2
+mov patch3orgcode,[patch3orgadd],5
+mov patch3add,newmem1
+add patch3add,30
+eval "jmp {patch3add}"
+asm patch3orgadd,$RESULT
+mov [patch3add],#609C8B75C48B4EFC8B3B81C702004000F3A49D618B45C4#
+mov tmp,patch3orgadd
+add tmp,5
+eval "jmp {tmp}"
+mov tmp2,patch3add
+add tmp2,17
+asm tmp2,$RESULT
+
+
+PATCH4-5:
+find eip,#83C0028BD3E8#
+mov patch4orgadd,$RESULT
+add patch4orgadd,5
+mov patch4orgcode,[patch4orgadd],5
+mov [patch4orgadd],#9090909090#
+mov patch5orgadd,patch4orgadd
+add patch5orgadd,D
+mov patch5orgcode,[patch5orgadd],5
+mov [patch5orgadd],#9090#
+
+patch6:
+find patch5orgadd,#e8????????eb46#
+mov [tmpmem],#0000000000000000000000000000#
+opcode $RESULT
+mov [tmpmem],$RESULT_1
+find tmpmem,#20#                   //
+mov tmp,$RESULT
+add tmp,1                                
+mov tmp2,[tmp],8 
+atoi tmp2
+find $RESULT,#890633C0#
+mov patch6orgadd,$RESULT
+mov patch6orgcode,[patch6orgadd],4
+mov [patch6orgadd],#9090#
+
+
+PATCH7-8:
+mov patch7add,newmem1
+add patch7add,50
+find patch5orgadd,#e8????????eb2725#
+mov patch7orgadd,$RESULT
+mov patch7orgcode,[patch7orgadd],5
+opcode $RESULT
+eval "jmp {patch7add}"
+asm patch7orgadd,$RESULT
+asm patch7add,$RESULT_1
+mov tmp,patch7add
+add tmp,$RESULT_2
+mov tmp2,patch7add
+add tmp2,3f
+mov [tmp],#609c#
+add tmp,2
+eval "mov [0{tmp2}],esp"
+asm tmp,$RESULT
+add tmp,$RESULT
+eval "sub dword [0{tmp2}],4"
+asm tmp,$RESULT
+add tmp,$RESULT
+mov [tmp],#FFD08BF08B4EFC3E8B7DB866C707000083C702F3A4C607009D61#
+add tmp,1a
+mov tmp3,patch7orgadd
+add tmp3,5
+eval "jmp {tmp3}"
+asm tmp,$RESULT
+
+find patch7orgadd,#751683c614ff45e0#
+mov patch8orgadd,$RESULT
+mov patch8orgcode,[patch8orgadd],5
+mov [patch8orgadd],#9090#
+
+PATCH9:
+GMI eip, CODEBASE
+mov codebase,$RESULT
+find codebase,#8B45ece8????????8bd0#
+mov patch9orgadd,$RESULT
+add patch9orgadd,3
+mov patch9orgcode,[patch9orgadd],12
+eval "mov esp,[0{tmp2}],"
+asm patch9orgadd,$RESULT
+mov tmp,patch9orgadd
+add tmp,$RESULT
+asm tmp,"retn"
+ 
+ImportTableOK:
+find patch8orgadd,#6a008d45b8#
+bphws $RESULT,"x"
+run
+bphwcall
+
+mov [patch1orgadd],patch1orgcode
+mov [patch2orgadd],patch2orgcode
+mov [patch3orgadd],patch3orgcode
+mov [patch4orgadd],patch4orgcode
+mov [patch5orgadd],patch5orgcode
+mov [patch6orgadd],patch6orgcode
+mov [patch7orgadd],patch7orgcode
+mov [patch8orgadd],patch8orgcode
+mov [patch9orgadd],patch9orgcode
+
+//free tmpmem,1000
+//free newmem1,1000
+
+
+DLLRelocaTable:
+find $RESULT,#2B50348955B0#
+bphws $RESULT,"x"
+run
+bphwcall
+sti
+mov DLLimage,edx
+
+find  $RESULT,#8B90A00000008955C8#
+bphws $RESULT,"x"
+run
+bphwcall
+sti
+mov RelocationTableRVA,edx
+
+sti
+sti
+mov RelocationTableSize,edx
+
+CodeReplace:
+find $RESULT,#a1????????8038007405#
+bphws $RESULT,"x"
+run
+bphwcall
+
+find $RESULT,#e8????????a1????????8b008b55e88b0490#
+mov CodeReplaceadd,$RESULT
+cmt CodeReplaceadd,"CodeReplaceadd （代码重放函数）" 
+bp CodeReplaceadd                          //请注意从上面到这里这里有和硬件断点检测，要用软断点
+esto
+bc CodeReplaceadd
+sti
+
+
+CodeReplace1:
+find eip,#0f8c????????4089#
+mov CodeReplacebp1,$RESULT
+bp CodeReplacebp1
+run
+bc CodeReplacebp1
+cmp !sf,1
+je CodeReplace2                            //不明重放代码判断，未完成
+ret
+
+CodeReplace2:
+sti
+find eip,#0f8c????????4089#
+mov CodeReplacebp2,$RESULT
+bp CodeReplacebp2
+run
+bc CodeReplacebp2
+cmp !sf,1
+je findOEP
+find CodeReplacebp2,#88078bdf43b8#
+go $RESULT                                   //写入跳转命令
+cmt $RESULT,"写入跳转命令"                     
+find $RESULT,#892B8bdf83c30a#
+go $RESULT                                   //记录处理地址
+cmt $RESULT,"记录处理地址"
+find $RESULT,#89038BDF83C326#
+go $RESULT                                  //记录原来的重定位地址
+cmt $RESULT,"记录原来的重定位地址"
+find $RESULT,#8938FF0424#
+go $RESULT                                   //写入加密地址
+cmt $RESULT,"写入加密地址"
+sti
+
+PATCH10:
+mov patch10orgadd,eip
+mov patch10orgcode,[patch10orgadd],8
+mov patch10add,newmem1
+add patch10add,a0
+eval "jmp {patch10add}"
+asm patch10orgadd,$RESULT
+mov tmp,patch10add
+add tmp,3f
+mov [patch10add],#609C#
+add patch10add,2
+eval "mov [0{tmp}],esp"
+asm patch10add,$RESULT
+add patch10add,$RESULT
+eval "sub dword [0{tmp}],4"
+asm patch10add,$RESULT
+add patch10add,$RESULT
+mov [patch10add],#48FFD08B3083C0168B38668916897E029D61FF0424FF4C2408#
+add patch10add,19
+mov tmp2,patch10orgadd
+add tmp2,7
+eval "jmp {tmp2}"
+asm patch10add,$RESULT
+
+patch11-14:
+find codebase,#8A1303C28B1868#                                  //patch11位置
+mov patch11orgadd,$RESULT
+go patch11orgadd
+mov [ebx],1                                                     //壳处理完CodeReplace则会把[ebx]置1
+
+find patch11orgadd,#8B4DF86689118b0d????????8b493c#             //patch14位置
+mov patch14orgadd,$RESULT
+mov patch14orgcode,[patch14orgadd],11
+eval "mov esp,[0{tmp}],"
+asm patch14orgadd,$RESULT
+mov tmp3,patch14orgadd
+add tmp3,$RESULT
+mov [tmp3],#c3#
+
+find patch11orgadd,#8B45F8668910#                               //patch12位置
+mov patch12orgadd,$RESULT
+mov patch12orgcode,[patch12orgadd],8
+eval "jmp {patch14orgadd}"
+asm patch12orgadd,$RESULT
+
+find patch12orgadd,#8b15????????8b523c#                           //patch13位置
+mov patch13orgadd,$RESULT
+mov patch13orgcode,[patch13orgadd],9
+eval "jmp {patch14orgadd}"
+asm patch13orgadd,$RESULT
+
+go patch14orgadd
+
+
+
+
+
+findOEP:
+find codebase,#35FFFFFFFF8944243483C410#
+mov findoepadd,$RESULT
+bp findoepadd
+esto
+bc findoepadd
+sti
+mov oep,eax
+
+gotooep:
+bp oep
+esto
+bc oep

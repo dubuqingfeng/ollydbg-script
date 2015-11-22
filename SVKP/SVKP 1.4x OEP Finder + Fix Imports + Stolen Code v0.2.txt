@@ -1,0 +1,261 @@
+/*  Script for SKVP 1.4x            *\
+|*      OEP + Imports + Stolen Code *|
+|*                                  *|
+|* Import ideas:    Whiterat / ICU  *|
+|* Rest:            MOID     / TSRh *|
+|*                                  *|
+|*  All code hereby Public Domain   *|
+|*                                  *|
+|* Hide Olly, ignore all exceptions *|
+|*                                  *|
+|* Tested on:                       *|
+\*  SKVP 1.43 and ODBGScript 1.62.3 */
+
+history 0                               //remove when debugging
+
+gpa "VirtualFree", "kernel32.dll"       //If previous one crashed
+bphwc $RESULT
+
+gmi eip, MODULEBASE
+mov modulebase, $RESULT                 //Get our base
+gmi eip, MODULESIZE
+mov moduleend, modulebase + $RESULT
+
+gpa "GetModuleHandleA", "kernel32.dll"
+bphws $RESULT, "x"
+erun
+bphwc $RESULT                           //Hardware breaking on GetModuleHandleA
+
+findmem #0F84????????8B8D????????8D99#
+mov magicjump, $RESULT
+
+cmp $RESULT, 0
+jnz noerror
+msg "Can't find magic jump!"
+ret
+noerror:
+
+mov [magicjump], #90E9#                 //Patch magic jump
+
+gmemi magicjump, MEMORYBASE
+mov magicblock, $RESULT
+gmemi magicjump, MEMORYSIZE
+mov magicblockend, $RESULT + magicblock //Get some info on the magic block
+
+find magicblock, #813B????????0F84????????813B????????0F84????????813B????????0F84????????#
+mov magicjump2, $RESULT              //Second magic jump
+
+cmp $RESULT, 0
+jnz noerror2
+msg "Can't find magic jump #2!"
+ret
+noerror2:
+
+msgyn "Do you want to remove all import redirection? (might not work with imports from virtual dll)"
+cmp $RESULT, 1
+jz noploop
+
+mov eip_, eip
+mov eip, magicjump2
+msg "Please nop all 'je's you can without crashing. Just use trial and error."
+pause
+mov eip, eip_
+jmp endnoploop
+
+noploop:
+mov [magicjump2], #909090909090#        //Patch it out with nops
+add magicjump2, 6
+mov temp, [magicjump2], 1
+cmp temp, 60                            //Until pushad
+jnz noploop
+endnoploop:
+
+gpa "VirtualFree", "kernel32.dll"
+bphws $RESULT, "x"
+erun                                    //Hardware breaking on VirtualFree - don't delete bp
+
+refresh                                 //Make sure we have all modules
+mov pointer, modulebase - 1
+mov problemcount, 0
+mov fixlater, 0
+
+fixloop2:                           //Search for call [xxxxxxxx]
+inc pointer
+findmem #FF15#, pointer
+cmp $RESULT, 0
+jz finished2
+
+cmp $RESULT, moduleend
+jae finished2
+
+mov pointer, $RESULT
+mov temp, [pointer+2]
+
+gmemi [temp], MEMORYBASE
+cmp $RESULT, 0
+jz fixloop2                         //Only in valid memory
+
+mov temp2, pointer + 2
+buf temp2
+find magicblock, temp2              //Is it in the magic block?
+insane:
+cmp $RESULT, 0
+jnz foundone
+
+gmi [temp], MODULEBASE
+cmp $RESULT, 0
+jnz fixloop2                        //In some module
+
+cmp fixlater, 0
+jz ok
+
+cmp fixlater, [pointer + 2]
+jz ok
+
+msg "Uh-oh, possible IAT corruption!"
+
+ok:
+mov fixlater, [pointer + 2]         //No, but remember it
+jmp fixloop2
+
+foundone:                           //Yes
+mov [pointer + 2], [$RESULT - 4]
+
+mov temp, $RESULT
+
+gmi [temp - 8], MODULEBASE
+cmp $RESULT, modulebase
+jz fixloop2                         //We are in the call table
+
+gmi [temp + 8], MODULEBASE
+cmp $RESULT, modulebase
+jz fixloop2                         //We are in the call table
+
+mov temp3, [temp-5], 1
+cmp temp3 & 0C7, 05                 //Sanity check, good r/m?
+jz sane                             //This is for if we find some random bytes
+
+inc temp
+find temp, temp2
+jmp insane
+
+sane:                               //We're in the mov table
+mov [pointer], #8B#                 //Replace with mov r32, [xxxxxxxx]
+mov [pointer+1], [temp-5], 1        //Put r/m byte with register in
+jmp fixloop2
+
+finished2:
+gpa "ExitProcess", "kernel32.dll"   //Not TerminateProcess I think
+mov [fixlater], $RESULT             //That's the last
+
+                                    //Now find the OEP
+erun                                //VirtualFree once again
+erun                                //and again
+
+bphwc eip
+
+bp [esp]
+erun
+bc eip
+
+findjumpeax:
+sto
+mov temp, [eip], 2
+cmp temp, 0E0FF
+jnz findjumpeax
+sto
+
+gmemi eip, MEMORYBASE
+mov temp, $RESULT
+gmemi eip, MEMORYSIZE
+mov temp2, temp + $RESULT
+eval "eip < 0{temp} || eip > 0{temp2}"
+ticnd $RESULT
+
+gmemi eip, MEMORYBASE
+mov temp, $RESULT
+gmemi eip, MEMORYSIZE
+mov temp2, temp + $RESULT
+eval "eip < 0{temp} || eip > 0{temp2}"
+ticnd $RESULT
+
+gmi eip, MODULEBASE
+cmp modulebase, $RESULT
+jz done                                 //If we are in the main module
+                                        //there is no stolen code
+
+                                        //Fix stolen code
+alloc 10000                             //Should be enough space
+
+mov allocated, $RESULT
+mov allocptr, $RESULT
+
+mov [allocptr], #B8#                    //first a mov eax, stolen code EP
+inc allocptr
+mov [allocptr], eip
+add allocptr, 4
+
+mov junkptr, eip
+
+killjunk:                               //Main junk killer loop
+mov temp, [junkptr], 1
+cmp temp, 0E9
+jnz notjump
+
+mov junkptr, [junkptr+1] + 5 + junkptr  //follow jumps, don't write
+jmp killjunk
+
+notjump:
+mov temp, [junkptr], 4
+cmp temp, 0FC2464FF
+jnz notend
+
+mov [allocptr], [junkptr], 4            //final jump to OEP
+add allocptr, 4
+jmp done_stolen
+
+notend:
+mov temp, [junkptr], 2
+
+cmp temp & 0FF00, 90                    //NOP
+jz nop
+
+mov temp2, temp ^ 0C087
+xor temp2, temp & 700 < 3
+cmp temp2 & 0F8FF, 0                    //xchg r32, same r32?
+jz nop
+
+mov temp2, temp ^ 0C08B
+xor temp2, temp & 700 < 3
+cmp temp2 & 0F8FD, 0                    //mov r32, same r32?
+jz nop
+
+opcode junkptr
+mov [allocptr], [junkptr], $RESULT_2    //Copy
+add junkptr, $RESULT_2                  //add instruction length
+add allocptr, $RESULT_2                 //ditto
+jmp killjunk                            //end of loop
+
+nop:
+opcode junkptr
+add junkptr, $RESULT_2                  //add instruction length
+jmp killjunk                            //end of loop
+
+done_stolen:
+alloc allocptr - allocated              //allocate smaller block
+mov allocated2, $RESULT                 //to prevent dumping thousands of zeroes
+
+mov [allocated2], [allocated], allocptr - allocated
+free allocated
+
+bp junkptr                  //Get to jump OEP
+erun
+bc eip
+sto
+
+eval "Stolen code saved at: {allocated2}"
+log $RESULT
+msg $RESULT
+
+done:
+ret

@@ -1,0 +1,131 @@
+/*
+Script written by    a__p
+Script             : Themida & WinLicen 1.1.X - 1.8.X 系列脱壳脚本
+Date               : 2007-05-25
+Test Environment   : OllyDbg 1.1, ODBGScript 1.52, Winxp Win2003
+*/
+
+var modulebase
+var codebase
+var codesize
+var TZM
+var gjd1
+var gjd2
+var tmpbp
+var apibase
+var mem
+var tmp
+BPHWCALL
+gmi eip,MODULEBASE
+mov modulebase,$RESULT
+gmi eip,CODEBASE
+mov codebase,$RESULT
+gmi eip,CODESIZE
+mov codesize,$RESULT
+bpwm codebase,codesize
+ESTO
+REP:
+ESTO
+ESTO
+find eip,#F3A4????#
+cmp $RESULT,0
+je REP
+STI
+STO
+ESTO
+LODS:
+find eip,#8908AD??#
+cmp $RESULT,0
+je TZM
+jmp DM
+TZM:
+ESTO
+find eip,#8908AD??#
+cmp $RESULT,0
+jmp LODS
+DM:
+bpmc
+mov add,eip
+findmem #0F850A000000C785#
+mov add1,$RESULT
+mov [add1],0A0EEB
+findmem #0F84390000003B8D#
+mov add2,$RESULT
+mov [add2],3928EB
+mov tmpbp,add1
+alloc 1000
+mov mem, $RESULT
+log mem
+mov tmp,mem
+mov [tmp],#A3000000008908ADC746FC00000000E90000000050A1000000008907807FFFE8750866C747FEFF15EB0666C747FEFF2558E90000000050A100000000894701807FFFE8750866C747FFFF15EB0666C747FFFF25580F8500000000E90000000083C704E900000000#
+mov memtmp,tmp
+add memtmp,100
+add tmp,1
+mov [tmp],memtmp
+add tmp,15
+mov [tmp],memtmp
+add tmp,22
+mov [tmp],memtmp
+mov tmp,mem
+find tmpbp,#8908AD#
+mov tmpbp,$RESULT
+mov addr1,tmpbp
+add addr1,0A
+eval "jmp {tmp}"
+asm tmpbp, $RESULT
+find tmpbp,#E92400000058#
+mov tmpbp,$RESULT
+add tmp,14
+eval "jmp {tmp}"
+asm tmpbp, $RESULT
+find tmpbp,#0F851800000083BD#
+mov tmpbp,$RESULT
+mov addr3,tmpbp
+add addr3,06
+add tmp,22
+eval "jmp {tmp}"
+asm tmpbp, $RESULT
+find tmpbp,#884704#
+mov tmpbp,$RESULT
+mov addr2,tmpbp
+add addr2,03
+mov [tmpbp],#909090#
+find tmpbp,#ABAD#
+mov tmpbp,$RESULT
+mov [tmpbp],#90#
+add tmpbp,9
+add tmp,29
+eval "jmp {tmp}"
+asm tmpbp, $RESULT
+mov memtmp,mem
+add memtmp,0F
+eval "jmp {addr1}"
+asm memtmp, $RESULT
+add memtmp,22
+eval "jmp {addr2}"
+asm memtmp, $RESULT
+add memtmp,23
+eval "jne {addr2}"
+asm memtmp, $RESULT
+add memtmp,06
+eval "jmp {addr3}"
+asm memtmp, $RESULT
+add memtmp,08
+eval "jmp {addr1}"
+asm memtmp, $RESULT
+find eip,#C7010000000083C104#
+mov tmpbp,$RESULT 
+add tmpbp,14
+bphws tmpbp,"x"
+esto
+bphwc tmpbp
+mov tmp,codebase
+add tmp,codesize
+oep:
+bprm codebase,codesize
+esto
+bpmc
+cmp eip,tmp
+ja oep
+msg "脚本执行完毕!请注意OEP是否被偷代码!"
+ret

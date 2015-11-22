@@ -1,0 +1,200 @@
+/*
+Script written by okdodo  2007/03
+Tested for themida IAT restore and OEP find~
+
+Ollyice: Ignore all exceptions (add 0EEDFADE,C0000005,C000001E)
+HideOD : Check HideNtDebugBit and ZwQueryInformationProcess(method2)
+
+Test Environment : Ollyice 1.1 + HideOD    
+                   ODBGScript 1.52 under WINXP
+Thanks :
+         kanxue     - author of HideOD       
+         hnhuqiong  - author of ODbgScript 1.52
+*/
+
+
+data:
+var cbase
+var csize
+var dllimg
+var pmbase
+var apibase
+var mem
+
+cmp $VERSION, "1.52"
+jb odbgver
+
+gmi eip,CODEBASE
+mov cbase,$RESULT
+gmi eip,CODESIZE
+mov csize,$RESULT
+gmemi eip,MEMORYBASE
+mov dllimg,$RESULT
+log dllimg
+
+findapibase:
+gpa "GetLocalTime", "kernel32.dll" 
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+gpa "VirtualAlloc", "kernel32.dll"
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+mov apibase,eax
+log apibase
+gpa "LoadLibraryA", "kernel32.dll"
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+esto
+bphwc tmpbp
+rtu
+
+findVirtualAlloc:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE8090000005DC21000#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je win2003
+bphws tmpbp ,"x"
+jmp iatloop
+
+win2003:
+find apibase,#558BECFF7514FF7510FF750CFF75086AFFE878FFFFFF5DC21000#
+mov tmpbp,$RESULT
+cmp tmpbp,0
+je stop
+bphws tmpbp ,"x"
+
+
+iatloop:
+esto
+mov tmp,[esp]
+find dllimg,#50516033C0#
+cmp $RESULT,0
+jne iatpatch
+jmp iatloop
+
+iatpatch:
+bphwc tmpbp
+find eip,#C21000#
+bphws $RESULT,"x"
+esto
+bphwc $RESULT
+sti
+mov tmpbp,tmp
+find tmpbp,#0F850A000000C785#
+mov tmpbp,$RESULT
+mov [tmpbp],0A0EEB
+find tmpbp,#0F84390000003B8D#
+mov tmpbp,$RESULT
+mov [tmpbp],3928EB
+
+alloc 1000
+mov mem, $RESULT
+log mem
+mov tmp,mem
+mov [tmp],#A3000000008908ADC746FC00000000E90000000050A1000000008907807FFFE8750866C747FEFF15EB0666C747FEFF2558E90000000050A100000000894701807FFFE8750866C747FFFF15EB0666C747FFFF25580F8500000000E90000000083C704E900000000#
+mov memtmp,tmp
+add memtmp,100
+add tmp,1
+mov [tmp],memtmp
+add tmp,15
+mov [tmp],memtmp
+add tmp,22
+mov [tmp],memtmp
+mov tmp,mem
+
+find tmpbp,#8908AD#
+mov tmpbp,$RESULT
+mov addr1,tmpbp
+add addr1,0A
+eval "jmp {tmp}"
+asm tmpbp, $RESULT
+
+find tmpbp,#E92400000058#
+mov tmpbp,$RESULT
+add tmp,14
+eval "jmp {tmp}"
+asm tmpbp, $RESULT
+
+find tmpbp,#0F851800000083BD#
+mov tmpbp,$RESULT
+mov addr3,tmpbp
+add addr3,06
+add tmp,22
+eval "jmp {tmp}"
+asm tmpbp, $RESULT
+
+find tmpbp,#884704#
+mov tmpbp,$RESULT
+mov addr2,tmpbp
+add addr2,03
+mov [tmpbp],#909090#
+
+find tmpbp,#ABAD#
+mov tmpbp,$RESULT
+mov [tmpbp],#90#
+
+add tmpbp,9
+add tmp,29
+eval "jmp {tmp}"
+asm tmpbp, $RESULT
+
+mov memtmp,mem
+add memtmp,0F
+eval "jmp {addr1}"
+asm memtmp, $RESULT
+add memtmp,22
+eval "jmp {addr2}"
+asm memtmp, $RESULT
+add memtmp,23
+eval "jne {addr2}"
+asm memtmp, $RESULT
+add memtmp,06
+eval "jmp {addr3}"
+asm memtmp, $RESULT
+add memtmp,08
+eval "jmp {addr1}"
+asm memtmp, $RESULT
+
+find eip,#C7010000000083C104#
+mov tmpbp,$RESULT 
+add tmpbp,14
+bphws tmpbp,"x"
+esto
+bphwc tmpbp
+
+mov tmp,cbase
+add tmp,csize
+
+findoep:
+bprm cbase,csize
+esto
+bpmc
+cmp eip,tmp
+ja findoep
+msg "script finished,check the oep place by yourself~"
+ret
+
+stop:
+pause
+
+apierror:
+pause
+
+odbgver:
+msg "Please use the ODbgscript 1.52"
+jmp end
+
+end:
+ret 

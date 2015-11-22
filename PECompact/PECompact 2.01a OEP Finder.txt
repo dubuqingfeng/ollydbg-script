@@ -1,0 +1,43 @@
+/* 
+
+PECompact 2.01a (27-04-04 release) OEP Finder by Scarabee 
+
+Make sure you Select NO on 'Compressed code message' when loading application in Olly. 
+When at OEP, just dump and fix with IMPREC. 
+
+*/ 
+
+var cbase 
+var csize 
+var lbl2 
+var lbl1 
+var oki 
+
+sto 
+findop eax, #c3# 
+bp $RESULT 
+esto 
+esto 
+GMI eip, CODEBASE 
+mov cbase, $RESULT 
+GMI eip, CODESIZE 
+mov csize, $RESULT 
+bpwm cbase, csize 
+esto 
+sto 
+bpmc 
+findop eip, #FFE0# 
+mov oki, $RESULT 
+bp $RESULT 
+esto 
+
+lbl2: 
+cmp eip, oki 
+jne lbl1 
+sto 
+MSG "This is OEP, now dump and fix!" 
+ret 
+
+lbl1: 
+esto 
+jmp lbl2

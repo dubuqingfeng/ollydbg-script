@@ -1,0 +1,40 @@
+// Скрипт для нахождения OEP в программах упакованных nspack 
+// сделал DrFits
+var end
+var VirtualAllocExAddr
+
+gpa "VirtualAllocEx", "kernel32.dll"	//Получили адрес VirtualAllocEx
+mov VirtualAllocExAddr, $RESULT
+BP VirtualAllocExAddr
+
+@agane:
+run
+cmp VirtualAllocExAddr, eip
+JE @next
+jmp @agane
+
+@next:
+bc VirtualAllocExAddr
+rtr
+rtr
+sto
+
+find eip, #619DE9#
+
+mov end, $RESULT
+bp end
+@agane2:
+run
+cmp end, eip
+JE @next2
+jmp @agane2
+
+@next2:
+bc end
+sto
+sto
+sto
+an eip
+MSG "Это OEP! Теперь можно сдампить программу ;)"
+
+ret

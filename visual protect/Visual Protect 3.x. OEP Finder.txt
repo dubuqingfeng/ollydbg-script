@@ -1,0 +1,107 @@
+/*Autor: sEby
+Date: 09.01.2006
+Team: TEAM RESURRECTiON
+Web: http://www.appznet.org
+Mail: unpackme@gmail.com
+Environment :  WinXP SP2,OllyDbg V1.10,ODbgScript V1.48
+Ignore all exceptions
+Erase all breakpoints
+*/
+
+var tmp
+var temp
+var temp1
+var temp2
+var temp3
+
+find eip, #528D85F8FEFFFF508D8DE8FEFFFF51FF15????????83BDF8FEFFFF00740d#
+cmp $RESULT,0
+je error
+mov temp, $RESULT
+log temp
+bphws temp, "x"
+run
+bphwc temp
+sti
+sti
+sti
+sti
+sti
+sti
+find eip, #E8????????B201A1????????E8????????8945F88B45F8#
+cmp $RESULT,0
+je error
+mov tmp, $RESULT
+bphws tmp, "x"
+run
+bphwc tmp
+sti
+
+//first API redirect
+find eip, #3B35????????74133B35????????740B5356E8????????8BD8#
+cmp $RESULT,0
+je error
+mov temp1, $RESULT
+log temp1
+find temp1,#7413#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+find temp1,#740B#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+bphws temp1, "x"
+run
+bphwc temp1
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+sti
+
+//second api redirect
+log eip
+find eip, #6685C0751D8B4424083905????????75076681FE540174275650#
+cmp $RESULT,0
+je error
+mov temp2, $RESULT
+log temp2
+find temp2,#751D#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+find temp2,#7507#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+find temp2,#7427#
+cmp $RESULT,0
+je error
+fill $RESULT,2,90
+rtr
+sti
+
+//find jmp to oep
+find eip, #FF65FC6A00E8????????E9????????A1#
+cmp $RESULT,0
+je error
+mov temp3, $RESULT
+bphws temp3, "x"
+run
+bphwc temp3
+sti
+msg "OEP found, IAT redirection pached, one invalid function remaining: GetProcAddress!"
+
+cmt eip, "<-- OEP found by sEby! one invalid function remaining: GetProcAddress"
+ret
+
+
+error:
+MSGYN  " Script error... Aborting! "
+ret

@@ -1,0 +1,57 @@
+/* 
+** 
+** UPX script by Bruce Lee with dump 
+** 
+*/ 
+
+log " " 
+log " " 
+eob bp1 
+log "Search for address of GetProcAddress..." 
+gpa "GetProcAddress", "kernel32.dll" 
+cmp $RESULT, 0 
+jne nadjen 
+jmp error 
+
+nadjen: 
+log "OK!" 
+log $RESULT 
+bp $RESULT 
+log "bp on GetProcAddress." 
+log "Run!" 
+run 
+
+bp1: 
+bc eip 
+rtu 
+log "Clear breakpoint! Return to user code!" 
+log eip 
+log "Search for address of POPAD..." 
+findop eip, #61# 
+cmp $RESULT, 0 
+jne ok 
+jmp error 
+
+ok: 
+log "Run till POPAD." 
+go $RESULT 
+log eip 
+sto 
+log eip 
+sto 
+log eip 
+MSGYN "OEP! Dump?" 
+cmp $RESULT, 1 
+je dump 
+jmp kraj 
+
+error: 
+Msg "Error!" 
+jmp kraj 
+
+dump: 
+dpe "c:\bl_dumped.exe", eip 
+MSG "Your dump is in root of c: ! Start ImpREC and fix the IAT! Bye!" 
+
+kraj: 
+ret

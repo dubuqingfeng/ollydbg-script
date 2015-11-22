@@ -1,0 +1,105 @@
+/*
+=============================================
+ PESpin 1.x - Simple Code Redirection FIXER
+=============================================
+*/
+
+var mbase
+var cbase
+var addr
+var point
+var dword
+
+
+gmi eip,MODULEBASE
+mov mbase,$RESULT
+gmi eip,CODEBASE
+mov cbase,$RESULT
+
+
+
+
+//First pattern: Fixing CALL PE_HEADER:
+mov addr,cbase
+
+LABEL01:
+find addr,#E8??????FF#
+cmp $RESULT,0
+je END01
+
+mov addr,$RESULT
+add addr,1
+mov point,[addr]
+add point,$RESULT
+add point,5
+cmp point,cbase
+ja  LABEL01
+
+add point,1
+mov dword,[point]
+add dword,point
+add dword,4
+sub dword,addr
+sub dword,4
+
+mov [$RESULT],#E890909090#
+mov [addr],dword
+
+jmp LABEL01
+END01:
+
+
+
+
+//Second patternt: Fixing 7-byte pattern (JMP and two NOP):
+mov addr,cbase
+
+LABEL02:
+find addr,#E9??????FF9090#
+cmp $RESULT,0
+je END02
+
+mov addr,$RESULT
+add addr,1
+mov point,[addr]
+add point,$RESULT
+add point,5
+cmp point,cbase
+ja  LABEL02
+
+mov [$RESULT],[point]
+add $RESULT,3
+add point,3
+mov [$RESULT],[point]
+
+jmp LABEL02
+END02:
+
+
+
+
+//Third patternt: Fixing 5-byte JMP PE_HEADER:
+mov addr,cbase
+
+LABEL03:
+find addr,#E9??????FF#
+cmp $RESULT,0
+je END03
+
+mov addr,$RESULT
+add addr,1
+mov point,[addr]
+add point,$RESULT
+add point,5
+cmp point,cbase
+ja  LABEL03
+
+mov [$RESULT],[point]
+add $RESULT,1
+add point,1
+mov [$RESULT],[point]
+
+jmp LABEL03
+END03:
+
+ret

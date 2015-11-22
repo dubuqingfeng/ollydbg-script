@@ -1,0 +1,111 @@
+/*
+==================================================================
+    PESpin v0.3 unpacking script for SHaG's OllyScript plugin
+==================================================================
+
+    Script works only on Windows XP systems.
+    Script will prevent IAT redirecting and it will stop at
+    place where stolen OEP's bytes are. You can dump file from
+    that place and use ImpREC if needed. If you know how, you
+    can search for stolen bytes and restore them. Script is
+    tested on VB, VC++, Delphi, BC++ and ASM programs. Before
+    use, ignore ALL exceptions!
+
+    haggar
+==================================================================
+*/
+
+var x
+var A
+var B
+var C
+
+msg "Script runs on Win XP only. Ignore ALL exceptions!"
+
+//Break on GetTickCount
+gpa "GetTickCount","kernel32.dll"
+cmp $RESULT,0
+je er1
+bp $RESULT
+esto
+esto
+bc eip
+rtu
+
+//Fix IAT redirection.
+mov $RESULT,eip
+sub $RESULT,401
+findop $RESULT,#60#
+cmp $RESULT,0
+je er2
+mov A,$RESULT
+add A,1
+
+findop $RESULT,#61#
+cmp $RESULT,0
+je er2
+mov B,$RESULT
+sub B,1
+
+nop:
+fill A,1,90
+cmp A,B
+inc A
+jne nop
+
+
+
+
+
+cont1:
+//Find instruction after redirectin IAT - first type.
+find eip,#F97205E8??????00EB01#
+cmp $RESULT,0
+je SecondOption
+add $RESULT,1
+bp $RESULT
+esto
+bc eip
+jmp continue
+
+//Second type - also kill thread.
+SecondOption:
+find eip,#F87205E8??????00EB01#
+cmp $RESULT,0
+je er2
+mov x,$RESULT
+bphws x,"x"
+esto
+bphwc x
+add $RESULT,2
+fill $RESULT,5,90
+
+
+continue:
+
+
+find eip,#61#
+cmp $RESULT,0
+je er2
+bp $RESULT
+esto
+bc eip
+sto
+
+msg "Here starts stolen OEP code. If there is no stolen OEP, after this POPAD opcode is jump to real OEP. In any case you can dump file now."
+ret
+
+
+
+
+
+
+er1:
+msg "ERROR! Couldn't find GetTickCount in kernel32.dll. Exiting."
+ret
+er2:
+msg "ERROR! Couldn't find needed opcode."
+ret
+
+
+

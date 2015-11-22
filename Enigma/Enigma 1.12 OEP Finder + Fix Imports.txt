@@ -1,0 +1,71 @@
+Var ExceptionCounter
+Var Temp
+Var MemoryBaseAddr
+
+setexc AccessVio,0
+setexc SINGLESTEP,1
+setexc INT3,1
+mov ExceptionCounter,0
+
+Loop:
+eob ExceptionReached
+ESTO
+ExceptionReached:
+
+cmp [eip],0089,2
+je RemoveException
+jmp ViolationsFinished
+
+RemoveException:
+mov [eip],#EB01#
+jmp Loop
+
+ViolationsFinished:
+// Get_Mem_Base
+gmemi eip, MEMORYBASE
+mov MemoryBaseAddr,$RESULT
+// CRC Remove 1
+find MemoryBaseAddr,#33F68D143E8A1292E8#
+mov Temp,$RESULT
+mov [Temp+11],#9090909090#
+// CRC Remove 2
+find MemoryBaseAddr,#33F68D143E8A1292E8#
+mov Temp,$RESULT
+mov [Temp+11],#9090909090#
+// Eliminate Preventation
+find MemoryBaseAddr,#894C020146#
+mov Temp,$RESULT
+mov [Temp],#90909090#
+// Address Fixer
+find MemoryBaseAddr,#037D00#
+mov Temp,$RESULT
+mov [Temp-6],#81C7000040008B3F90#
+mov [Temp-16],#8B4C39#
+jmp Find_OEP
+
+
+Find_OEP:
+setexc AccessVio,1
+setexc INT3,0
+
+DLoop: // 5 Times Shift+F9
+eob INT3ExceptionReached
+ESTO
+inc ExceptionCounter
+INT3ExceptionReached:
+cmp ExceptionCounter,5
+jne DLoop
+
+GMEMI 401000,MEMORYSIZE
+mov Temp,$RESULT
+BPRM 401000,Temp // Setting Memory BreakOn Code Section
+
+eob ReachOEP
+ESTO
+ReachOEP:
+BPMC 401000
+
+an eip // Analize
+
+// Script By NiMa SUB Z3R0 ( Seek'n Destroy TeaM )
+ret

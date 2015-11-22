@@ -1,0 +1,103 @@
+////////////////////////////////////////////////////////////////////////////////////////
+//用来补充说明修复anti-hook的
+//也就是FF15或FF25都被抽取的差不多的情况的
+//由于自己用ZP 1.4.9加没加出效果，所以没测试下面代码是否可行或者可能还有很多各种各样的错误
+//因此，没集成到主脚本中去
+//有条件的可以帮忙测试下，觉得效果好，可以自己集成进主脚本中
+//当然有什么错误可以自己根据需要修改，或者反馈给我，谢谢
+//just for fun
+//ximo[LCG]
+////////////////////////////////////////////////////////////////////////////////////////
+
+var base
+var FixAddr
+var AIATAddr
+var tmpjmp
+var valueoffix
+var fixedAddr
+var IATSrart
+vae IATEnd
+
+mov base,00401000     ////////////////开始查找基址
+mov IATStart,01001000  //////////////////////////////////////////////////////////IATStart
+mov IATEnd,01001344    //////////////////////////////////////////////////////////IATEnd
+
+case1:
+find base,#e9????????908bc0#
+cmp $RESULT,0
+je case2
+mov FixAddr,$RESULT
+mov AIATAddr,FixAddr
+mov tmpjmp,[AIATAddr+1]
+add tmpjmp,5
+add AIATAddr,tmpjmp   //地址
+mov eip,[AIATAddr]
+loop33:
+mov fixtmp,eip
+cmp [fixtmp],E8,1
+je startfix
+sti
+jmp loop33
+
+find eip,#C20400#
+mov GetIATbp,$RESULT
+BPHWS GetIATbp,"x"
+run
+bphwc GetIATbp
+mov valueoffix,eax  //获得值
+
+mov fixedAddr,IATStart
+startfind:
+cmp [fixedAddr],valueoffix
+je fixing
+add fixedAddr,4
+jmp startfind
+
+fixing:
+mov [FixAddr],#FF25#
+mov [FixAddr+2],fixedAddr
+mov base,FixAddr
+jmp case1
+
+case2:
+find base,#e8????????908bc0#
+cmp $RESULT,0
+je Exit
+
+mov FixAddr,$RESULT
+mov AIATAddr,FixAddr
+mov tmpjmp,[AIATAddr+1]
+add tmpjmp,5
+add AIATAddr,tmpjmp   //地址
+mov eip,[AIATAddr]
+loop44:
+mov fixtmp,eip
+cmp [fixtmp],E8,1
+je startfix
+sti
+jmp loop44
+
+find eip,#C20400#
+mov GetIATbp,$RESULT
+BPHWS GetIATbp,"x"
+run
+bphwc GetIATbp
+mov valueoffix,eax  //获得值
+
+mov fixedAddr,IATStart
+startfind:
+cmp [fixedAddr],valueoffix
+je fixing
+add fixedAddr,4
+jmp startfind
+
+fixing:
+mov [FixAddr],#FF15#
+mov [FixAddr+2],fixedAddr
+mov base,FixAddr
+jmp case2
+
+
+
+Exit:
+ret

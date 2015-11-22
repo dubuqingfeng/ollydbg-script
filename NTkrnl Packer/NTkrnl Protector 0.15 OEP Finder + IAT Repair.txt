@@ -1,0 +1,42 @@
+// WinXP SP2,OllyDbg V1.10,ODbgScript 1.48xxx1.60,FantOm plugin0,58
+var br
+var pt
+var va
+
+run
+
+mov [eip],#CC#
+mov br,[esp+8]
+bp br
+run
+bc br
+gpa "LoadLibraryA","kernel32.dll"
+bp $RESULT
+run
+bc $RESULT
+rtr
+mov br,eip
+bpcnd br, "EDI==7C809A81"//--"VirtualAlloc","kernel32.dll" 
+
+run
+bc br
+sti
+mov pt,eip
+add pt,A8
+mov [pt],#EB#
+
+find eip,#8944241C61FFE0#
+cmp $RESULT,0
+je quit
+mov br,$RESULT
+add br,5
+bp br
+run
+bc br
+sti
+cmt eip, "This is the entry point"
+MSG "OEP Faund ! IAT fixed! Dump it"
+ret
+
+quit:
+ret

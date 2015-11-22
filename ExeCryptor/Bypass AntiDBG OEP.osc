@@ -1,0 +1,63 @@
+data:
+    var hInstance
+    var codeseg
+    var vmseg
+    var ep
+    var oep
+    var temp
+code:
+    gpa "VirtualFree","kernel32.dll"
+    bphws $RESULT,"x"
+    run
+    bphwc $RESULT
+    rtu
+    gmi eip,MODULEBASE
+    mov hInstance,$RESULT
+    mov temp,$RESULT
+    add temp,3c
+    mov temp,[temp]
+    add temp,hInstance
+    add temp,28
+    mov temp,[temp]
+    add temp,hInstance
+    bc temp
+    mov ep,temp
+    gmemi eip,MEMORYBASE
+    mov codeseg,$RESULT
+    find $RESULT,#2ECC9D#
+    mov [$RESULT],#2ECC90#
+    gpa "EnumWindows","user32.dll"
+    mov [$RESULT],#8BC09C85C09D0578563412C20800#
+    gpa "CreateThread","kernel32.dll"
+    find $RESULT,#FF7518#
+    mov [$RESULT],#6A0490#
+    gpa "ZwCreateThread","ntdll.dll"
+    bp $RESULT
+loop1:
+    run
+    cmp eip,$RESULT
+    jne loop1
+    bc $RESULT
+    bp ep
+loop2:
+    run
+    cmp eip,ep
+    jne loop2
+    bc ep
+    mov temp,codeseg
+    sub temp,1
+    gmemi temp,MEMORYBASE
+    mov vmseg,$RESULT
+    gmemi temp,MEMORYSIZE
+    bprm vmseg,$RESULT
+    run
+    bpmc
+    mov oep,eax
+    sti
+    bprm oep,1
+loop3:
+    run
+    cmp eip,oep
+    jne loop3
+    bpmc
+    ret

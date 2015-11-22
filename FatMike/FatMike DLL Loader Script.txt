@@ -1,0 +1,44 @@
+/*
+FatMike DLL loader script
+********************
+nick_name
+TEAM RESSURRECTiON
+********************
+*/
+
+mov saved_eip,eip
+alloc 100
+mov alloc_addr,$RESULT
+
+gpa "LoadLibraryA","kernel32.dll"
+mov LoadLibraryA,$RESULT
+
+LOOP:
+ask "DLL name ??"
+mov dllname,$RESULT
+cmp $RESULT,""
+je FIN
+
+mov tmp,alloc_addr
+add tmp,50
+fill tmp, 50, 00
+mov [tmp],dllname
+
+eval "push {tmp}"
+asm alloc_addr,$RESULT
+mov eip,alloc_addr
+sto
+fill alloc_addr,50,00
+
+eval "call {LoadLibraryA}"
+asm alloc_addr,$RESULT
+mov eip,alloc_addr
+sto
+fill alloc_addr,50,00
+
+mov eip,saved_eip
+jmp LOOP
+
+FIN:
+ret
+=====================

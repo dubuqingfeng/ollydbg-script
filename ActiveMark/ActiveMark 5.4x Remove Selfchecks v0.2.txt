@@ -1,0 +1,158 @@
+/*
+ActiveMark unpacking script by russiankid
+Note: check all execptions in Debuggin options.
+
+tested with following AM versions:
+5.42.1218 (granny in paradise, triblettes, xt rally, lab project deluxe, )
+5.41.1210 (beetle bomp, the bug factor, jewel miner,)
+5.4.1171 (fortune tiles gold,)
+5.31.1140 (mouse trophy,)
+5.3.1078 (capitalism 2, chuzzle deluxe,)
+does not fully work:
+5.2.1006 (mindrover,)   ;AM selfcheck could not be found because of messed level 2 code, the rest is OK
+*/
+
+var LoadLibraryA
+var RetAddr
+var JumpAddr
+var FixAddr
+var AtEIP
+var CurEIP
+
+dbh
+
+gpa "LoadLibraryA","kernel32.dll"
+find $RESULT,#C20400#
+mov LoadLibraryA,$RESULT
+
+bp LoadLibraryA
+esto
+esto
+bc LoadLibraryA
+esti
+
+/*
+lets find zero level end
+*/
+
+find eip,#90000000000000000000000000000000#
+mov JumpAddr,$RESULT
+cmp JumpAddr,0
+je Level0EndNotFound
+
+NextByte:
+dec JumpAddr
+mov AtEIP,[JumpAddr]
+and AtEIP,000000FF
+cmp AtEIP,000000C3
+jne NextByte
+
+bp JumpAddr
+esto
+bc JumpAddr
+esti
+
+/*
+now we can be at level 1 or at level 2. lets find which one.
+*/
+
+CheckForSecondLayer:
+
+find eip,#54646E41#
+mov FixAddr,$RESULT
+cmp FixAddr,0
+je Level2NotFound
+
+/*
+we finally at level 2. we can dump here.
+*/
+
+cmt eip, "This will be new entry point."
+
+sub FixAddr,8
+mov AtEIP,[FixAddr]
+and AtEIP,000000FF
+cmp AtEIP,00000074
+jne FixAddrNotFound
+inc FixAddr
+mov [FixAddr],#00#
+dec FixAddr
+
+cmt FixAddr, "ActiveMark selfcheck fixed."
+ret
+
+/*
+we are at level 1. lets find its end.
+*/
+
+Level2NotFound:
+
+find eip,#6661FF25#
+mov JumpAddr,$RESULT
+cmp JumpAddr,0
+je MessedCode
+add JumpAddr,2
+bp JumpAddr
+esto
+bc JumpAddr
+esti
+
+FoundSecondLayer:
+
+cmt eip, "This will be new entry point."
+
+find eip,#54646E41#
+mov FixAddr,$RESULT
+cmp FixAddr,0
+je FixAddrNotFound
+sub FixAddr,8
+mov AtEIP,[FixAddr]
+and AtEIP,000000FF
+cmp AtEIP,00000074
+jne FixAddrNotFound
+inc FixAddr
+mov [FixAddr],#00#
+dec FixAddr
+
+cmt FixAddr, "ActiveMark selfcheck fixed."
+ret
+
+/*
+code is messed up. try to find end of leve 1 anyway.
+*/
+
+MessedCode:
+
+find eip,#6661#
+mov JumpAddr,$RESULT
+cmp JumpAddr,0
+je Level1EndNotFound
+bp JumpAddr
+esto
+bc JumpAddr
+esti
+
+mov CurEIP,eip
+tocnd "eip < CurEIP"
+esti
+mov AtEIP,[eip]
+and AtEIP,0000FFFF
+cmp AtEIP,00006066
+je FoundSecondLayer
+jmp Level1EndNotFound
+
+Level0EndNotFound:
+
+msg "Could not find level 0 end. Stopped on LoadLibraryA call."
+ret
+
+Level1EndNotFound:
+
+msg "Could not find level 1 end. Stopped at level 1 start."
+ret
+
+FixAddrNotFound:
+
+msg "Could not find AM selfcheck bytes. Stopped at level 2 start (new EP)."
+ret
+

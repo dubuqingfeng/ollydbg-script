@@ -1,0 +1,11 @@
+sto
+sto
+findop eip, #9D#
+go $RESULT
+sto
+sto
+msg "Script finished! You are on the OEP! "
+msg "Dump it and rebuild the IAT "
+msg "Have fun! Generic OEP Finder {nSPack 2.4} by Max_Zero "
+
+

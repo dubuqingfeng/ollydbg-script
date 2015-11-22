@@ -1,0 +1,216 @@
+/////////////////////////////////////////////////////////////////////////////////////////
+//fuck Zrotectect1.4.9
+//thanks hmily
+//说明：
+//1、使用前先修改下面几个值：IATStart和IATEnd，以及模拟的个数
+//2、接着运行脚本，若第一次则输入1，第二次输入2
+//3、若无模拟，请直接选择2，地址随便输入个0区域地址就行,或者直接输入0
+//4、模拟个数的判断，只要bp CreateFileA，然后运行，观察堆栈，数堆栈窗口系统dll的个数即可
+//just for fun
+//ximo[LCG]
+/////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+var count
+ask "whitch step?"
+mov count,$RESULT
+cmp count,1
+je step1
+cmp count,2
+je step2
+ret
+
+
+
+step1:
+
+var imagebase
+var addr
+var tmp
+var value
+var sizeoffuck
+var VirtualAllocAddr
+
+
+bphwcall
+bpmc 
+
+gpa "VirtualAlloc","kernel32.dll"
+cmp $RESULT,0
+je Exit
+mov VirtualAllocAddr,$RESULT
+bp VirtualAllocAddr
+run
+bc VirtualAllocAddr
+find eip,#c21000#
+cmp $RESULT,0
+je Exit
+bp $RESULT
+run
+bc $RESULT
+mov imagebase,eax   
+mov addr,imagebase
+
+/*
+00944754    FF4424 14            inc dword ptr ss:[esp+14]
+00944758    FF4424 10            inc dword ptr ss:[esp+10]  
+*/
+
+
+
+add addr,14758   //看了下，同版本的地址都相同了，若有需要，自己修改吧
+
+mov sizeoffuck,0a   ///////////////////////////////////////////////////////////模拟个数
+
+
+bphws addr,"x"
+loopfind:
+run
+mov tmp,esp
+add tmp,10
+mov value,[tmp]
+cmp [value],sizeoffuck,1
+jne loopfind
+bphwc addr
+mov eip,value
+log eip
+MSG eip
+MSG "请记住该地址，然后重新运行脚本，输入并且按照提示输入该地址"
+ret
+
+
+Exit:
+ret
+
+
+
+step2:
+ bphwcall
+  bpmc 
+  
+  
+  var fuckhook
+  ask "请输入脚本1得到的地址"
+  mov fuckhook,$RESULT
+  mov [fuckhook],#00# 
+
+  var tmp
+  var local
+  var l  
+  var oep
+  var ThreadAddr
+  var ThreadProc
+  var HookExitAddr 
+  var CreateFileAddr
+  var count
+  var fuckflag
+  var IsHook
+  var regist
+  mov count,1
+
+fuckregist:
+ gpa "DialogBoxIndirectParamA","user32.dll"
+ mov regist,$RESULT
+ mov [regist],#b82c230000c21400#
+
+fuckexit:
+  gpa "ExitProcess","kernel32.dll"
+  mov HookExitAddr,$RESULT
+  mov [HookExitAddr],#c20800# 
+found:
+  mov tmp,eip  
+  cmp [tmp],60,1  
+  je start
+  sti
+  jmp found 
+start:
+  sti
+  mov tmp,esp
+  bphws tmp,"r"
+  gpa "CreateThread","kernel32.dll"
+  mov ThreadAddr,$RESULT
+  bphws ThreadAddr,"x"
+  gpa  "GetModuleHandleA","kernel32.dll"
+  mov local, $RESULT
+  add local,20
+  bp local
+
+
+
+loop:
+  run
+  mov l,eip
+  cmp [l],CC,1
+  je loop
+  cmp eip,7c000000
+  jb goesp
+  bphwc ThreadAddr
+  mov ThreadProc,[esp+c]
+  mov [ThreadProc],#C390#
+  jmp loop
+goesp:
+  bphwc tmp
+  bc local
+  mov oep,[esp]
+  bphws oep,"x"
+  run
+  bphwc oep
+
+
+
+
+mov oep,eip
+
+var IATStart
+var IATEnd
+var IATAddr
+var fixtmp
+var GetIATbp
+var ExitFlag
+var guolv
+mov IATStart,01001000  //////////////////////////////////////////////////////////IATStart
+mov IATEnd,01001344    //////////////////////////////////////////////////////////IATEnd
+mov IATAddr,IATStart
+fixloop:
+mov guolv,[IATAddr]
+cmp IATAddr,IATEnd
+je Exit2
+cmp [IATAddr],0
+je next
+cmp [guolv],68,1
+je getapi
+cmp [guolv],50,1
+jne next
+
+getapi:
+mov eip,[IATAddr]
+stiloop:
+mov fixtmp,eip
+cmp [fixtmp],E8,1
+je startfix
+sti
+jmp stiloop
+
+
+startfix:
+sti
+find eip,#7457#
+cmp $RESULT,0
+je goon
+mov GetIATbp,$RESULT
+mov [GetIATbp],#EB#
+goon:
+find eip,#C20400#
+mov GetIATbp,$RESULT
+BPHWS GetIATbp,"x"
+run
+bphwc GetIATbp
+mov [IATAddr],eax
+next:
+add IATAddr,4
+jmp fixloop
+
+Exit2:
+mov eip,oep
+ret

@@ -1,0 +1,81 @@
+//code by skylly
+//for polycrypt pe 2.1.5
+msg "忽略所有异常 hideod设置hidentbit"
+gpa "GetModuleHandleA", "kernel32.dll"
+cmp $RESULT,0
+je err
+var GMA
+mov GMA,$RESULT
+
+sto
+sto
+//第一次解码
+
+find eip,#E2EEC3#
+cmp $RESULT,0
+je err
+add $RESULT,2
+bp $RESULT
+esto
+bc $RESULT
+sti      //第二次解码
+
+find eip,#E8????????90#
+cmp $RESULT,0
+je err
+add $RESULT,5
+go $RESULT       //第三次解码
+
+find eip,#C3CC8D85#
+cmp $RESULT,0
+je err
+inc $RESULT    
+mov [$RESULT],#90#  //去掉无用异常
+
+find eip,#66C74206FFFF#  //pe头写入垃圾
+cmp $RESULT,0
+je err 
+mov [$RESULT],#90909090909090909090909090909090909090909090909090909090909090909090#
+
+find eip,#B0FFF3AA#
+cmp $RESULT,0
+je err 
+add $RESULT,2
+mov [$RESULT],#9090#      //仍然是垃圾
+
+find eip,#6A006A006A046A006A006800000080#
+cmp $RESULT,0  //绕开createfile
+je err 
+mov [$RESULT],#EB19#
+
+bp GMA
+esto
+esto
+bc GMA
+rtu
+
+//开始处理输入表
+repl eip,#CC#,#90#,100     //去掉无用异常
+
+find eip,#80BD????????01755E#
+cmp $RESULT,0
+je err
+add $RESULT,7
+mov [$RESULT],#EB#     //magic jmp
+
+find eip,#5D9D6168????????C3#      //跳oep: push oep;retn;
+cmp $RESULT,0
+je err
+add $RESULT,8
+bp $RESULT
+esto
+bc $RESULT
+sti
+
+OEP:
+cmt eip,"OEP"
+
+ret
+err:
+msg "error"
+ret

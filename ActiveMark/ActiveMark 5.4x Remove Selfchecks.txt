@@ -1,0 +1,48 @@
+/*
+AM 5.4x selfcheck remover script by russiankid.
+It will finds and disables new AM selfcheck (which was added since AM v5.4).
+This script should be run at new EP (can be run on original target after upack script or on dumped target).
+*/
+
+/*
+the code that do the ckeck:
+0050978D   8845 E0          MOV BYTE PTR SS:[EBP-20],AL
+00509790   E8 BE170000      CALL dumped_.0050AF53
+00509795   8DBE B4000000    LEA EDI,DWORD PTR DS:[ESI+B4]
+0050979B   895D FC          MOV DWORD PTR SS:[EBP-4],EBX
+0050979E   57               PUSH EDI
+0050979F   E8 2FF00500      CALL dumped_.005687D3
+005097A4   84C0             TEST AL,AL
+005097A6   59               POP ECX
+005097A7   75 0A            JNZ SHORT dumped_.005097B3
+005097A9   FF35 10DB4F00    PUSH DWORD PTR DS:[4FDB10]
+005097AF   53               PUSH EBX
+005097B0   57               PUSH EDI
+005097B1   EB 41            JMP SHORT dumped_.005097F4
+005097B3   399E 60010000    CMP DWORD PTR DS:[ESI+160],EBX
+005097B9   74 43            JE SHORT dumped_.005097FE
+*/
+
+var FixAddr
+var SeqAddr
+
+find eip,#E8????????8DBEB4000000895DFC57E8#
+mov SeqAddr,$RESULT
+cmp SeqAddr,0
+je SeqAddrNotFound
+
+add SeqAddr,10
+mov FixAddr,[SeqAddr]
+add FixAddr,SeqAddr
+add FixAddr,4
+mov [FixAddr],#B001C3#
+
+dec SeqAddr
+eval "New ActiveMark selfcheck fixed in the call at: {SeqAddr}"
+msg $RESULT
+ret
+
+SeqAddrNotFound:
+
+msg "Could not find sequence to fix!"
+ret

@@ -1,0 +1,65 @@
+//////////////////////////////////////////////////
+//  FileName    :  NsPack.V1.0-V3.5.osc
+//  Comment     :  OEP Find For NsPack V1.0-V3.5 OEP Find
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://www.unpack.cn
+//  Date        :  2005-10-02 13:30
+//////////////////////////////////////////////////
+#log
+
+MSGYN "Plz Clear All BreakPoints  And  Set Debugging Options : Events->Make First Pause at->WinMain !   "
+cmp $RESULT, 0
+je TryAgain
+
+
+//GameStart———————————————————————————————— 
+
+eob VirtualProtect 
+gpa "VirtualProtect", "KERNEL32.dll"
+bp $RESULT
+
+esto
+GoOn0:
+esto
+
+VirtualProtect:
+cmp eip,$RESULT
+jne GoOn0
+bc $RESULT
+
+rtu
+find eip, #619DE9#
+cmp $RESULT, 0
+je NoFind
+log $RESULT
+add $RESULT,2
+eob PoPad
+bp $RESULT
+
+esto
+GoOn1:
+esto
+
+PoPad:
+cmp eip,$RESULT
+log eip
+log $RESULT
+jne GoOn1
+bc $RESULT
+sti
+
+
+//GameOver———————————————————————————————— 
+
+cmt eip, "This is the OEP! Found by fly"
+MSG "Just : OEP !  Dump and Fix IAT.  Good Luck  "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not NsPack V1.0-V3.5 "
+ret
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret

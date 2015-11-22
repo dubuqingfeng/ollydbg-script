@@ -1,0 +1,13 @@
+//Ezip 1.0 OEP finder by Flashback/Team-X
+//Site: www.team-x.ru
+//Email: Flashback@mail15.com
+STO
+FIND eip, #FFE0#
+BP $RESULT
+RUN
+BC $RESULT
+STO
+cmt eip, "OEP"
+MSG "OEP! Script by Flashback/Team-X [www.team-x.ru/Flashback]"
+an eip
+ret

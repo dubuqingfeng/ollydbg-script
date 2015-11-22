@@ -1,0 +1,109 @@
+//////////////////////////////////////////////////
+//  FileName    :  FSG.osc
+//  Comment     :  OEP Find For FSG V1.0/V1.1/V1.31/V1.33/V2.0 
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://www.unpack.cn
+//  Date        :  2005-10-04 22:30
+//////////////////////////////////////////////////
+#log
+
+var T0
+var T1
+var T2
+
+MSGYN "Plz Clear All BreakPoints  And  Set Debugging Options : Events->Make First Pause at->WinMain !   "
+cmp $RESULT, 0
+je TryAgain
+
+
+//LoadLibraryA————————————————————————————————
+
+gpa "LoadLibraryA", "KERNEL32.dll"
+bp $RESULT
+
+eob LoadLibraryA
+esto
+
+LoadLibraryA:
+bc $RESULT
+mov T2,[esp]
+bp T2
+eob Kaspersky
+esto
+
+Kaspersky:
+bc T2
+
+
+//FSG V1.X————————————————————————————————
+
+FSG V1.X:
+//FSG V1.0/V1.1/V1.31/V1.33/FPack
+/*
+005170DD    EB 09           jmp short 005170E8
+005170DF    FE0F            dec byte ptr ds:[edi]
+005170E1    0F84 199FEEFF   je 00401000
+00401000=005170E1+6+0FFEE9F19
+*/
+find eip, #FE??0F84#
+cmp $RESULT, 0
+jne Take
+jmp FSG V2.0
+
+Take:
+eob Break FSG V1.X
+mov T0,$RESULT
+add T0,4
+mov T1, [T0]
+log T1
+add T1,4
+add T1,T0
+log T1
+go T1
+
+Break FSG V1.X:
+bc $RESULT
+jmp GetOEP
+
+
+//FSG V2.0————————————————————————————————
+
+FSG V2.0:
+/*
+0051E15A    FF37            push dword ptr ds:[edi]
+0051E15C    AF              scas dword ptr es:[edi]
+0051E15D    EB 09           jmp short 0051E168
+0051E15F    FE07            inc byte ptr ds:[edi]
+0051E161    0F84 992EEEFF   je 00401000
+0051E167    57              push edi
+0051E168    55              push ebp
+*/
+find eip, #FF630C#
+cmp $RESULT, 0
+je NoFind
+
+bp $RESULT
+eob Break FSG V2.0
+run
+
+Break FSG V2.0:
+bc $RESULT
+sti
+
+
+//GameOver————————————————————————————————
+
+GetOEP:
+log eip
+cmt eip, "This is the OEP! Found By: fly"
+MSG "Just : OEP !  Dump and Fix IAT.  Good Luck   "
+ret
+
+NoFind:
+MSG "Error! Maybe It's not FSG V1.0/V1.1/V1.31/V1.33/V2.0 ! "
+ret
+
+TryAgain:
+MSG " Plz  Try  Again   !   "
+ret

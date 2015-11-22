@@ -1,0 +1,28 @@
+/*
+///////////////////////////////////////////////////////////////////
+nSpack v2.0 - v2.3 OEP Finder script v0.1
+Author: KuNgBiM
+Email : gb_1227@163.com
+OS : WinXP sp1,Ollydbg 1.1,OllyScript v0.92
+Date : 2005-7-7
+Config: Ignore all Exceptions.
+Note : If you have one or more question, email me please,thank you!
+////////////////////////////////////////////////////////////////////
+*/
+
+start:
+  msg "nSpack v2.0 - v2.3 OEP Finder script v0.1 by KuNgBiM[DFCG]"
+  var addr  
+  sto
+  sto
+  mov addr,esp 
+  bphws addr,"r"
+  run
+  an eip
+  sto
+  BPHWC addr
+
+lblabort:
+  msg "This is OEP, You can dump it here!"
+  msg "Script by KuNgBiM[DFCG],Thank you for using my script!"
+ret

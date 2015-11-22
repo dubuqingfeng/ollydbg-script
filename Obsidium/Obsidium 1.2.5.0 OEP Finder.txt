@@ -1,0 +1,142 @@
+/*
+=================================================================================
+        Obsidium 1.2.5.0 - OEP finder script , haggar BIW reversing
+=================================================================================
+*/
+
+var RemoteDebugger
+var IsDebugger
+var UnhandledException
+var FindWindow
+var counter
+var opcode
+
+
+msg "Ignore ALL exceptions EXCEPT 'Intiger division by 0' in Olly options!!!"
+
+
+//---------------------------- Placing breakpoints ------------------------------
+gpa "CheckRemoteDebuggerPresent","kernel32.dll"
+findop $RESULT,#c20800#
+mov RemoteDebugger,$RESULT
+
+gpa "UnhandledExceptionFilter","kernel32.dll"
+find $RESULT,#50ff15????????85c00f8c#
+mov UnhandledException,$RESULT
+
+gpa "FindWindowA","user32.dll"
+findop $RESULT,#c20800#
+mov FindWindow,$RESULT
+
+gpa "IsDebuggerPresent","kernel32.dll"
+findop $RESULT,#c3#
+mov IsDebugger,$RESULT
+
+bp RemoteDebugger
+bp IsDebugger
+bp UnhandledException
+bp FindWindow
+
+
+
+//------------------------- Finding last exception -------------------------
+mov counter,0   //11(0b) is what I want.
+
+GO_FREAKY:
+esto
+
+cmp eip,RemoteDebugger
+jne NEXT_01
+    mov eax,0
+    jmp GO_FREAKY
+NEXT_01:
+
+cmp eip,IsDebugger
+jne NEXT_02
+    mov eax,0
+    jmp GO_FREAKY
+NEXT_02:
+
+cmp eip,UnhandledException
+jne NEXT_03
+    mov eax,0
+    jmp GO_FREAKY
+NEXT_03:
+
+cmp eip,FindWindow
+jne NEXT_04
+    mov eax,0
+    jmp GO_FREAKY
+NEXT_04:
+
+
+mov opcode,[eip]
+and opcode,0FFFF
+cmp opcode,0F0F7
+jne GO_FREAKY
+add counter,1
+cmp counter,0B
+jne GO_FREAKY
+
+
+
+//---------------------- Finding jump to OEP -------------------------
+find eip,#00000000000000000000000000000000E8??000000#
+cmp $RESULT,0
+je ERROR
+add $RESULT,10
+bp $RESULT
+esto
+bc eip
+sti
+
+find eip,#0F85????FFFF#
+cmp $RESULT,0
+je ERROR
+bp $RESULT
+esto
+bc eip
+
+find eip,#C3#
+cmp $RESULT,0
+je ERROR
+bp $RESULT
+esto
+bc eip
+
+
+sti
+
+findop eip,#FFE7#
+cmp $RESULT,0
+je ERROR
+bphws $RESULT,"x"
+esto
+bphwc eip
+
+sti
+sti
+sti
+sti
+sti
+
+sti
+sti
+sti
+sti
+sti
+
+sti
+sti
+sti
+sti
+sti
+
+an eip
+cmt eip,"<--- False OEP is found!"
+
+ret
+ERROR:
+msg "Some error occured in script. Exiting..."
+ret
+

@@ -1,0 +1,49 @@
+/*
+//////////////////////////////////////////////////
+                  .:[CracksLatinoS]:.
+Script para poner bp en las call magicas de delphi
+
+script realizado by ---=<<RedH@wK>>=--- && Lisa && Alquimista
+    con la ayuda de Ricardo Narvaja
+   
+//////////////////////////////////////////////////
+*/
+
+var cont_01
+var cont_02
+var poner_bp
+var num_call
+var code_base
+
+mov code_base,00401000
+mov cont_01,code_base
+mov cont_02,code_base
+
+bucle_01:
+         find cont_01, #FF93????????5BC3#
+         mov poner_bp,$RESULT
+         cmp poner_bp,0
+             je bucle_02
+         bp poner_bp
+         inc poner_bp
+         inc num_call
+         mov cont_01,poner_bp
+jmp bucle_01
+
+bucle_02:
+         find cont_02, #FF93????????5E5BC3#
+         mov poner_bp,$RESULT
+         cmp poner_bp,0
+             je final
+         bp poner_bp
+         inc poner_bp
+         inc num_call
+         mov cont_02,poner_bp
+jmp bucle_02
+
+final:
+log " "
+log " "
+log "El numero de BP activado es:"
+log num_call
+ret

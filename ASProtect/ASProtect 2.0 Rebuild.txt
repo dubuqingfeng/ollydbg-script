@@ -1,0 +1,130 @@
+// find all redirected Calls ('call EA0000')
+//#log
+
+
+var reladr
+var bytedata
+var ASPRCall
+	mov ASPRCall, EA0000
+
+VAR ImportStart
+	mov ImportStart, 55B000
+
+VAR ImportEnd
+	mov ImportEnd, 55DA00
+
+var oldIP
+	mov oldIP,eip
+
+var i
+
+		sub ASPRCall,5
+		GMI eip, CODEBASE		
+loop:
+		find $RESULT, #E8??????00#
+		
+		cmp $RESULT,0	
+	je done
+
+		mov reladr,ASPRCall
+		sub reladr,$RESULT
+
+	//	log adr
+	//	log reladr
+		inc $RESULT
+		cmp [$RESULT], reladr
+	je found1
+	
+	continue:
+		jmp loop
+
+	done:
+		eval "Done! - {count} API's fixed."
+		log $RESULT
+
+		mov eip,oldIP
+		jmp end2 
+
+	
+	// Recover Call
+	found1:
+		mov i,$RESULT
+
+		var count
+		inc count
+
+
+		dec i
+//		log i
+		mov eip,i
+//----------------------------------------
+
+
+// Break into Asprotect 2.0 Advance Import redirecting proc
+// map
+// MainExe
+// ...
+// call Ea000...
+// 	callC7xxxx ....
+//			Call C76xxx
+//				Call Checksum
+//				Call 00C76255; getimportadr
+go 00C76255			// Fix Offset!!!
+
+// Show actual/found API start offset
+//log eax
+
+
+// find Offset in original IAT
+var impadr
+mov impadr,ImportStart
+
+loop1:
+cmp [impadr],eax
+je found
+
+add impadr,4
+cmp impadr,ImportEnd
+jb loop1
+
+	imp_not_found:
+	log "imp_not_found"
+	pause
+
+found:
+
+// show found IAT Entry adress
+//log impadr
+
+//skip memchunk-part & get current call offset
+
+//find eip, #8B45F8#
+//mov eip, $RESULT
+mov eip, 00C762B7
+
+//8B45 F8         MOV     EAX, [EBP-8]
+//83E8 04         SUB     EAX, 4
+//8B55 F0         MOV     EDX, [EBP-10]
+//8910            MOV     [EAX], EDX
+//8B45 0C         MOV     EAX, [EBP+C]
+//find eip, #8B450C#
+//go $RESULT
+go 00C762C2 
+
+
+var retvar
+log edx
+mov retvar,edx
+
+// Fix import Call  (edx:   CALL [i])
+mov [edx],#FF15#
+add edx,2
+mov [edx],impadr
+
+go retvar
+
+		mov $RESULT,i
+jmp continue
+
+end2:
+ret

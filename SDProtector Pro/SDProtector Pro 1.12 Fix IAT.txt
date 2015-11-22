@@ -1,0 +1,258 @@
+/*
+-------------------------------------------------------------
+ SDProtector 1.12 - generic script for cleaning imports
+-------------------------------------------------------------
+*/
+
+
+
+
+
+var x
+var y
+var addr
+var block
+var fixed
+mov fixed,0
+
+ask "Enter base address of block where IAT is redirected:"
+cmp $RESULT,0
+je  done8
+mov block,$RESULT
+
+log "======================================================="
+log " "
+log " SDProtector 1.12 - script for fixing imports (haggar)"
+log " "
+log "======================================================="
+log " "
+log "Numbers of fixed patherns:"
+log " "
+
+
+
+mov addr,block
+pattern1:
+find addr,#5850609C680100000050B8????????50B8????????50E8????????9D61740E750CFF35#
+cmp $RESULT,0
+je done1
+mov addr,$RESULT
+add $RESULT,11
+mov x,[$RESULT]
+sub x,addr
+sub x,5
+fill addr,1,E9
+add addr,1
+mov [addr],x
+add addr,4
+fill addr,2D,90
+inc fixed
+jmp pattern1
+
+
+done1:
+log "type 1:"
+log fixed
+
+
+mov addr,block
+mov fixed,0
+pattern2:
+find addr,#5850609C680400000050B8????????50B8????????50E8????????9D61B8#
+cmp $RESULT,0
+je done2
+mov addr,$RESULT
+add $RESULT,1E
+mov x,[$RESULT]
+add $RESULT,6
+mov y,[$RESULT]
+xor x,y
+sub x,addr
+sub x,5
+fill addr,1,E9
+add  addr,1
+mov  [addr],x
+add  addr,4
+fill addr,25,90
+inc fixed
+jmp pattern2
+
+
+done2:
+log "type 2:"
+log fixed
+
+
+mov addr,block
+mov fixed,0
+pattern3:
+find addr,#5850609C680200000050B8????????50B8????????50E8????????9D#
+cmp $RESULT,0
+je done3
+mov addr,$RESULT
+add $RESULT,1E
+mov x,[$RESULT]
+add $RESULT,6
+mov y,[$RESULT]
+sub x,y
+sub x,addr
+sub x,5
+fill addr,1,E9
+add  addr,1
+mov  [addr],x
+add  addr,4
+fill addr,25,90
+inc fixed
+jmp pattern3
+
+
+done3:
+log "type 3:"
+log fixed
+
+
+mov addr,block
+mov fixed,0
+pattern4:
+find addr,#5850609C680300000050B8????????50B8????????50E8????????9D#
+cmp $RESULT,0
+je done4
+mov addr,$RESULT
+add $RESULT,1E
+mov x,[$RESULT]
+add $RESULT,6
+mov y,[$RESULT]
+add x,y
+sub x,addr
+sub x,5
+fill addr,1,E9
+add  addr,1
+mov  [addr],x
+add  addr,4
+fill addr,25,90
+inc fixed
+jmp pattern4
+
+done4:
+log "type 4:"
+log fixed
+
+mov addr,block
+mov fixed,0
+pattern5:
+find addr,#B8????????9C35????????9D50C3#
+cmp $RESULT,0
+je done5
+mov addr,$RESULT
+fill $RESULT,1,0E9
+add $RESULT,1
+mov x,[$RESULT]
+add $RESULT,6
+mov y,[$RESULT]
+xor x,y
+sub $RESULT,6
+sub x,$RESULT
+sub x,4
+mov [$RESULT],x
+inc fixed
+jmp pattern5
+
+
+done5:
+log "type 5:"
+log fixed
+
+
+mov addr,block
+mov fixed,0
+pattern6:
+find addr,#B8????????9C05????????9DFFE0#
+cmp $RESULT,0
+je done6
+mov addr,$RESULT
+fill $RESULT,1,0E9
+add $RESULT,1
+mov x,[$RESULT]
+add $RESULT,6
+mov y,[$RESULT]
+add x,y
+sub $RESULT,6
+sub x,$RESULT
+sub x,4
+mov [$RESULT],x
+inc fixed
+jmp pattern6
+
+done6:
+log "type 6:"
+log fixed
+
+
+
+mov addr,block
+mov fixed,0
+pattern7:
+find addr,#740E750CFF35????????FF20F6094100B8????????FFE0#
+cmp $RESULT,0
+je done7
+mov addr,$RESULT
+fill $RESULT,10,90
+add $RESULT,10
+fill $RESULT,1,0E9
+add $RESULT,1
+mov x,[$RESULT]
+sub x,$RESULT
+sub x,4
+mov [$RESULT],x
+inc fixed
+jmp pattern7
+
+
+done7:
+log "type 7:"
+log fixed
+
+
+mov addr,block
+mov fixed,0
+pattern8:
+find addr,#B8????????9C2D????????9D50C3#
+cmp $RESULT,0
+je done8
+mov addr,$RESULT
+fill $RESULT,1,0E9
+add $RESULT,1
+mov x,[$RESULT]
+add $RESULT,6
+mov y,[$RESULT]
+sub x,y
+sub x,addr
+sub x,5
+add addr,1
+mov [addr],x
+inc fixed
+jmp pattern8
+
+
+done8:
+log "type 8:"
+log fixed
+log " "
+log "Now use ImpREC to repair dumped file."
+log " "
+log "                    - THE END -"
+ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+

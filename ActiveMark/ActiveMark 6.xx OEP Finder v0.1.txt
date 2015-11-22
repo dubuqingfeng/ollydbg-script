@@ -1,0 +1,96 @@
+/*
+===============================================================
+ActiveMARK™ 6.x - OEP finder script (v0.1) for Windows XP
+===============================================================
+*/
+
+var addr
+var EP1
+var EP2
+var EP3
+var EP4
+
+mov EP1,eip
+
+//------------- Debugging trick on Windows XP ---------------
+gpa "DebugActiveProcess","kernel32.dll"
+cmp $RESULT,0
+je NOT_WINDOWS_XP
+mov [$RESULT],#33C0C20400#
+NOT_WINDOWS_XP:
+
+//------- ReadProcessMemory trick for detecting tools -------
+gpa "ReadProcessMemory","kernel32.dll"
+cmp $RESULT,0
+je ERROR
+mov [$RESULT],#33C0C21400#
+
+//------------------ Let's find EP2 -------------------------
+gpa "GetModuleHandleA","kernel32.dll"
+cmp $RESULT,0
+je ERROR
+mov addr,$RESULT
+findop addr,#C20400#
+bp $RESULT
+CHECK_HANDLE:
+esto
+cmp eax,00400000
+jne CHECK_HANDLE
+bc eip
+sti
+mov EP2,eip
+sub EP2,3E
+
+//--------------------- Let's find EP3 -----------------------
+find eip,#FF25??????00#
+cmp $RESULT,0
+je ERROR
+mov addr,$RESULT
+add addr,6
+find addr,#FF25??????00#
+cmp $RESULT,0
+je ERROR
+bp $RESULT
+esto
+bc eip
+sti
+mov EP3,eip
+
+//------------ Let's find EP4=OEP or stolen code -------------
+FIND_PUSHAD:
+sti
+mov addr,[eip]
+and addr,0FF
+cmp addr,60
+jne FIND_PUSHAD
+sti
+mov addr,esp
+bphws addr,"r"
+msg "ActiveMARK window will start now. Click 'Start Free Trial' link to continue script."
+CHECK_EXCEPTION:
+esto
+cmp eip,70000000
+ja CHECK_EXCEPTION
+bphwc addr
+mov EP4,eip
+msg "If you are in the some AM section, in front of you is stolen code. Trace to find exact opcodes. Otherwise you are at OEP. Check log for some info."
+
+//------------------- Log some info -----------------------
+log "=================================================="
+log " ActiveMARK™ 6.1 OEP SCRIPT"
+log "=================================================="
+log " "
+log "Entry points of protection modules:"
+log " "
+log EP1
+log EP2
+log EP3
+log " "
+log "OEP or EP4 (stolen code):"
+log " "
+log EP4
+
+ret
+ERROR:
+msg "Error in script! I couldn't find needed information."
+ret

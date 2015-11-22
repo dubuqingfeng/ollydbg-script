@@ -1,0 +1,31 @@
+//////////////////////////////////////////////////////////////////////////////
+//  OEP Find Script for NPack 1.1
+//  Coded by: PiONEER {RES}
+//  Greetz to: {RES},ICU,ARTeam,SnD,B@S,CiM,AS.MS
+//  Data: 00:01 26.03.2007
+//  Environment :  WinXP SP1,OllyDbg V1.10,ODbgScript V1.48
+//  Contact: http://www.appzclub.tk - or - admin@appzclub.tk
+//////////////////////////////////////////////////////////////////////////////
+
+start:
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+msg "OEP found! - Now dump and fix the IAT!"
+cmt eip, "<-- OEP found by PiO - TEAM {RES}!"
+ret
+end:

@@ -1,0 +1,38 @@
+﻿//////////////////////////////////////////////////////////////////////////////////////////
+//  
+//  The Best Cryptor OEP Finder
+//  Coded by: 0x87k/ICU
+//  Special greetz fly out to: TEAM ICU,SnD,TSRh,{RES},ARTeam,REVENGE,my friends
+//  Data: 27.11.2007
+//  Test: WinXP SP2, ODbgScript V1.64.3, OllyDump
+//  Contact: oxy87k@gmail.com
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+
+//.v4r
+var oep
+var imgbase
+
+//.c0de
+_start:
+    gmi eip,MODULEBASE
+    mov imgbase, $RESULT 
+    findop eip, #C3#
+    go $RESULT
+    cmp eip, $RESULT
+    je _continue
+       msg "Error, maybe target isn't packed with The Best Cryptor!"
+       ret
+
+_continue:
+    sti
+    mov oep, eip
+    log oep
+    an oep
+    sub oep, imgbase
+    eval "IMAGEBASE: {imgbase}  -  OEP : {oep}"
+    msg $RESULT
+       cmt eip, "This is the OEP! Found by 0x87k/ICU"
+       msg "File was dumped, now you have to fix the IAT! Regards!"
+    dpe "dumped.exe", oep
+       ret

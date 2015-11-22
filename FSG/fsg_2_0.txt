@@ -1,0 +1,11 @@
+/*
+// OEP FINDER FOR: FSG v2.0 by bart
+// AUTHOR        : SMoKE (smoke@freenet.am)
+// OS            : WinXP SP1, OllyDbg v1.10c, OllyScript v0.8
+*/
+
+findop eip, #FF630C#
+go $RESULT
+sto
+cmt eip, "OEP Reached !"
+ret

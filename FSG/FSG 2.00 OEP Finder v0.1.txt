@@ -1,0 +1,26 @@
+/* 
+Find target's OEP [ FSG v2.0 ] v0.1
+---------------------------------------
+Author: DeAtH HaS cOMe #eCh!2004 .:[ CracksLatinos ]:.
+Email : death.hc@gmail.com
+OS : Win XP SP1,OllyDbg 1.10,OllyScript v0.92 
+Date : 10.08.2004 
+Config: -
+Note : Any bug or comments, please report at death_ech@phreaker.net
+That's all folks!
+Un saludo para todo CracksLatinoS, maravillosos listeros, y para mi enana Aurënya :P
+*/
+
+
+findop eip, #FF630C#
+go $RESULT
+
+sto
+log "El OEP del programa es:"
+log eip
+log "Dumpealo ahora y repara la IAT automaticamente con el IREC"
+log "Script CracksLatinos by DeAtH #eCh!2004"
+log "@: death.hc@gmail.com  WWW: http://www.ech2004.tk"
+msg "Script finalizado correctamente. Ahora esta parado en el OEP, dumpealo y arregla la IAT :D"
+
+ret

@@ -1,0 +1,165 @@
+///////////////////////////////////////////////////////////////////////////////////
+// FileName    :  EncryptPE.oSc
+// Comment     :  EncryptPE V2.2007.4.11.Service UnPacK
+// Environment :  WinXP SP2,OllyDbg V1.10,OllyScript 
+// Author      :  cxh852456[CUG]
+// Date        :  2007-09-30 18:00
+// WebSite     :  http://www.unpack.cn
+// WebSite     :  http://bbs.unpack.cn
+///////////////////////////////////////////////////////////////////////////////////
+var replacaddr
+var hardp
+var oep
+var mem
+var patch
+var iatstart
+var iatend
+var iatdo
+var iatdone
+var modify
+var duizhan
+
+findiat:
+    MSG "Only for service protected model 2007.4.11,greet all CUG members and founders!!"
+    cmp $VERSION, "1.48" 
+    jb version
+    gpa "IsDebuggerPresent","kernel32.dll"
+    bp $RESULT
+    esto
+    bc $RESULT
+    find 711e8000,#890633C05A5959648910#
+    mov iatdo,$RESULT
+    find 711e8000,#0F8780FEFFFF6A008D45B8B901000000#
+    mov iatdone,$RESULT
+    bphws iatdo,"x"
+    add iatdone,6
+    bphws iatdone,"x"
+    esto
+    mov iatstart,esi
+    mov iatend,esi
+
+findend:
+    esto
+    cmp eip,iatdone
+    je replacecode
+    cmp esi,iatend
+    jb findstart
+    mov iatend,esi
+    jmp findend
+    
+findstart:
+    cmp esi,iatstart
+    ja findend
+    mov iatstart,esi
+    jmp findend
+    
+replacecode:
+    bphwc iatdo
+    bphwc iatdone
+    mov crkadd,iatdone
+    add crkadd,21
+    mov [crkadd],#9090#
+    add crkadd,b
+    mov [crkadd],#eb#
+    find 711e8000,#33C08945C833C08945CC8B55D48B45D8#
+    bphws $RESULT,"x"
+    esto
+    bphwc $RESULT
+    find 711e8000,#FF0424FF4C24080F855FFEFFFF#
+    cmp $RESULT,0
+    JE error
+    mov replacaddr,$RESULT
+    asm $RESULT,"jmp 71232B20"
+    mov $RESULT,71232B20
+    mov [$RESULT],#609C89251C2B2371832D1C2B23710448FFD08B3083C0168B38668916897E029D61FF0424FF4C2408E93B06FDFF#
+    find 711e8000,#8A1303C28B1868????????E8#
+    cmp $RESULT,0
+    je error
+    mov hardp,$RESULT
+    asm $RESULT,"mov byte ptr [ebx],1"
+    add hardp,3
+    bp hardp
+    esto
+    bc hardp
+    sub hardp,3
+    mov [hardp],#8A1303C2#
+    mov eip,hardp
+    find 711e8000,#8B45F8668910#
+    cmp $RESULT,0
+    je error
+    asm $RESULT,"jmp 711F4EDA"
+    find 711e8000,#6681F2BF888B4DF8668911#
+    cmp $RESULT,0
+    je error
+    add $RESULT,b
+    asm $RESULT,"jmp 711F4EDA"
+    asm 711F4EDA,"mov esp,dword ptr ds:[71232B1C]"
+    asm 711F4EE0,"ret"
+    bp 711f4ee0
+    esto
+    bc 711f4ee0
+    add replacaddr,D
+    bp replacaddr
+    esto
+    bc replacaddr
+    find 711e8000,#35FFFFFFFF8944243483C410648F050000000058#
+    cmp $RESULT,0
+    je error
+    bp $RESULT
+    esto
+    bc $RESULT 
+    sto
+    mov oep,eax
+    an oep
+    bp oep
+    esto
+    bc oep
+    cmt oep,"OEP is found by cxh852456[CUG]"
+   
+IAT:
+    alloc 1000
+    mov mem,$RESULT
+    MOV [mem],#BEE0624000BF206540008B06EB1EFFD0EB0C83C6043BF77CF1EBFE909090BC121212118906EBEB9090909090EB04EBE2EBDC3D0000007077F583F80074F081388B44240874E8EBE8#
+    mov eip,mem
+    add iatend,4
+    mov modify,mem
+    add modify,1
+    mov [modify],iatstart
+    add modify,5
+    mov [modify],iatend
+    add mem,19
+    bp mem
+    find 711e8000,#31D889430631D889C3#
+    mov patch,$RESULT
+    bp patch
+    esto
+    bc patch
+    add mem,5
+    mov [711f47fa],mem
+    ASM patch,"jmp dword ptr [711f47fa]"
+    add mem,1
+    mov [mem],duizhan
+    esto
+    bc mem
+    mov eip,oep
+    log oep
+    log iatstart
+    log iatend
+    sub mem,1e
+    fill mem,500,0
+    msg "脚本完毕,按ALT+L获取OEP和IAT!! HAVE FUN"
+    ret
+    
+    
+version:
+    msg "插件版本过低"  
+    ret  
+    
+    
+    
+error:
+    msg "错误,请联系cxh852456,QQ:290019543"
+    pause
+
+
+

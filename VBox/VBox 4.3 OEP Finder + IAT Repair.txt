@@ -1,0 +1,39 @@
+var oep
+var bdl
+var pth
+
+gpa "IsProcessorFeaturePresent","kernel32.dll"
+bp $RESULT
+erun
+bc eip
+rtu
+GMEMI eip, MEMORYBASE
+mov bdl,$RESULT 
+find bdl,#FF7514FF7510FF750CFFD0#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT+9
+find bdl,#8906EB02893E#
+cmp $RESULT,0
+je quit
+
+mov bdl,$RESULT
+bphws bdl,"x"
+cmt eip,"if Show Nag push try:)"
+erun
+
+mov [bdl+1],#3E#
+bphwc bdl
+
+bphws oep,"x"
+
+erun
+bphwc oep
+sti
+cmt eip,"<----OEP "
+MSG " OEP Faund! IAT fixed. Dump it"
+ret
+
+ret
+quit:
+ret

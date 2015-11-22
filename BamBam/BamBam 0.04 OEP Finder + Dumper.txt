@@ -1,0 +1,31 @@
+////////////////////////////////////////////////////////
+//			    AORE TEAM
+//
+//                 script by TallfaZ  24/03/2007
+//                 This script unpacks BamBam
+//
+//			www.alalme.com\vb
+//////////////////////////////////////////////////////////
+var tmp1
+
+gmemi 401000, MEMORYSIZE
+mov tmp1, $RESULT
+
+bprm 401000, tmp1
+run
+sto
+an
+
+bprm 401000, tmp1
+run
+an eip
+
+cmt eip, "OEP"
+msg "File is already dumped to same dir, just fireup ImpRec 'n fix IAT"
+dpe "Dump.exe", eip
+
+abort:
+ret
+
+
+

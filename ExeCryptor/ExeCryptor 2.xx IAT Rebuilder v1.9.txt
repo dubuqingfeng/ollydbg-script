@@ -1,0 +1,204 @@
+////////////////////////////////////////////////////////////////
+//
+// EXECryptor 2.x IAT rebuilder by PE_Kill / REVENGE CREW v 1.9
+// -------------------------------------------------------------
+// Replace my values of iat_start and iat_end and run script! 
+//
+// =============================================================
+// - HISTORY -
+// =============================================================
+// [ v 0.x-1.7 ]
+// Private versions
+//
+// [ v 1.8 ]
+// Public version
+//
+// [ v 1.9 ]
+// ! Thanks pavka, for good BugReport
+// * tracing became some slower, but is more stable.
+// * little bugfixes in IAT reader.
+// =============================================================
+//
+////////////////////////////////////////////////////////////////
+
+ var _esp
+ var iat_start
+ var iat_end
+ var iat_cur
+ var addr
+ var counter
+ var flag
+ var c_gpa
+ var temp
+ var gmh
+ var ll
+ var ibase
+ var iend
+
+//================================================
+// Инициализируем IAT
+//================================================
+ mov iat_start,00471FF8
+ mov iat_end,00472EB4
+
+//================================================
+// Получаем информацию о процессе
+//================================================
+
+//================================================
+// Получаем ImageBase брутом, т.к. оля иногда не 
+// хочет дать его нормальным способом
+//================================================
+ mov addr,eip
+ and addr,FFFFF000
+ add addr,1000
+@get_base:
+ sub addr,1000
+ mov temp,[addr]
+ and temp,0000FFFF
+ cmp temp,00005A4D
+ jne @get_base
+//================================================
+// Берем из хэдера ImageSize, но иногда криптор его
+// портит, поэтому будет перестраховка...
+//================================================
+ mov ibase,addr
+ mov temp,addr
+ add temp,3C
+ mov temp,[temp]
+ add temp,ibase
+ add temp,50
+ mov iend,[temp]
+ eval "ImageSize = {iend} ???"
+ msgyn $RESULT
+ cmp $RESULT,1
+ je @run
+ ask "Enter real ImageSize!"
+ mov iend,$RESULT
+@run:
+ add iend,ibase
+ 
+
+//================================================
+// Плучаем адреса АПИ, которые использует враппер
+//================================================
+ gpa "GetModuleHandleA","kernel32.dll"
+ mov gmh,$RESULT
+ gpa "LoadLibraryA","kernel32.dll"
+ mov ll,$RESULT
+//////////////////////////////////////////////////
+ mov _esp,esp
+ mov iat_cur,iat_start
+ sub iat_cur,4
+ mov c_gpa,0		// Cryptor GetProcAddress неизвестна
+//=================================================
+// Цикл восстановления IAT
+//=================================================
+@imprec:
+ add iat_cur,4
+ cmp iat_cur,iat_end 	// Конец?
+ ja @end
+ mov addr,[iat_cur]
+ cmp addr,0		// Разделитель?
+ je @imprec
+ cmp addr,ibase
+ jb @imprec
+ cmp addr,iend
+ ja @imprec
+
+ mov esp,_esp		// Восстанавливаем стек
+ mov eip,addr		// Встаем на враппер
+ mov [esp],eip		// Иногда криптор читает байт по адресу возврата
+ mov counter,25		// Счетчик трассировки
+ mov flag,0		// Ничего не найдено
+//==================================================
+// Ищем команды проверки внутренней IAT
+//==================================================
+@chk_run:
+ dec counter
+ cmp counter,0		// Если счетчик обнулился
+ je @find_gpa		// То идем на Cryptor gpa
+ sti			// Делаем шаг
+ mov temp,[eip] 	// Читаем байты с eip
+ cmp flag,0		// Если еще ничего не найдено
+ ja @chk_jnz
+ and temp,0000FFFF 	// Ищем OR EAX,EAX
+ cmp temp,0000C009
+ jne @chk_run		// Нет следующяя команда
+ inc flag		// Нашли, выставляем флаг
+ jmp @chk_run		// Идем на следующюю команду
+@chk_jnz:
+ and temp,0000FFFF 	// Ищем JNZ xxxxxxxx
+ cmp temp,0000850F
+ jne @chk_run		// Нет следующяя команда
+ mov !ZF,1 		// Да нашли, говорим криптору, что внутренняя IAT пуста
+
+@find_gpa:
+ cmp c_gpa,0		// Нашли ли мы адрес Cryptor GetProcAddress?
+ jne @trace		// Если нашли то идем на получение адреса АПИ
+ bphws gmh,"x"		// Иначе ставим бряк на GetModuleHandleA
+ bphws ll,"x"		// и на LoadLibraryA
+ ticnd "WORD [eip]==453Bh" // трассируем, пока не дойдем до сравнения хэшей
+ bphwc ll		// снимаем бряки с АПИ
+ bphwc gmh
+ cmp eip,gmh		// Мы на GetModuleHandleA?
+ jne @chk_ll		// Нет следующяя проверка...
+ bp [esp]		// Иначе переходим на адрес возврата
+ run
+ bc eip
+ jmp @find_gpa		// снова идем на поиск Cryptor GetProcAddress
+@chk_ll:
+ cmp eip,ll		// Мы на GetModuleHandleA?
+ jne @f_jnz		// Нет следующяя проверка...
+ bp [esp]		// Иначе переходим на адрес возврата
+ run
+ bc eip
+ jmp @find_gpa		// снова идем на поиск Cryptor GetProcAddress
+//=================================================
+// Теперь ищем jnz xxxxxxxx
+//=================================================
+@f_jnz:
+ sti
+ mov temp,[eip] // 659F850F
+ and temp,0000FFFF
+ cmp temp,0000850F
+ jne @f_jnz
+ mov !ZF,1		// если нашли, то в Z ложим единичку, как будто хэши совпали
+//==================================================
+// Теперь ищем вторую по счету команду ADD EAX,DWORD PTR SS:[EBP-4]
+//==================================================
+ mov counter,2		
+@f_add:
+ sti
+ mov temp,[eip] // 68FC4503
+ and temp,00FFFFFF
+ cmp temp,00FC4503
+ jne @f_add
+ sti
+ dec counter
+ cmp counter,0
+ jne @f_add 
+ mov c_gpa,eip		// Текущий адрес и будет адресом Cryptor GetProcAddress
+ sub iat_cur,4		// Возвращаем указатель на IAT в прежнее положение
+ jmp @imprec		// Возвращаемся в цикл восстановления ИАТ
+
+//==================================================
+// Получение адреса АПИ...
+//==================================================
+@trace:
+ bphws c_gpa,"x"
+ run
+ bphwc c_gpa
+ cmp eip,c_gpa
+ jne @error
+ mov [iat_cur],eax
+ jmp @imprec
+@end:
+ msg "OK!" 
+pause
+ret
+
+@error:
+ msg "error!!!"
+ pause
+ret

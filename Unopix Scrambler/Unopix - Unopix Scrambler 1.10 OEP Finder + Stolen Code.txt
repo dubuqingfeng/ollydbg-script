@@ -1,0 +1,86 @@
+//by apuromafo
+//need olly+OllyDump v3.00.110 by Gigapede+ollyscript optional:import rec+lord pe
+//this script need start from entrypoint
+//all checks and exceptions tilded
+//dont put bp..maybe can see too much exceptions..
+//try bp and remove bp when is ok..
+//this script only find the jump to oep with yours stolen (1 byte)
+//but resources are encripted..
+//base code and base data are in 0 must change..
+//post oep must dump whit olly ..because this can see good the iat..
+//because the section is very encripted-
+//good luck
+var temp
+var JmpAddress
+var JmpOEP
+var moving
+start:
+findop eip,#c3#
+cmp $RESULT,0
+je bad1
+bp $RESULT
+run
+bc $RESULT
+//maybe this way can be transformed..
+sto
+//entrypoint->0040009C > 83EC 04          SUB ESP,4
+//----------->0040009F   C70424 005C4700  MOV DWORD PTR SS:[ESP],UnPackMe.00475C00
+//c3--------->004000A6   C3               RETN
+mov temp, esp
+//EAX 00000000
+//ECX 0012FFB0
+//EDX 7C91EB94 ntdll.KiFastSystemCallRet
+//EBX 7FFD5000
+//->>>>>ESP 0012FFC4
+//EBP 0012FFF0
+//ESI FFFFFFFF
+//EDI 7C920738 ntdll.7C920738
+//EIP 00475C00 UnPackMe.00475C00
+// now bp in access
+bphws temp,"r"
+run
+bphwc temp
+//this is the same 
+sto
+mov temp,eax
+mov temp,esp
+bphws temp,"r"
+run
+bphwc temp
+sto
+//search jmp that remove oep good push..
+good:
+find eip,#7524C60090#
+cmp $RESULT,0
+je bad2
+mov JmpAddress,$RESULT
+find JmpAddress,#FFE0#
+mov JmpOEP,$RESULT
+eval "jmp {JmpOEP}"
+asm JmpAddress,$RESULT
+bphws JmpOEP,"x"
+run
+bphwc JmpOEP
+sti
+an eip
+log "dump in oep with olly dump in method 1 (jmp api)..etc with rebuild import tilded from olly dumper example:d1.exe"
+log "post can do if you want..lord pe-> rebuild PE and dump whit imagesize correct d1.exe->d2.exe"
+log "and can dump other d3.exe and take the iat from dumped with method 1 d1.exe in import rec ->d1_.exe "
+msg "dump in oep with olly dump in method 1 (jmp api)..etc with rebuild import tilded from olly dumper example:d1.exe"
+msg "post can do if you want..lord pe-> rebuild PE and dump whit imagesize correct d1.exe->d2.exe"
+msg "and can dump other d3.exe and take the iat from dumped with method 1 d1.exe in import rec ->d1_.exe "
+msg "review the log again if you need see again this info"
+ret
+
+bad:
+msg "i cant bp??"
+ret
+
+bad1:
+msg "i cant1 exeptions??"
+ret
+
+je bad2
+msg "are sure that this is the packer correct?"
+msg "find the jump to stolen oep... and oep ->jmp eax more down.."
+ret

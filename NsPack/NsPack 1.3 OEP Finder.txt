@@ -1,0 +1,19 @@
+/*
+//////////////////////////////////////////////////////////
+// nSPack 1.3 OEP Finder                      
+// Author: Max_Zero                                 
+// Email : max_zero130@yahoo.de           
+// Website: www.max_zero.6x.to              
+/////////////////////////////////////////////////////////
+*/
+
+
+sto
+findop eip, #9D#
+go $RESULT
+sto
+sto
+msg "Script finished! You are on the OEP! "
+msg "Dump it and rebuild the IAT "
+msg "Have fun! Generic OEP Finder {nSPack 1.3} by Max_Zero "
+

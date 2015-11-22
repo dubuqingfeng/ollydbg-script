@@ -1,0 +1,52 @@
+// Mr.David TeLock0.98 OEP finder v0.1
+// This script will quickly put you at the OEP of an TeLock0.98 EXE.
+// Just run it!
+
+var a
+
+msg "请设置OD异常设置不要忽略任何异常，然后从菜单处继续运行脚本"
+
+pause
+
+var cbase
+
+gmi eip, CODEBASE
+mov cbase, $RESULT    
+log cbase            //将源操作数输出到OllyDbg的记录窗口[log window]中,调试用
+
+var csize           //获得指定地址所在模块的相关信息,内存镜像断点
+
+gmi eip, CODESIZE
+mov csize, $RESULT
+log csize
+
+run
+
+esto
+esto
+esto
+esto
+esto
+esto
+esto              //忽略19次SEH异常
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto
+esto              
+esto
+
+bprm cbase, csize //内存镜像断点
+
+esto 
+
+bpmc
+
+cmt eip,"OEP To Get,Please dumped it,Enjoy!"
+

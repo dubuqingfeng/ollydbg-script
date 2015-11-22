@@ -1,0 +1,140 @@
+//Securom 7.x CRC Check Fixer by Human/MiNT
+var fixstart
+var jmpaddr
+var noplen
+var oep
+var oldesp
+var scan
+var tmp
+var tmp2
+var tmpmem
+var tmpmemsize
+
+
+
+mov oep,eip
+mov oldesp,esp
+mov fixstart,57EE000
+call fix_crc
+mov fixstart,5D49000
+call fix_crc
+mov eip,oep
+tick
+log $RESULT
+ret
+
+
+
+fix_crc:
+gmemi fixstart,MEMORYSIZE
+mov tmpmemsize,$RESULT
+alloc tmpmemsize
+mov tmpmem,$RESULT
+
+memcpy tmpmem,fixstart,tmpmemsize
+
+mov scan,fixstart
+eob do_crc
+
+scan_crc:
+find scan,#83EC??C74424#
+cmp $RESULT,0
+je end_fix
+mov eip,$RESULT
+mov scan,$RESULT+13
+find scan,#66FF4C24#
+mov tmp,$RESULT-eip
+cmp tmp,60
+ja scan_crc
+find $RESULT,#75#
+mov jmpaddr,$RESULT+2
+mov scan,$RESULT+2
+bphws scan,"x"
+run
+
+do_crc:
+bphwc scan
+mov noplen,[jmpaddr-1],1
+neg noplen
+and noplen,FF
+sub jmpaddr,noplen
+mov tmp,jmpaddr
+add jmpaddr,tmpmem-fixstart
+
+do_skip:
+opcode tmp
+add tmp,$RESULT_2
+cmp [tmp],33,1
+je do_xor
+cmp [tmp],1,1
+jne do_skip
+
+do_add:
+mov tmp,[tmp+3],1
+mov tmp2,[esp+tmp]
+mov esp,oldesp
+fill jmpaddr,noplen,90
+mov [jmpaddr],2444C7,3
+mov [jmpaddr+3],tmp,1
+mov [jmpaddr+4],tmp2
+jmp scan_crc
+
+do_xor:
+mov tmp,[tmp+1],1
+mov esp,oldesp
+fill jmpaddr,noplen,90
+shr tmp,3
+and tmp,7
+cmp tmp,0
+je do_xor_eax
+cmp tmp,1
+je do_xor_ecx
+cmp tmp,2
+je do_xor_edx
+cmp tmp,3
+je do_xor_ebx
+cmp tmp,5
+je do_xor_ebp
+cmp tmp,6
+je do_xor_esi
+cmp tmp,7
+jne scan_crc
+
+do_xor_edi:
+mov [jmpaddr],BF,1
+mov [jmpaddr+1],edi
+jmp scan_crc
+
+do_xor_eax:
+mov [jmpaddr],B8,1
+mov [jmpaddr+1],eax
+jmp scan_crc
+
+do_xor_ecx:
+mov [jmpaddr],B9,1
+mov [jmpaddr+1],ecx
+jmp scan_crc
+
+do_xor_edx:
+mov [jmpaddr],BA,1
+mov [jmpaddr+1],edx
+jmp scan_crc
+
+do_xor_ebx:
+mov [jmpaddr],BB,1
+mov [jmpaddr+1],ebx
+jmp scan_crc
+
+do_xor_ebp:
+mov [jmpaddr],BD,1
+mov [jmpaddr+1],ebp
+jmp scan_crc
+
+do_xor_esi:
+mov [jmpaddr],BE,1
+mov [jmpaddr+1],esi
+jmp scan_crc
+
+end_fix:
+memcpy fixstart,tmpmem,tmpmemsize
+ret

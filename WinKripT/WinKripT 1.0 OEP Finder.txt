@@ -1,0 +1,119 @@
+/*
+	============================
+	                
+	      Author: Goldocrack 1 mai 2006
+	      Packer: Winkript 1.0
+	      Script for: Winkript 1.0 Francais/English
+	      Level: Easy
+	      Date: Lundi 1 mai 2006
+                  http://www.forumcrack.new.fr/
+                  http://s141422204.onlinehome.fr/forum/
+                  Merci à tous 
+	 ============================
+						*/
+
+
+/*
+Avant d'utiliser ce script, vous devez aller dans les options de olly, 
+dans -> debugging options et cocher toutes les erreurs!
+*/
+msgyn "English(oui) ou Francais(non)?"
+cmp $RESULT,1
+je lang1
+msgyn "Veux-tu utiliser le script auto (oui) ou manuel(non)?"
+cmp $RESULT,1
+je packer
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+bphws esp,"r"
+msgyn "Pose un breakpoint sur le jmp juste en dessous du popad, quand tu as mis le BP, retourne dans le menu plugin et cliques sur resume !  "
+cmp $RESULT, 0
+je error
+pause
+run
+run
+run
+run
+jmp eip1
+
+packer:
+findop eip,#61#
+inc $RESULT
+go $RESULT
+
+sto
+jmp eip1
+
+eip1:
+AN eip
+CMT eip, " Tu es a l'entry point  !"
+msgyn " Veux-tu enregistrer un fichier dump nomme dumped.exe sur c:\    N'oublie pas les imports avec imprec pour que le dump soit fonctionnel!                                                                                                           Goldocrack 2006!"
+cmp $RESULT,1 
+je label
+msg "N'oublie pas les imports avec imprec pour que le dump soit fonctionnel!"
+ret 
+
+lang1:
+
+msgyn "Do you want to use this in auto (Yes) or in manual (No)?"
+cmp $RESULT,1
+je packer1
+
+sto
+sto
+sto
+sto
+sto
+sto
+sto
+bphws esp,"r"
+msgyn "Put a breakpoint on the jmp under the popad, When done, go back in ollymenu plugin and click on resume !"
+cmp $RESULT, 0
+je error1
+pause
+run
+run
+run
+run
+sto
+
+jmp eip2
+
+packer1:
+findop eip,#61#
+inc $RESULT
+go $RESULT
+
+sto
+jmp eip2
+
+eip2:
+AN eip
+CMT eip, " you are at the entry point  !"
+msgyn " Do you want to save a dumpfile named dumped.exe sur c:\   Dont' forget imports with imprec to make your dump functional!                                                                                                           Goldocrack 2006!"
+cmp $RESULT,1 
+je label1
+msg "Dont' forget imports with imprec to make your dump functional!"
+ret
+
+error:
+msg " Si tu ne pose pas le breakpoint, comment veux-tu que le script fonctionne?"
+ret
+
+label:
+dpe "c:\dumped.exe",eip
+ret
+
+error1:
+msg " If you don't put the breakpoint, how do you want that the script run?"
+ret
+
+label1:
+dpe "c:\dumped.exe",eip
+ret
+

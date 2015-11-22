@@ -1,0 +1,65 @@
+var iat
+var oep
+var cb
+var cs
+var oep
+var counter
+var ImageBase
+var espv
+
+GMI eip,MODULEBASE
+mov ImageBase,$RESULT
+GMI eip,CODEBASE
+mov cb,$RESULT
+ask "Enter size code section" //GMI ?? ????? ?????????? ?????? 
+cmp $RESULT, 0
+je quit
+mov cs,$RESULT
+
+GMEMI eip, MEMORYBASE
+mov oep,$RESULT
+dec oep
+GMEMI oep, MEMORYBASE
+
+find $RESULT,#8A0419E2F8#
+cmp $RESULT, 0
+je quit
+bphws $RESULT+5,"x"
+erun
+bphwc eip
+find eip,#890164FF35300000005D#
+cmp $RESULT, 0
+je quit
+fill $RESULT,2,90
+find eip,#300419E2FB61E8#
+bp $RESULT+5
+erun
+mov iat,ebx
+bc eip
+find eip,#890283C204EBA45F83C114#
+cmp $RESULT, 0
+je quit
+fill $RESULT,2,90
+BPRM cb,cs
+erun
+BPMC
+cmt eip, "oep"
+mov oep,eip
+
+sub oep,ImageBase
+sub iat,ImageBase
+mov counter,ImageBase
+add counter,3C
+mov counter,[counter]
+add counter,ImageBase
+add counter,28
+mov [counter],oep
+add counter,58
+mov [counter],iat
+DPE "dump.exe",eip
+msg "The file is unpacked! "
+ret
+
+quit:
+msg "UProtector v2.1"
+ret

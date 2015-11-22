@@ -1,0 +1,26 @@
+// Protection Plus 4.xx OEP Finder & Import Fixer by GaBoR {RES}
+var v
+var t
+sto
+sto
+mov t,esp
+bphws t,"r"
+find eip,#01E8FFD0#
+mov v,$RESULT
+add v,0D
+bphws v,"x"
+run
+bphwc v
+mov v,eax
+sto
+find v,#83F80377#
+mov v,$RESULT
+repl v,#83F80377#,#83F803EB#,4
+run
+bphwc t
+sto
+sto
+cmt eip," This is the OEP!"
+msg "Dump & fix IAT somehow!"
+
+

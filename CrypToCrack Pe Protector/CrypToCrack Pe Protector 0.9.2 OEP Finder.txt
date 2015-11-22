@@ -1,0 +1,32 @@
+var patch
+var x
+var y
+
+gmi eip,CODEBASE
+mov x,$RESULT
+ask "введите размер секции кода(Enter the size  section code)"
+mov y,$RESULT
+
+gpa  "GetProcAddress","kernel32.dll"
+bp $RESULT
+run
+bc eip
+rtu
+find eip,#893C8A807F0555#
+cmp $RESULT,0
+je quit
+mov patch,$RESULT
+mov [patch],#89048A#
+
+bprm x,y
+run
+cmt eip,"OEP"
+bpmc
+MSG "OEP Faund! Import recover!"
+ret
+quit:
+MSG "Not CrypToCrackPeProtector0.9.2"
+ret
+
+ 
+

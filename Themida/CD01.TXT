@@ -1,0 +1,15 @@
+
+mov x,THEMIDA
+N1:
+findop x,#CD01#
+cmp $RESULT,0
+mov z,$RESULT
+je N3
+cmp [z],00EB01CD
+jne N2
+and [z],ffff0000
+add [z],0C033
+N2:
+mov x,$RESULT
+jmp N1
+N3:

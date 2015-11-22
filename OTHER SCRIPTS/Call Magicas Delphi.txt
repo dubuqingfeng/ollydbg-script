@@ -1,0 +1,79 @@
+/*
+/////////////////////////////////////////////////////////////////////////////////
+/       		.:[CracksLatinoS]:.                                     /
+/               Script para poner bp en las call magicas de delphi              /
+/                                                                               /
+/       script realizado by ---=<<RedH@wK>>=--- && Lisa && Alquimista           /
+/                       con la ayuda de Ricardo Narvaja                         /
+/                                                                               /
+/////////////////////////////////////////////////////////////////////////////////
+
+
+              !!!!!!!!!!!!!!!! MUY  IMPORTANTE   !!!!!!!!!!!!!!!!!!!!!!!
+
+        Para su correcto funcionaminto es necesario:
+
+     Que el programa ( el modulo EXE ) este detenido en Olly
+     bien sea en el OEP o por algun tipo de BP,pero que sea el modulo EXE
+*/
+
+
+
+
+var cont_01             // cont_01 -> Primera pasada
+var cont_02             // cont_02 -> Segunda pasada
+var poner_bp            // Donde colocar los BP
+var num_eventos         // Cuenta el Numero de evntos capturados por el Script
+var imagen_base         // Direccion de imagen Base
+var Inicio_sec_CODE     // Inicio de la seccion Code
+
+
+gmi eip, MODULEBASE         // Obtener Imagen Base del Modulo
+mov imagen_base,$RESULT
+
+
+mov Inicio_sec_CODE,1000         // Tamano de la seccion PE
+add Inicio_sec_CODE,imagen_base  // Obtener Inicio de Seccion CODE
+
+
+mov cont_01,Inicio_sec_CODE  // Pasa a la Primera pasada la direccion de inicio de busqueda
+mov cont_02,Inicio_sec_CODE  // Pasa a la Segunda pasada la direccion de inicio de busqueda
+
+
+bucle_01:
+         find cont_01, #FF93????????5BC3#   // Patron de busqueda en Primera pasada
+         mov poner_bp,$RESULT               // Pon en poner_bp el resultado
+         cmp poner_bp,0                     // si has acabado vete a la Segunda pasada
+             je bucle_02
+         bp poner_bp                        // Si no has acabado pon un BP
+         inc poner_bp                       // Incrementa contador  de busqueda
+         inc num_eventos                    // Incrementa contador de evntos
+         mov cont_01,poner_bp               // Pasa a busqueda, el contador actualizado
+jmp bucle_01
+
+
+bucle_02:
+         find cont_02, #FF93????????5E5BC3#  // Patron de busqueda en Segunda pasada
+         mov poner_bp,$RESULT                // Pon en poner_bp el resultado
+         cmp poner_bp,0                      // si has acabado vete a fin
+             je final
+         bp poner_bp                         // Si no has acabado pon un BP
+         inc poner_bp                        // Incrementa contador  de busqueda
+         inc num_eventos                     // Incrementa contador de evntos
+         mov cont_02,poner_bp                // Pasa a busqueda, el contador actualizado
+jmp bucle_02
+
+
+final:         // Saca el numero de evntos capturados en la ventana  en un MSG
+cmp num_eventos,0
+     je final_malo
+
+eval "El Numero de Eventos capturados es: {num_eventos} (Hex)"
+mov num_eventos, $RESULT
+msg num_eventos
+ret
+
+final_malo:
+msg "!! NO es un programa Delphi !!"
+ret
+

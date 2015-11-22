@@ -1,0 +1,35 @@
+/*
+	============================
+	.:[OllyScript Editor v2.0]:.
+	      Author: GaBoR RES
+	      Packer: Molebox 2.xx
+	      Script for: Molebox 2.xx
+	      Level: Simple
+	      Date: Thursday, November 17, 2005
+        Tested on: MoleBox Pro 2.2.4,2.3,2.5.7
+	 ============================
+						*/
+var v
+find eip,#60#
+cmp $RESULT,eip
+je pushad
+bp $RESULT
+run
+bc $RESULT
+pushad:
+sto
+mov v,esp
+bphws v,"r"
+run
+bphwc v
+find eip,#FF?0#
+cmp $RESULT,eip
+je end
+bp $RESULT
+run
+bc $RESULT
+end:
+sti
+cmt eip,"OEP found"
+msg "Dump & fix the IAT"
+ret

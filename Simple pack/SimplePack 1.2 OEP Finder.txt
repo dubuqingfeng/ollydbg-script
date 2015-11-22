@@ -1,0 +1,43 @@
+//simplepack 1.2 go to oep
+//code by skylly
+var codebase
+mov codebase,400000
+find codebase,#CD2E#   //int 2E
+cmp $RESULT,0
+je start
+mov [$RESULT],#9090#
+start:
+gpa "VirtualProtect","kernel32.dll"
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+rtu
+find eip,#61#  //popad
+cmp $RESULT,0
+je method2
+log "method1"
+bp $RESULT
+esto
+bc $RESULT
+sti
+sti
+sti
+jmp oep
+method2:
+log "method2"
+find eip,#FFE0#  //jmp eax
+cmp $RESULT,0
+je err
+bp $RESULT
+esto
+bc $RESULT
+sti
+oep:
+cmt eip,"oep"
+an eip
+ret
+err:
+msg "error"
+ret

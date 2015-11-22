@@ -1,0 +1,35 @@
+//Securom 7.x Cpuid Fixer by Human/MiNT
+var mycpuid
+var scan
+var tmp
+
+mov eax,1
+exec
+cpuid
+ende
+and eax,FFFFFFDF
+mov mycpuid,eax
+
+mov scan,6130000
+
+scan_cpuid:
+find scan,#0FA2#
+cmp $RESULT,0
+je end_cpuid
+mov scan,$RESULT+2
+cmp [scan],EB,1
+jne do_cpuid
+mov tmp,[scan+1],1
+add scan,tmp+2
+
+do_cpuid:
+cmp [scan],25,1
+jne scan_cpuid
+mov [scan],B8,1
+mov [scan+1],mycpuid
+jmp scan_cpuid
+
+end_cpuid:
+tick
+log $RESULT
+ret

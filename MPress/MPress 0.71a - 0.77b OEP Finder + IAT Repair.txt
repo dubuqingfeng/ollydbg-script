@@ -1,0 +1,244 @@
+///////////////////////////////////////////////////////////////
+// FileName    :  MPRESS V0.71a-V0.77b.By.fly[CUG].oSc
+// Comment     :  MPRESS V0.71a-V0.77b.UnPacK
+// Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V1.65
+// Author      :  fly [CUG]
+// WebSite     :  http://unpack.cn
+// Date        :  2008.03.10 12:00 + 2008.03.13 18:00 
+///////////////////////////////////////////////////////////////
+#log
+dbh
+
+var T0
+var J1
+var OEP
+var Time
+var Relocation
+var RelocationVA
+var RelocationSize
+var RelocationTable
+
+MSGYN "Plz Clear All BreakPoints + Make First Pause at:Entry Point Of Main Module !  "
+cmp $RESULT, 0
+je TryAgain
+cmp $VERSION, "1.65" 
+jb CheckODbgScripVersion 
+bphwc
+bc
+
+//RelocationTable______________________________________
+
+/*MPRESS V0.71a-V0.75b
+003D71C5    58              pop eax
+003D71C6    05 FE000000     add eax,0FE
+003D71CB    8B78 08         mov edi,dword ptr ds:[eax+8]
+003D71CE    8BD7            mov edx,edi
+003D71D0    8B78 04         mov edi,dword ptr ds:[eax+4]
+003D71D3    0BFF            or edi,edi
+003D71D5    74 53           je short 003D722A
+003D71D7    8B30            mov esi,dword ptr ds:[eax]
+003D71D9    03F0            add esi,eax
+003D71DB    2BF2            sub esi,edx
+003D71DD    8BEE            mov ebp,esi
+003D71DF    8BC2            mov eax,edx
+003D71E1    8B45 3C         mov eax,dword ptr ss:[ebp+3C]
+003D71E4    03C5            add eax,ebp
+003D71E6    8B48 34         mov ecx,dword ptr ds:[eax+34]
+003D71E9    2BCD            sub ecx,ebp
+003D71EB    74 3D           je short 003D722A
+003D71ED    E8 00000000     call 003D71F2
+003D71F2    58              pop eax
+003D71F3    05 DD000000     add eax,0DD
+003D71F8    8B10            mov edx,dword ptr ds:[eax]
+003D71FA    03F2            add esi,edx
+003D71FC    03FE            add edi,esi
+003D71FE    2BC0            sub eax,eax
+003D7200    AD              lods dword ptr ds:[esi]
+003D7201    3BF7            cmp esi,edi
+003D7203    73 25           jnb short 003D722A
+*/
+/*MPRESS V0.77b
+0040D221    8B78 08         mov edi,dword ptr ds:[eax+8]
+0040D224    8BD7            mov edx,edi
+0040D226    8B78 04         mov edi,dword ptr ds:[eax+4]
+0040D229    0BFF            or edi,edi
+0040D22B    74 42           je short 0040D26F
+0040D22D    8B30            mov esi,dword ptr ds:[eax]
+0040D22F    03F0            add esi,eax
+0040D231    2BF2            sub esi,edx
+0040D233    8BEE            mov ebp,esi
+0040D235    8B48 10         mov ecx,dword ptr ds:[eax+10]
+0040D238    2BCD            sub ecx,ebp
+0040D23A    74 33           je short 0040D26F
+0040D23C    8B50 0C         mov edx,dword ptr ds:[eax+C]
+0040D23F    03F2            add esi,edx
+0040D241    03FE            add edi,esi
+0040D243    2BC0            sub eax,eax
+0040D245    AD              lods dword ptr ds:[esi]
+0040D246    3BF7            cmp esi,edi
+0040D248    73 25           jnb short 0040D26F
+0040D24A    8BD8            mov ebx,eax
+0040D24C    AD              lods dword ptr ds:[esi]
+0040D24D    3BF7            cmp esi,edi
+0040D24F    73 1E           jnb short 0040D26F
+0040D251    8BD0            mov edx,eax
+0040D253    83EA 08         sub edx,8
+0040D256    03D6            add edx,esi
+0040D258    66:AD           lods word ptr ds:[esi]
+0040D25A    0AE4            or ah,ah
+0040D25C    74 0B           je short 0040D269
+0040D25E    25 FF0F0000     and eax,0FFF
+0040D263    03C3            add eax,ebx
+0040D265    03C5            add eax,ebp
+0040D267    2908            sub dword ptr ds:[eax],ecx
+0040D269    3BF2            cmp esi,edx
+0040D26B    73 D8           jnb short 0040D245
+0040D26D    EB E9           jmp short 0040D258
+0040D26F    C3              retn
+*/
+
+find eip, #8B78088BD78B78040BFF74??8B3003F02BF28BEE#
+cmp $RESULT,0
+//jne Relocation
+//find eip, #2BCD74338B500C03F203FE2BC0AD3BF773258BD8AD3BF7731E8BD083EA0803D666AD0AE4740B25FF0F000003C303C529083BF273D8EBE9C3#
+//cmp $RESULT,0
+je EXE
+//sub $RESULT,0A*
+Relocation:
+add $RESULT,8
+mov RelocationTable,$RESULT
+eob RelocationTable
+log RelocationTable
+bp RelocationTable
+jmp EXE
+
+RelocationTable:
+bc RelocationTable
+mov RelocationVA,ecx
+eval "RelocationVA£º{RelocationVA}"
+Log RelocationVA
+mov RelocationSize,edi
+eval "RelocationSize£º{RelocationSize}"
+Log RelocationSize
+jmp GoOn0
+
+
+//J0______________________________________
+
+/*MPRESS V0.71a-V0.77b
+0040D30E    33C0            xor eax,eax
+0040D310    EB DF           jmp short 0040D2F1
+0040D312    5D              pop ebp
+0040D313    8BC7            mov eax,edi
+0040D315    59              pop ecx
+0040D316    2BC1            sub eax,ecx
+0040D318    5F              pop edi
+0040D319    5E              pop esi
+0040D31A    5B              pop ebx
+0040D31B    C3              retn
+0040D31C    E9 AB8EFFFF     jmp 004061CC
+*/
+
+EXE:
+find eip, #33C0EBDF5D8BC7592BC15F5E5BC3E9#
+cmp $RESULT,0
+je NoFind
+add $RESULT,0E
+mov J0,$RESULT
+log J0
+eob J0
+bp J0
+
+esto
+GoOn0:
+esto
+
+J0:
+cmp eip,RelocationTable
+je RelocationTable
+cmp eip,J0
+jne GoOn0
+bc
+esti
+
+
+//OEP______________________________________
+
+/*MPRESS V0.71a-V0.75b
+00406232    5F              pop edi
+00406233    81C7 9AFFFFFF   add edi,-66
+00406239    B0 E9           mov al,0E9
+0040623B    AA              stos byte ptr es:[edi]
+0040623C    B8 79000000     mov eax,79
+00406241    AB              stos dword ptr es:[edi]
+00406242    83C4 28         add esp,28
+00406245    5E              pop esi
+00406246    5F              pop edi
+00406247    5B              pop ebx
+00406248    5A              pop edx
+00406249    59              pop ecx
+0040624A    E9 7DAEFFFF     jmp 004010CC
+*/
+/*MPRESS V0.77b
+0040617B    5F              pop edi
+0040617C    81C7 9DFFFFFF   add edi,-63
+00406182    B0 E9           mov al,0E9
+00406184    AA              stos byte ptr es:[edi]
+00406185    B8 72000000     mov eax,72
+0040618A    AB              stos dword ptr es:[edi]
+0040618B    83C4 28         add esp,28
+0040618E    61              popad
+0040618F    E9 38AFFFFF     jmp 004010CC
+*/
+
+find eip, #5F81C7??FFFFFFB0E9AAB8??000000AB83C4285E5F5B5A59E9#
+cmp $RESULT,0
+jne OEP
+find eip, #5F81C7??FFFFFFB0E9AAB8??000000AB83C42861E9#
+cmp $RESULT,0
+je NoFind
+sub $RESULT,04
+
+OEP:
+add $RESULT,18
+mov J1,$RESULT
+log J1
+eob J1
+bp J1
+
+esto
+GoOn2:
+esto
+
+J1:
+cmp eip,J1
+jne GoOn2
+bc J1
+
+tick Time
+eval "Time Since Script Startup£º{Time} Microsecond"
+log $RESULT
+cmt eip,$RESULT
+esti
+
+
+//GameOver______________________________________ 
+
+mov OEP,eip
+eval "OEP VA£º{OEP}"
+log OEP
+cmt eip, "This is the OEP!  Found By: fly[CUG] "                              
+msg "Just : OEP !  Dump and Fix IAT.  Good Luck   "
+ret                       
+
+NoFind:
+msg "Error! Don't find.     "
+ret
+
+CheckODbgScripVersion:
+msg  "ODBGScript Version Need 1.65 or higher!"
+ret
+
+TryAgain:
+msg " Plz  Try  Again   !   "
+ret

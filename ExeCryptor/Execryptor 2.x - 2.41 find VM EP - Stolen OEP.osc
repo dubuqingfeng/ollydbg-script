@@ -1,0 +1,118 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	FileName		:	Execryptor 2.x - 2.41 find VM EP - Stolen OEP.osc
+//	Version			:	1.0
+//	Comment			:	modified Bypass anti debug script,just for find Stolen OEP
+//	Environment		:	WinXP SP2,OllyICE with Phantom plugin,
+//						ODBGScript V1.64+,
+//						Olly Advanced (Break on TLS Callback),
+//						Check bypass All Exception:00000000 - FFFFFFFF
+//	Author			:	Trickyboy
+//	WebSite			:	http://www.reaonline.net
+//	Date			:	2008-06-15 14:50
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Data:
+	var imagebase
+	var ecseg
+	var vmseg
+	var ep
+	var oep
+	var vmep
+	var codeseg
+	var sizeheader
+	var oriByte
+	var temp
+	
+Init:
+	BPHWCALL
+	gmi eip, MODULEBASE
+	mov imagebase, $RESULT
+	mov codeseg, $RESULT
+	mov temp, $RESULT
+	gmemi imagebase, MEMORYSIZE
+	mov sizeheader, $RESULT
+	add codeseg, sizeheader
+	add temp, 3C
+	mov temp, [temp]
+	add temp, imagebase
+	add temp, 28
+	mov temp, [temp]
+	add temp, imagebase
+	bc temp									//Clear memory breakpoint at EP
+	mov ep, temp
+	gmemi eip, MEMORYBASE
+	mov ecseg, $RESULT
+	gpa "CreateThread", "kernel32.dll"
+	mov oriByte, [$RESULT] 					//Store original byte at CreateThread
+	mov [$RESULT], #C3#						//Patch RETN at CreateThread
+	
+FindSOEPNotPacked:
+	mov temp, eip							//Store current EIP
+	cmp [codeseg], 00000000				//Is section code null?
+	je FindVMEP								
+	mov eip, codeseg						//If section code is not packed
+	eval "JMP 0{ep}"
+	findcmd eip, $RESULT					//Find command JMP EP
+	cmp $RESULT, 0							
+	jne FoundSOEP							//Found OEP
+	
+FindVMEP:
+	mov eip, temp							//Restore last EIP
+	bphws ep, "x"
+	esto
+	bphwc ep
+	mov temp, ecseg
+	sub temp, 1
+	gmemi temp,MEMORYBASE
+	mov vmseg,$RESULT
+	gmemi temp,MEMORYSIZE
+	bprm vmseg,$RESULT
+	esto
+	bpmc
+	mov vmep, eax
+	sti
+	bprm vmep, 1
+	
+LoopFind:
+	esto
+	cmp eip, vmep
+	jne LoopFind
+	
+FoundVMEP:
+	bpmc
+	mov temp, vmep
+	sub temp, imagebase
+	eval "VM EP: {vmep} RVA: {temp}"
+	log $RESULT
+	mov temp, $RESULT
+	msg temp
+	eval "<== Found VM EP by Trickyboy. {temp}"
+	cmt vmep, $RESULT
+	gpa "CreateThread","kernel32.dll"
+	mov [$RESULT],oriByte					//Restore CreateThread API
+	
+FindSOEP:
+	mov eip,codeseg
+	eval "JMP 0{vmep}"
+	findcmd eip,$RESULT
+	cmp $RESULT,0
+	je notFoundSOEP
+	
+FoundSOEP:
+	mov eip, $RESULT
+	mov oep, $RESULT
+	mov temp, oep
+	sub temp, imagebase
+	eval "OEP: {oep} RVA: {temp}"
+	log $RESULT
+	mov temp, $RESULT
+	msg temp
+	eval "<== Found Stolen OEP by Trickyboy. {temp}"
+	cmt oep, $RESULT
+	ret
+	
+notFoundSOEP:
+	mov eip, vmep
+	msg "Sorry, not found Stolen OEP !"
+	ret
+	

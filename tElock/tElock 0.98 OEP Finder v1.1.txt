@@ -1,0 +1,51 @@
+/*
+	tElock 0.98 OEP finder v1.1
+	---------------------------
+	Seems to work =)
+	Please make sure no exceptions are passed to program
+	i.e. uncheck all the boxes on the Exceptions tab 
+	in Debugging Options except the topmost one
+*/
+
+var cbase
+gmi eip, CODEBASE
+mov cbase, $RESULT
+log cbase
+var csize
+gmi eip, CODESIZE
+mov csize, $RESULT
+log csize
+
+var count
+mov count, A
+eob lbl1
+eoe lbl1
+run
+
+lbl1:
+cmp count, 0
+je lbl2
+esto
+sub count, 1
+jmp lbl1
+
+lbl2:
+esti
+bprm cbase, csize 
+eob end
+eoe end
+run
+
+end:
+cmt eip, "OEP"
+ret
+
+
+
+
+
+
+
+
+
+

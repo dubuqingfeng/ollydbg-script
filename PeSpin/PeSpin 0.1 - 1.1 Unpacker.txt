@@ -1,0 +1,527 @@
+//code by skylly
+//for pespin
+msg "忽略所有异常"
+#log
+var addr
+var cb
+var cs
+gmi eip,CODEBASE
+cmp $RESULT,0
+je err
+mov cb,$RESULT
+gmi eip,CODESIZE
+cmp $RESULT,0
+je err
+mov cs,$RESULT
+
+var espvar
+var op
+
+findpushad:
+mov op,[eip]
+and op,FF
+cmp op,60
+je atpushad
+sti
+jmp findpushad
+
+atpushad:
+sti
+mov espvar,esp
+var ver        //壳版本
+
+gpa "VirtualFree","kernel32.dll"
+cmp $RESULT,0
+je err
+var VirtualFree
+mov VirtualFree,$RESULT
+add VirtualFree,5
+bp VirtualFree
+esto
+bc VirtualFree
+rtu
+find eip,#095820#    //anti anti_dump
+cmp $RESULT,0
+je err
+mov [$RESULT],#909090#
+
+find eip,#838D????????00740D#    //判断是否用create检测ice
+cmp $RESULT,0
+je err
+add $RESULT,7
+bp $RESULT
+esto
+bc $RESULT
+mov !ZF,1        //不让检测调试器
+
+gpa "LoadLibraryA","kernel32.dll"
+cmp $RESULT,0
+je err
+var LoadLibraryA
+mov LoadLibraryA,$RESULT
+add LoadLibraryA,5
+lating:
+bp LoadLibraryA
+esto
+bc LoadLibraryA
+rtu
+cmp eip,70000000
+ja lating         //在系统dll中则返回
+//正式开始啦
+
+var iidstart
+mov iidstart,esi
+
+find eip,#83661000#     //清thunk
+cmp $RESULT,0
+je err
+mov [$RESULT],#90909090#
+add $RESULT,4
+var op
+mov op,[$RESULT]
+and op,FFFF
+cmp op,174     //  je
+jne skipthunk
+//1.1的要做点处理
+mov [$RESULT],#909090#
+
+skipthunk:
+find eip,#800B00740D#   //清dll name
+cmp $RESULT,0
+je err
+add $RESULT,3
+mov [$RESULT],#EB#
+
+var temp
+mov temp,eip
+sub temp,0800     //回溯一小段地址
+
+find temp,#832700#     //清func name ,不过func name好似加密了,清不清没多大关系
+cmp $RESULT,0
+je skipfuncname
+mov [$RESULT],#909090#
+
+skipfuncname:
+repl temp,#EB04??EB04??EBFB??#,#909090909090909090#,1000
+repl temp,#E803000000EB04??EBFB??8304240CC3??#,#9090909090909090909090909090909090#,1000
+repl temp,#EB07????????EB04??EBF8??#,#909090909090909090909090#,1000
+
+find temp,#3BC7763503BD????????3BF8762B#
+cmp $RESULT,0           //个别函数判断
+je pe7 
+
+find eip,#F60101740A#   //magic jmp
+cmp $RESULT,0
+je pe7
+//pespin 0.1
+
+mov ver,01
+add $RESULT,3
+mov [$RESULT],#EB#     
+jmp iatend
+
+pe7:
+//pespin 0.7
+  find eip,#0FBA67FF07#           //find command 'bt [edi-1],7'
+  cmp $RESULT,0
+  je err
+  mov addr,$RESULT
+  fill addr,1,F8        //修改为clc清除CF
+  inc addr
+  mov [addr],90909090
+
+mov ver,10
+find temp,#FE4FFF83C7042BC78947FC#
+cmp $RESULT,0
+je not1
+//pespin 1.1
+mov ver,11
+
+not1:
+find temp,#8944241C#    //填充api
+cmp $RESULT,0
+je err
+
+sub $RESULT,3
+var op
+mov op,[$RESULT]
+and op,FF
+cmp op,EB  //如果这里不是jmp 则可能是1.1
+je pe10
+cmp op,9E
+je pe12
+jmp err
+
+pe12:
+mov ver,12
+//不知道是什么版本,类似1.1,姑且说1.2吧
+var addr
+mov addr,eip
+sub addr,1000
+
+lblfind2:
+  find addr,#807FFFEA#              //find command'CMP BYTE PTR DS:[EDI-1],0EA'
+  cmp $RESULT,0
+  je err
+
+  find $RESULT,#FE4FFF83C7042BC78947FC#
+  
+/*
+find commands:
+FE4F FF         DEC BYTE PTR DS:[EDI-1]
+83C7 04         ADD EDI,4
+2BC7            SUB EAX,EDI
+8947 FC         MOV DWORD PTR DS:[EDI-4],EAX
+*/
+  cmp $RESULT,0
+  je err
+  mov addr,$RESULT
+mov [addr],#66C747FFFF258957018902#      //fix iat
+  
+lbl4:
+  find eip,#E801000000??83C404#           //find commands:'call $+1 add esp,4'
+  cmp $RESULT,0
+  je lblerrver
+  go $RESULT
+jmp iatend
+
+
+ret
+
+pe10:
+log "1.0"
+
+go $RESULT
+mov [$RESULT],#8944241C61890290#
+add $RESULT,8
+
+var mygod
+mov mygod,$RESULT //保存当前eip
+
+find eip,#83C204E9#
+cmp $RESULT,0
+je novb
+sub $RESULT,3
+
+var nowcode
+mov nowcode,[$RESULT]
+and nowcode,FF
+cmp nowcode,EB
+je vb
+novb:
+find mygod,#807FFF00#
+cmp $RESULT,0
+je err
+go $RESULT       //判断编译器
+
+repl eip,#EB04??EB04??EBFB??#,#909090909090909090#,1000
+repl eip,#E803000000EB04??EBFB??8304240CC3??#,#9090909090909090909090909090909090#,1000
+repl eip,#EB07????????EB04??EBF8??#,#909090909090909090909090#,1000
+
+var tempcode
+mov tempcode,edi
+sub tempcode,1
+mov tempcode,[tempcode]
+and tempcode,FF
+cmp tempcode,0
+je vc7
+cmp tempcode,E9
+je masm
+log "vb"
+jmp iatend
+ret
+
+vb:
+log "0.7 vb"
+jmp iatend
+ret
+
+masm:
+log "0.7 masm"
+find mygod,#8902#
+cmp $RESULT,0
+je err
+mov [$RESULT],#9090#     //不让被破坏
+var addr
+mov addr,eip
+add addr,C
+mov [addr],#66C747FFFF25895701EB05#
+jmp iatend
+
+vc7:
+log "0.7 vc or delphi"
+find mygod,#8902#
+cmp $RESULT,0
+je skipfake      //1.1的版本没有这里
+mov [$RESULT],#9090#     //不让被破坏
+skipfake:
+
+find eip,#8907#
+cmp $RESULT,0
+je err
+//mov [$RESULT],#9090#
+
+var iatnow
+mov iatnow,$RESULT
+
+find iatnow,#0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000#
+cmp $RESULT,0
+je err
+var patchaddr
+mov patchaddr,$RESULT
+add patchaddr,8
+eval "call {patchaddr}"
+asm iatnow,$RESULT        //写入补丁代码
+
+mov [patchaddr],#609CBB00000000B9000000008B133BD7750C8B17891383C30483E903EB0383C301E2E99D61C3#
+add patchaddr,3
+mov [patchaddr],cb
+add patchaddr,5
+mov [patchaddr],cs
+
+jmp iatend
+ret
+
+iatend:
+cmp ver,11
+jne hws
+find eip,#9061#      //popad,到oep
+cmp $RESULT,0
+je err
+add $RESULT,2
+bp $RESULT
+esto
+bc $RESULT
+
+jmp fixcall
+
+
+hws:
+bphws espvar,"r"
+esto
+bphwc espvar
+
+fixcall:
+killflower:
+//杀花
+repl eip,#EB01??#,#909090#,100
+
+//修复某些代码
+cmp ver,10
+je fixstart  //不是1.0版本的不需要处理这里
+cmp ver,11
+je fixstart  //1.1的也要处理
+
+jmp step2
+
+fixstart:
+var temp
+mov temp,eip
+lop: 
+//1.0 版本修复call [api]型时未处理的那些  call []
+find temp,#FF15#
+cmp $RESULT,0
+je step1
+var addr
+mov addr,$RESULT
+add addr,2
+var code
+mov code,[addr]
+mov code,[code]
+mov [addr],code
+mov temp,addr
+jmp lop
+
+step1:
+mov temp,eip
+lopme:
+//1.0 版本修复call [api]型时未处理的那些  call []
+find temp,#8B3D#
+cmp $RESULT,0
+je step2
+var addr
+mov addr,$RESULT
+add addr,2
+var code
+mov code,[addr]
+mov code,[code]
+mov [addr],code
+mov temp,addr
+jmp lopme
+
+step2: 
+//花指令     push ;jmp api型
+mov temp,eip
+lop2:
+find temp,#68????????E9????????#
+cmp $RESULT,0
+je step3
+var addr
+mov addr,$RESULT
+mov temp,$RESULT
+var code
+mov code,addr
+add addr,A
+add code,6
+mov code,[code]
+add code,addr
+mov [temp],#E8#
+
+sub code,temp
+sub code,5
+add temp,1
+mov [temp],code
+add temp,4
+mov [temp],#9090909090#
+
+mov temp,addr
+jmp lop2
+
+step3:
+//花指令  push 的一种变形    push const;sub [esp] const2;
+mov temp,eip
+lop3:
+find temp,#68????????81??24????????#
+cmp $RESULT,0
+je fixheader
+mov temp,$RESULT
+var code1
+var code2
+mov code1,$RESULT
+mov code2,$RESULT
+inc code1
+mov code1,[code1]
+add code2,8
+mov code2,[code2]
+var op
+mov op,$RESULT
+add op,6
+mov op,[op]
+and op,FF
+adding:
+cmp op,4
+jne subing
+add code1,code2
+mov code2,temp
+mov [code2],#68#  //push
+inc code2
+mov [code2],code1
+add code2,4
+mov [code2],#90909090909090#
+
+jmp continue
+
+subing:
+cmp op,2C
+jne continue
+sub code1,code2
+mov code2,temp
+mov [code2],#68#  //push
+inc code2
+mov [code2],code1
+add code2,4
+mov [code2],#90909090909090#
+
+continue:
+add temp,C
+jmp lop3
+
+fixheader:     
+ //修复偷到pe头中的代码
+var addr
+var Redir
+var buffer
+var temp
+var Value
+mov addr,cb
+msg "fixing header stolen code!"
+var baseAddress
+mov baseAddress,cb
+sub baseAddress,1000     //PE头大小
+log baseAddress
+
+search:
+findop addr,#E???????FF#        //查找所有的回跳跳转/call
+cmp $RESULT,0
+je OEP
+mov addr,$RESULT
+
+mov buffer,addr
+add addr,1
+
+mov Redir,[addr]                //判断是否跳到pe头中
+add Redir,addr
+add Redir,4
+
+and Redir,FFFFF000
+
+cmp Redir,baseAddress
+jne search
+
+mov Redir,[addr]                //计算在PE头中的代码地址
+add Redir,addr
+add Redir,4
+mov Value,[Redir]              
+and Value,0FF
+cmp Value,0E9			//此处代码是否是jmp
+je JumpsCalls                   
+//只需将头部中代码拷贝过来
+var ismov
+mov ismov,[Redir]
+and ismov,FFFF
+var temp
+mov temp,[Redir]
+add Redir,1                    
+mov Value,[Redir]
+//按push const的方式偷走的代码
+sub addr,1
+mov [addr],temp    //补上第一字节
+add addr,1
+mov [addr],Value   //补上四个字节
+
+cmp ismov,3D83   //cmp [const],0
+jne nomov
+//如果是cmp 型的代码则还要移动2个字节
+add addr,2
+add Redir,2
+mov Value,[Redir]
+mov [addr],Value
+
+nomov:
+mov addr,buffer
+jmp search
+
+JumpsCalls:                        
+//按jmp const/call const方式偷走的代码
+sub addr,1
+//cmt addr,"Fixed JMP or CALL opcode."
+mov temp,[addr]
+and temp,FF
+
+cmp temp,0E9
+je Jump
+fill addr,1,0E8
+jmp Call
+Jump:
+fill addr,1,0E9
+Call:
+add Redir,1
+add addr,1
+mov Value,[Redir]
+add Value,Redir
+add Value,4
+sub Value,addr
+sub Value,4
+mov [addr],Value
+mov addr,buffer
+jmp search
+
+OEP:
+cmt eip,"OEP"
+log ver
+log iidstart
+ret
+
+err:
+msg "error"
+ret

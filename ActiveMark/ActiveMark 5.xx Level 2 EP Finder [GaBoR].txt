@@ -1,0 +1,37 @@
+/*
+ActiveMark 5.xx 2nd layer EP finder
+Made by: GaBoR {RES}
+Thanks to:
+	-CondZero for the great tuts on Activemark!
+	-Lunar_Dust for the overlay method!
+Instructions:
+	-hide Olly with OllyAdvanced plugin;
+*/
+
+var x
+gpa "GetModuleHandleA","kernel32.dll"
+mov x,$RESULT
+add x,9
+bpcnd x, "[ESP+08]==0"
+run
+run
+run
+run
+run
+run
+run
+run
+bc x
+mov x,esp
+add x,4
+bp [x]
+run
+bc [x]
+sto
+sto
+sto
+sto
+sto
+cmt eip,"2nd layer EP found by GaBoR {RES}"
+msg "Dump, fix IAT & add overlay!"
+ret

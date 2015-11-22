@@ -1,0 +1,698 @@
+/*
+    REA-TEAM - www.reaonline.net
+	Filename	: Obsidium 1.3.x.x Unpacking Script.txt
+    Author    	: Unregistered !
+    Target    	: 1.3.x.x (Tested on Obsidium v1.3.5.5, v1.3.6.1, v1.3.6.3)
+    OS    	  	: Tested on XP SP2
+    Date      	: 04-November-2008
+    Credit    	:
+		* Special thanks Computer_Angel for "Obsidium IAT Fixer" script
+	Description : 
+		* I have modified Computer_Angel's Script to fix some Emulated API and some bugs...
+    Environment	:
+		* OllyDBG 1.10 : Igrone All Exception
+		* OllyAdvance 1.26 beta 12 or higher :
+			+ Anti-Debug  : Kill Anti-Attach + UnhandledExceptionFilter + Process32Next + Module32Next + CheckRemoteDebuggerPresent
+			+ Anti-Debug2 : IsDebuggerPresent
+		* Phantom 1.30 or higher :
+			+ Hide from PEB
+			+ Protect DRx
+			+ Patch ODBGString & FPU bugs
+			+ Hook BlockInput
+			+ Hook GetTickCount
+			+ Remove EP break
+			+ Custom handler exceptions
+			+ Change Olly caption
+*/
+
+
+Init:
+	var counter
+	var counter2
+	var counter3
+	var counter4
+	var temp
+	var MESS
+	cmp $VERSION, "1.52"
+	jb Odbgver
+	bphwcall
+	bpmc
+	alloc 100
+	mov codecave,$RESULT
+	mov codecave2,codecave
+	gpa "VirtualAlloc","kernel32.dll"
+	cmp $RESULT,0
+	je Abort
+	find $RESULT,#C21000#
+	mov pAlloc,$RESULT
+	cmp $RESULT,0
+	je Abort
+	bp $RESULT
+	
+	gpa "VirtualProtect","kernel32.dll"
+	cmp $RESULT,0
+	je Abort
+	find $RESULT,#E8#
+	mov pVir,$RESULT
+	cmp $RESULT,0
+	je Abort
+	bp $RESULT
+	
+	mov oep,eip
+	mov pEAX,eax
+	mov pEBX,ebx
+	mov pECX,ecx
+	mov pEDX,edx
+	mov pEDI,edi
+	mov pESI,esi
+	mov pESP,esp
+	mov pEBP,ebp
+	mov pEIP,eip
+	
+	//Infor of GetVersion api
+	gpa "GetVersion","kernel32.dll"
+	mov pGetVersion,$RESULT
+	mov eip,pGetVersion
+	find eip,#C3#
+	bp $RESULT
+	esto
+	bc eip
+	mov GetVersionResult,eax
+	mov eip,codecave
+	mov [eip],#B8#
+	mov [eip+1],GetVersionResult
+	opcode eip
+	mov bGetVersion,$RESULT
+
+	//Infor of GetCurrentProcessId api
+	gpa "GetCurrentProcessId","kernel32.dll"
+	mov pGetCurrentProcessId,$RESULT
+	mov eip,pGetCurrentProcessId
+	find eip,#C3#
+	bp $RESULT
+	esto
+	bc eip
+	mov GetCurrentProcessIdResult,eax
+	mov eip,codecave
+	mov [eip],#B8#
+	mov [eip+1],GetCurrentProcessIdResult
+	opcode eip
+	mov bGetCurrentProcessId,$RESULT
+	
+	//Infor of GetCurrentProcess api
+	gpa "GetCurrentProcess","kernel32.dll"
+	mov pGetCurrentProcess,$RESULT
+	mov [eip],#B8FFFFFFFF#
+	opcode eip
+	mov bGetCurrentProcess,$RESULT
+	
+	mov eip,oep
+	mov eax,pEAX,
+	mov ebx,pEBX
+	mov ecx,pECX
+	mov edx,pEDX
+	mov edi,pEDI
+	mov esi,pESI
+	mov esp,pESP
+	mov ebp,pEBP
+	mov eip,pEIP
+	
+FPE:
+	sti
+	mov temp,[eip],1
+	cmp temp,50
+	je Break
+	jmp FPE
+	
+Break:
+	sto
+	bphws esp,"r"
+	esto
+ct1:
+	mov des,1
+	cmp eip,pVir
+	je VirtualProtect
+	cmp eip,pAlloc
+	je VirtualAlloc
+	bphwcall
+FPA:
+	sti
+	mov temp,[eip],1
+	cmp temp,60
+	je Break2
+	jmp FPA
+	
+Break2:
+	sto
+	bphws esp,"r"
+	esto
+ct2:	
+	mov des,2
+	cmp eip,pVir
+	je VirtualProtect
+	cmp eip,pAlloc
+	je VirtualAlloc
+	bphwcall
+FPF:
+	sti
+	mov temp,[eip],1
+	cmp temp,9C
+	je Break3
+	jmp FPF
+	
+Break3:
+	sto
+	bphws esp,"r"
+	esto
+ct3:
+	mov des,3
+	cmp eip,pVir
+	je VirtualProtect
+	cmp eip,pAlloc
+	je VirtualAlloc
+	bphwcall	
+FSB:
+	mov temp,[eip],1
+	cmp temp,0EB
+	je c1
+	cmp temp,9C
+	je FOEP
+	cmp temp,0E9
+	je OEPBreak
+	jmp FixSB
+c1:	
+	sto
+	jmp FSB
+	
+FixSB:
+	opcode eip
+	mov [codecave],[eip],$RESULT_2
+	add codecave,$RESULT_2
+	add counter4,$RESULT_2
+	log "Stolen code:"
+	log $RESULT
+	log $RESULT_1
+	jmp c1
+
+OEPBreak:	
+	sto
+	eval "<-- OEP ! NO STOLEN CODE & IAT FIXED SUCCESSFULLY !"
+	cmt eip,$RESULT
+	log $RESULT
+	eval "************************************************************************* \r\n- OEP : {eip} \r\n- NO STOLEN CODE \r\n- IAT FIXED SUCCESSFULLY \r\n      + THUNKS: {MESS} \r\n************************************************************************* \r\n Dump & Fix iat by ImportREC \r\n(Not use IAT AutoSearch ! Find it yourself, may be one of that thunk :D !)"
+	msg $RESULT
+	jmp End_script
+	
+FOEP:
+	mov des,4
+	sto
+	bphws esp,"r"
+	esto	
+ct4:
+	cmp eip,pAlloc
+	je VirtualAlloc
+	cmp eip,pVir
+	je FixIAT
+FPFD:
+	sto
+	mov temp,[eip],1
+	cmp temp,0E9
+	jne FPFD
+	sto
+	jmp FixOEP
+	
+FixOEP:
+	sub eip,counter4
+	mov temp1,[codecave2],counter4
+	mov [eip],temp1
+	eval "<-- OEP ! STOLEN OEP & IAT FIXED SUCCESSFULLY !"
+	cmp eip,$RESULT
+	log $RESULT
+	eval "************************************************************************* \r\n- OEP : {eip} \r\n- STOLEN CODE FIXED SUCCESSFULLY ! \r\n- IAT FIXED SUCCESSFULLY \r\n      + THUNKS: {MESS} \r\n************************************************************************* \r\n Dump & Fix iat by ImportREC \r\n(Not use IAT AutoSearch ! Find it yourself, may be one of that thunk :D !)"
+	msg $RESULT
+	jmp End_script
+	
+VirtualProtect:
+	cmp counter3,1
+	je FixIAT
+	cmp [esp+0C],1
+	je FixAccess
+	jmp Continue
+FixAccess:
+	inc counter3
+	mov [esp+0C],40
+Continue:	
+	esto
+	cmp des,1
+	je ct1
+	cmp des,2
+	je ct2
+	cmp des,3
+	je ct3
+
+VirtualAlloc:
+	inc counter2
+	cmp counter2,1
+	je Continue2
+	mov pImportMem,eax
+	bc eip
+Continue2:
+	esto
+	cmp des,1
+	je ct1
+	cmp des,2
+	je ct2
+	cmp des,3
+	je ct3
+	
+FixIAT:
+	bc eip
+	mov counter2,0
+	find pImportMem,#FF733450FF760CFF75F8E8#
+	cmp $RESULT,0
+	je Abort
+	find $RESULT,#E8#
+	cmp $RESULT,0
+	je Abort
+	mov bp1,$RESULT
+	bp bp1
+	find $RESULT,#FF4DFC# //DEC DWORD PTR SS:[EBP-4]
+	cmp $RESULT,0
+	je Abort
+	mov bp2,$RESULT
+	bp bp2
+ShiftF9:
+	esto
+	cmp eip,bp1
+	jne ShiftF9
+	mov pNumOfDLL,[ebp-4]
+	mov MESS,[esp+8]
+	eval "{MESS}"
+	mov MESS,$RESULT
+	jmp ct5
+FixIAT_Loop:
+	esto
+	mov iattop,[esp+8]
+	eval "{MESS}, {iattop}"
+	mov MESS,$RESULT
+ct5:
+	mov iattop,[esp+8]
+	mov iatend,iattop
+	mov temp,[esp+4]
+	inc counter2
+Small_Loop:	
+	add iatend,4
+	dec temp
+	cmp temp,-1
+	jne Small_Loop
+	
+	esto
+	mov oep,eip
+	mov pEAX,eax
+	mov pEBX,ebx
+	mov pECX,ecx
+	mov pEDX,edx
+	mov pEDI,edi
+	mov pESI,esi
+	mov pESP,esp
+	mov pEBP,ebp
+	jmp FixIAT_Start
+	
+FixLoop:
+	cmp counter2,pNumOfDLL
+	jne FixIAT_Loop
+	bc bp1
+	bc bp2
+	esto
+	cmp des,1
+	je ct1
+	cmp des,2
+	je ct2
+	cmp des,3
+	je ct3
+	cmp des,4
+	je ct4
+
+End_script:
+	bphwcall
+	bpmc
+	ret
+	
+Odbgver:
+	msg "Please use the ODbgscript 1.52 or above"
+	jmp End_script
+	
+Abort:
+	msg "Error Found !"
+	jmp End_script
+	
+////////////////////////////////////////////////////////////////////////////////
+//					FIX IAT by Computer_Angel
+//						Modify by Unregistered !
+///////////////////////////////////////////////////////////////////////////////
+FixIAT_Start:
+
+	mov flagCheckValidIAT,0
+	mov iat,iattop
+	
+	iatloop:
+	mov apiaddress,[iat]
+	mov eip,apiaddress
+	opcode eip
+	cmp $RESULT,bGetCurrentProcessId
+	je fill_GetCurrentProcessId
+
+	cmp $RESULT,bGetCurrentProcess
+	je fill_GetCurrentProcess
+
+	cmp $RESULT,bGetVersion
+	je fill_GetVersion
+
+	mov tmp,[eip],1
+	cmp tmp,0B8
+	je fill_GetCommandLineA
+
+	cmp tmp,0E8
+	je fill_lstrlenA
+
+	mov tmp,[apiaddress],2
+	cmp tmp,9C60
+	jne next
+	mov eip,apiaddress
+	findop eip,#E9????????#
+	cmp $RESULT,0
+	je abort
+	gci $RESULT,DESTINATION
+	find $RESULT,#837F0400#  // Is dll image base loaded ? if not maybe obsidium api
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	mov dllbase,[edi]
+	add dllbase,1000
+	cmp [edi+4],0
+	je obsidium_api
+	find eip,#0FB706#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	sti
+	cmp eax,1
+	je TYPE=1
+	cmp eax,4
+	je TYPE=4
+	cmp eax,80
+	je TYPE=80
+	cmp eax,40
+	je TYPE=40
+	cmp eax,2
+	je TYPE=2
+	log eax
+	log "Unknown type of import, may be Obsidium's API or NULL bytes (00's). Continue by filling with 00's byte"
+	je fill_with_00
+	
+	next:
+	add iat,4
+	cmp iat,iatend
+	ja end
+	jmp iatloop
+
+end:
+	mov eip,oep
+	mov eax,pEAX,
+	mov ebx,pEBX
+	mov ecx,pECX
+	mov edx,pEDX
+	mov edi,pEDI
+	mov esi,pESI
+	mov esp,pESP
+	mov ebp,pEBP
+	sto
+	jmp FixLoop
+	
+	abort:
+	msg "Error found!"
+	ret
+
+TYPE=1:
+	find eip,#A901000000#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+
+	looptraceTYPE=1:
+	sti
+	gci eip,TYPE
+	cmp $RESULT,60
+	jne looptraceTYPE=1
+
+	gci eip,DESTINATION
+	find $RESULT,#FF5354#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	sto
+	jmp filliat
+
+TYPE=2:
+	find eip,#A940000000#
+	cmp $RESULT,0
+	je abort
+	find $RESULT,#0FB74602#
+	cmp $RESULT,0
+	je abort
+	find $RESULT,#FF5354#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	sto
+	jmp filliat
+
+TYPE=4:
+	MSGYN "Import Type 4 detected !!! This type is not handle yet! Do you want to continue ?"
+	cmp $RESULT, 1
+	je next
+	pause
+	jmp abort
+
+TYPE=80:
+	gmemi eip,MEMORYBASE
+	find $RESULT,#8038CC#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	mov [eax+29],#EB#
+	find eax,#FF938?000000# //CALL DWORD PTR DS:[EBX+8?]
+	bp $RESULT
+	esto
+	bc eip
+	mov tmp,[esp]
+	mov [iat],tmp
+	jmp next
+
+TYPE=40:
+	find eip,#A940000000#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+
+	looptraceTYPE=40:
+	sti
+	gci eip,TYPE
+	cmp $RESULT,60
+	jne looptraceTYPE=40
+
+	gci eip,DESTINATION
+	find $RESULT,#8B4604#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	sti
+	cmp eax,0
+	je TYPE=40=0
+	cmp eax,1
+	je TYPE=40=1
+	cmp eax,2
+	je TYPE=40=2
+	cmp eax,3
+	je TYPE=40=3
+	cmp eax,4
+	je TYPE=40=4
+	jmp abort
+
+	TYPE=40=0:
+	find eip,#83F800#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+
+	looptraceTYPE=40=0:
+	sti
+	gci eip,TYPE
+	cmp $RESULT,60
+	jne looptraceTYPE=40=0
+
+	gci eip,DESTINATION
+	find $RESULT,#FF5318#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	mov tmp,[ebx+18]
+	find tmp,#FF5354#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	sto
+	jmp filliat
+
+TYPE=40=1:
+	MSGYN "Import Type 40-1 detected !!! This type is not handle yet! Do you want to continue ?"
+	cmp $RESULT,1
+	je next
+	pause
+	jmp abort
+
+TYPE=40=2:
+	mov eax,0
+	jmp filliat
+
+TYPE=40=3:
+	find eip,#83F803#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+
+	looptraceTYPE=40=3:
+	sti
+	gci eip,TYPE
+	cmp $RESULT,60
+	jne looptraceTYPE=40=3
+
+	gci eip,DESTINATION
+	find $RESULT,#FF5354#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	sto
+	jmp filliat
+
+TYPE=40=4:
+	find eip,#83F804#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+
+	looptraceTYPE=40=4:
+	sti
+	gci eip,TYPE
+	cmp $RESULT,60
+	jne looptraceTYPE=40=4
+
+	gci eip,DESTINATION
+	find $RESULT,#FF5354#
+	cmp $RESULT,0
+	je abort
+	bp $RESULT
+	esto
+	bc eip
+	sto
+	jmp filliat
+
+filliat:
+	gmemi eax,MEMORYBASE
+	mov [iat],eax
+	cmp dllbase,0
+	je next
+	cmp eax,0
+	je next
+	cmp $RESULT,dllbase
+	jne filliat_skip
+	// Check for valid iat
+	cmp flagCheckValidIAT,0
+	je next
+	ref iat
+	cmp $RESULT,0
+	je next
+	mov tmp,[$RESULT],2
+	cmp tmp,25FF // JMP DWORD [] --> valid
+	je next
+	mov tmp,$RESULT
+	eval "Warning : API Address at {iat} should be 0"
+	cmt tmp,$RESULT
+	eval "API Address at {iat} seem incorrect, Do you want to fill 0 it ?"
+	MSGYN $RESULT
+	cmp $RESULT,1
+	jne next
+	mov [iat],0
+	jmp next
+
+filliat_skip:
+	ref iat
+	cmp $RESULT,0
+	je next
+	mov tmp,$RESULT
+	eval "Warning : API Address is not match base {dllbase}"
+	cmt tmp,$RESULT
+	jmp next
+
+obsidium_api:
+	ref iat
+	cmp $RESULT,0
+	je next
+	mov tmp,$RESULT
+	eval "Warning : Obsidium SDK API"
+	cmt tmp,$RESULT
+	jmp next
+
+fill_GetCurrentProcessId:
+	mov [iat],pGetCurrentProcessId
+	jmp next
+
+fill_GetCurrentProcess:
+	mov [iat],pGetCurrentProcess
+	jmp next
+
+fill_GetVersion:
+	mov [iat],pGetVersion
+	jmp next
+
+fill_GetCommandLineA:
+	gpa "GetCommandLineA","kernel32.dll"
+	mov [iat],$RESULT
+	jmp next
+
+fill_lstrlenA:
+	gpa "lstrlenA","kernel32.dll"
+	mov [iat],$RESULT
+	jmp next
+
+fill_with_00:
+	mov [iat],0
+	jmp next
