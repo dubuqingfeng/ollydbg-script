@@ -1,0 +1,275 @@
+
+//////////////////////////////////////////////////
+//  FileName    :  Get.eXe.PE.Information.osc
+//  Comment     :  Get eXe PE Information
+//  Environment :  WinXP SP2,OllyDbg V1.10,OllyScript V0.92
+//  Author      :  fly
+//  WebSite     :  http://fly2004.163.cn.com
+//  Date        :  2005-10-24 15:30
+//////////////////////////////////////////////////
+#log
+dbh
+
+
+var Temp
+var ImageBase
+var PE
+var e_lfanew
+var PE_Signature
+var NumberOfSections
+var SizeOfOptionalHeader
+
+var ->>EP
+var EPRVA
+var EP
+var OEPRVA
+
+var ->>ExportTable
+var ExportTableRVA
+var ExportTableSize
+
+var ->>ImportTable
+var ImportTableRVA
+var ImportTableSize
+
+var ->>ResourceTable
+var ResourceTableRVA
+var ResourceTableSize
+
+var ->>RelocationTable
+var RelocationTableRVA
+var RelocationTableSize
+
+var ->>TlsTable
+var TlsTableRVA
+var TlsTableSize
+
+var SectionTable
+var SectionsTableSize
+var FirstSectionVA
+var FirstSectionRVA
+var FirstSectionSize
+var LastSectionVA
+var LastSectionRVA
+var LastSectionSize
+
+
+//Get ImageBase！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,eax
+exec
+push 0
+call GetModuleHandleA
+ende
+mov ImageBase,eax
+mov eax,Temp
+log ImageBase
+
+
+//Get e_lfanew！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,ImageBase
+add Temp,3C
+mov e_lfanew,[Temp]
+log e_lfanew
+
+
+//Get PE_Signature！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,e_lfanew
+add Temp,ImageBase
+mov PE_Signature,Temp
+log PE_Signature
+
+
+//Get NumberOfSections！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+add Temp,6
+mov NumberOfSections,[Temp]
+and NumberOfSections,0FFFF
+log NumberOfSections
+
+
+//Get SizeOfOptionalHeader！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,14
+mov SizeOfOptionalHeader,[Temp]
+and SizeOfOptionalHeader,0FFFF
+log SizeOfOptionalHeader
+
+
+//Get ->>EP！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,28
+mov ->>EP,Temp
+log ->>EP
+mov EPRVA,[->>EP]
+log EPRVA
+mov Temp,ImageBase
+add Temp,EPRVA
+mov EP,Temp
+log EP 
+
+
+//Get ExportTable！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,78
+mov ->>ExportTable,Temp
+log ->>ExportTable
+mov ExportTableRVA,[->>ExportTable]
+log ExportTableRVA
+add Temp,4
+mov ExportTableSize,[Temp]
+log ExportTableSize
+
+
+//Get ImportTable！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,80
+mov ->>ImportTable,Temp
+log ->>ImportTable
+mov ImportTableRVA,[->>ImportTable]
+log ImportTableRVA
+add Temp,4
+mov ImportTableSize,[Temp]
+log ImportTableSize
+
+
+//Get ResourceTable！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,88
+mov ->>ResourceTable,Temp
+log ->>ResourceTable
+mov ResourceTableRVA,[->>ResourceTable]
+log ResourceTableRVA
+add Temp,4
+mov ResourceTableSize,[Temp]
+log ResourceTableSize
+
+
+//Get RelocationTable！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,A0
+mov ->>RelocationTable,Temp
+log ->>RelocationTable
+mov RelocationTableRVA,[->>RelocationTable]
+log RelocationTableRVA
+add Temp,4
+mov RelocationTableSize,[Temp]
+log RelocationTableSize
+
+
+//Get TlsTable！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,C0
+mov ->>TlsTable,Temp
+log ->>TlsTable
+mov TlsTableRVA,[->>TlsTable]
+log TlsTableRVA
+add Temp,4
+mov TlsTableSize,[Temp]
+log TlsTableSize
+
+
+//Get SectionTable！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,PE_Signature
+add Temp,SizeOfOptionalHeader
+add Temp,18
+mov SectionTable,Temp
+log SectionTable
+
+
+//Get FirstSectionInformation！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,SectionTable
+add Temp,C 
+mov FirstSectionRVA,[Temp]
+log FirstSectionRVA
+sub Temp,4
+mov FirstSectionSize,[Temp]
+log FirstSectionSize
+mov Temp,FirstSectionRVA
+add Temp,ImageBase
+mov FirstSectionVA,Temp
+log FirstSectionVA
+
+
+//Get LastSectionInformation！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+mov Temp,eax
+mov eax,NumberOfSections
+exec
+push edx
+mov edx,28
+mul edx
+pop edx
+ende
+mov SectionsTableSize,eax
+log SectionsTableSize
+mov eax,Temp
+
+mov Temp,SectionTable
+add Temp,SectionsTableSize
+sub Temp,1C
+mov LastSectionRVA,[Temp]
+log LastSectionRVA
+mov LastSectionVA,LastSectionRVA
+add LastSectionVA,ImageBase
+log LastSectionVA
+
+sub Temp,4
+mov LastSectionSize,[Temp]
+log LastSectionSize
+
+
+//Game Over！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+
+log ImageBase
+log e_lfanew
+log PE_Signature
+log NumberOfSections
+log SizeOfOptionalHeader
+log ->>EP
+log EPRVA
+log EP 
+
+log ->>ExportTable
+log ExportTableRVA
+log ExportTableSize
+
+log ->>ImportTable
+log ImportTableRVA
+log ImportTableSize
+
+log ->>ResourceTable
+log ResourceTableRVA
+log ResourceTableSize
+
+log ->>RelocationTable
+log RelocationTableRVA
+log RelocationTableSize
+
+log ->>TlsTable
+log TlsTableRVA
+log TlsTableSize
+
+log SectionTable
+log FirstSectionRVA
+log FirstSectionSize
+log FirstSectionVA
+log LastSectionRVA
+log LastSectionVA
+log LastSectionSize
+
+
+MSG "OOO   Game Over.  Plz View  -->  Log   OOO   "
+ret

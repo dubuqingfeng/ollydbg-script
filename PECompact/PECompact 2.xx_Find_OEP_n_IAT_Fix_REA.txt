@@ -1,0 +1,69 @@
+/* 
+Script written by Computer Angel 26/May/2009
+base on phongvucba(REAOnline.net) fixing IAT method using magic JMP
+
+Usage:
++ Run script at PECompact Entrypoint with debugger hide plugins
+
+History:
++ 26/May/2009: Draft version
+*/
+
+BC
+BPHWC
+mov tmp,[eip],1
+cmp tmp,B8
+jne error
+mov saveaddr0,[eip+1],4
+
+find_OEP_jmp:
+findmem #FFE0#,saveaddr0
+cmp $RESULT,0
+je error
+mov jmp_EAX,$RESULT
+
+find_alloc:
+gpa "VirtualAlloc", "kernel32.dll"
+bp $RESULT
+esto
+bc eip
+rtr
+mov save_alloc,eax
+
+hook_GetModule:
+gpa "GetModuleHandleA", "kernel32.dll"
+bp $RESULT
+bpgoto $RESULT, find_magic
+esto
+
+find_magic:
+mov find_addr,[esp],4
+gmemi find_addr,MEMORYBASE
+cmp $RESULT,save_alloc
+jne find_next
+findmem #FFE0558BEC83C4FC#,save_alloc
+cmp $RESULT,0
+je find_next
+mov find_addr2,$RESULT
+findmem #75??33C0#, find_addr2
+cmp $RESULT,0
+je find_next
+mov magic_addr,$RESULT
+mov [magic_addr],EB,1
+bc eip
+jmp to_OEP
+
+find_next:
+bc eip
+
+to_OEP:
+bp jmp_EAX
+esto
+bc eip
+sti
+cmt eip,"OEP found by Computer Angel, REATeam"
+ret
+
+error:
+msg "Error!"
+ret

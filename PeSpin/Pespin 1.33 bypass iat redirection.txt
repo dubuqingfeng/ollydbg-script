@@ -1,0 +1,90 @@
+//only for PESpin v1.33
+//break on oep and run this script
+
+var option
+var shell
+var addr
+var first
+var isenable
+
+gmemi eip, MEMORYBASE
+mov shell, $RESULT
+
+mov option, shell
+add option, 3887
+add shell, 340
+
+mov isenable, 0
+
+bpmc
+bphwc
+bc
+
+HRBreak:
+sti
+cmp [eip+1], 00000000
+jne HRBreak
+mov first, esp
+
+bprm option, 1
+esto
+bpmc
+cmp eip, shell
+jne err
+sti
+cmp [option], 0, 1
+je next
+mov [option], 0, 1
+sub shell, 340
+inc isenable
+
+next:
+gpa "CreateFileA", "kernel32.dll"
+cmp $RESULT, 0
+je err
+mov addr, $RESULT
+opcode addr
+add addr, $RESULT_2
+bp addr
+esto
+bc addr
+mov addr, 0
+
+gpa "LoadLibraryA", "kernel32.dll"
+cmp $RESULT, 0
+je err
+mov addr, $RESULT
+opcode addr
+add addr, $RESULT_2
+bp addr
+esto
+bc addr
+cmp isenable, 0
+je APIdisable
+
+mov addr, 19de
+add addr, shell
+bphws addr, "x"
+bphws first, "r"
+
+loop:
+esto
+cmp eip, addr
+jne err
+cmp [edi-1], C1, 1
+jb loop
+cmp [edi-1], FA, 1
+jg loop
+sub [edi-1], 80
+jmp loop
+
+APIdisable:
+bphws first, "r"
+esto
+log "This target does not protect with API Redirection"
+
+err:
+bpmc
+bphwc
+bc
+ret

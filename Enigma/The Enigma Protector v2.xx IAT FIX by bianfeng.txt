@@ -1,0 +1,127 @@
+///Enigma Protector V2.xx OEP Finder + IAT Fixer
+//                by bianfeng
+//http://www.52pojie.cn/forum.php?mod=viewthread&tid=92425&extra=page%3D3%26filter%3Dtypeid%26typeid%3D68
+////////////////////////////////////////
+
+
+VAR Temp
+VAR Var1
+VAR Var2
+VAR Var3
+VAR Var4
+VAR CodeBase
+VAR CodeSize
+VAR IAT
+VAR Mem
+VAR VirtualQuery
+
+
+//初始化
+BPHWCALL
+BPMC
+GMI eip,MODULEBASE
+MOV CodeBase,$RESULT
+ADD CodeBase,1000
+GMI eip,CODESIZE
+MOV CodeSize,$RESULT
+
+
+GPA "VirtualProtectEx","kernel32.dll"
+MOV Var4,$RESULT
+
+GPA "VirtualQuery","kernel32.dll"
+MOV VirtualQuery,$RESULT
+
+GPA "VirtualAlloc","kernel32.dll"
+Bp  $RESULT
+ERUN
+ERUN
+BC $RESULT
+
+//Patch The Enigma Protector指定的加密函数
+FINDMEM #89431083C31C4E75B75F5E5BC3#
+CMP $RESULT,0
+JE  End 
+ASM $RESULT,"MOV DWORD PTR DS:[EBX+14],EAX"
+
+//反汇编引擎Return下硬件断点
+FINDMEM #83BC243003000000740233C081C4380300005BC3#
+MOV Temp,$RESULT
+ADD Temp,13 
+BPHWS Temp,"x"
+FINDMEM #C602824633C08A062DE00000008901BF020000008BC75F5E5B5DC20C00#
+MOV Temp,$RESULT
+ADD Temp,1a 
+BPHWS Temp,"x"
+BP  Var4
+
+Lab2: 
+CMP eip,Var4      //程序是否停在VirtualProtectEx
+JE  Lab3
+XOR eax,eax 
+ERUN
+JMP Lab2
+
+
+//反反内存断点
+Lab3: 
+BPHWCALL
+BPRM CodeBase,CodeSize 
+
+ASM VirtualQuery,"RETN C" 
+
+//到达OEP 
+JMP Lab9
+Lab10:
+MOV  Temp,[esp+8]
+SUB  Temp,1000
+MOV  [esp+8],Temp
+MOV  [esp+c],1000
+Lab8:
+CMP [esp+8],CodeBase,4
+JE  Lab10  
+ERUN
+Lab9:
+CMP eip,Var4 
+JE  Lab8
+MSG "到达OEP或FOEP,偷取了入口的请补上虚拟机运行时需要的区段"
+BPMC
+BC Var4
+//恢复
+ASM  VirtualQuery,"MOV EDI,EDI"
+ADD  VirtualQuery,2
+ASM  VirtualQuery,"PUSH EBP"
+
+
+Lab4:  
+ASK "IAT起始地址:"
+MOV IAT,$RESULT
+
+//修复IAT
+Lab5:
+//PAUSE
+MOV Temp,[IAT],4 
+CMP [Temp],68,1
+JNE C
+CMP [Temp+5],3481,2
+JNE  B
+MOV Var1,[Temp+1],4
+MOV Var2,[Temp+8],4
+XOR Var1,Var2
+MOV [IAT],Var1
+JMP C 
+B:
+CMP [Temp+5],c3,1
+JNE C
+MOV Temp,[Temp+1],4
+MOV [IAT],Temp,4
+C:
+ADD IAT,4
+CMP [IAT],0
+JNE Lab5
+ADD IAT,4
+CMP [IAT],0
+JNE Lab5
+
+End:
+ret
