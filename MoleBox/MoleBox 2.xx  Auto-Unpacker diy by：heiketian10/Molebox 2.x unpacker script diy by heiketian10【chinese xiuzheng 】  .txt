@@ -1,0 +1,209 @@
+//------------------------------------------------------------------------//
+// this script is only for some version ,so you should be aware of this ; //
+//                                                                        //
+//                 script by heiketian10                                  //
+//                                                                        //
+//                      2010.12.17                                        //
+//                                                                        //
+//  增加了自动寻找解包入口的功能，脚本拼接了molbox的解包script，感谢原作者//
+//                                                                        //
+//  测试在win7 xp sp2 跑9.7 和10.4的飓风都可以解包。希望大家多提意见      //
+//-------------------------------------------------------------------------
+
+VAR temp                    //定义这几个变量在后面可以用；
+VAR tmp
+VAR address 
+VAR end  
+VAR espstart
+VAR if
+
+BPHWCALL                                       // clear hard breakpoint     
+MOV temp,eip
+FIND temp,#39DD7301C35F#                       //找到关键的call   
+MOV address ,$RESULT
+CMP address ,0
+JNZ ok  
+jmp kkkk  
+MSG  "CAN'T FIND THE STRINGS,PERHAPS,IT'S NOT THE PROPER VERSION."
+RET
+
+ok:
+ADD  address ,6                             //在为关键call处下断点做准备
+BP address                                  //在关键call下f2断点
+ERUN                                        //shift + f9
+STI                                         //f7
+BC address                                  //qing chu duan dian !
+RTR 
+STI 
+jmp kkkk
+
+
+
+
+kkkk:
+MOV tmp,eip
+FIND tmp,#60E84F000000??????#              //找到esp定律关键的部分
+MOV end,$RESULT
+BP end                                     //运行到这个关键的地方
+ERUN
+BC end                                     //清除断点
+STI    
+MOV espstart,esp                           
+BPHWS espstart,"r"                         //在esp处下读内存断点
+
+panduan:
+                        
+ERUN
+MOV if,[eip]
+CMP if,D0FF5858
+jnz panduan
+
+BPHWC  espstart                             //清除这个断点
+MSG  "点击确定继续运行提取Molbox 封装的内容，请记住，点击确定!"
+jmp molbox
+
+
+// Molebox 2.x Unpacker / OEP Finder Script v1.10     //  这个是拼接的molbox的那个提取脚本，感谢作者：
+// by Cherry
+//
+// Needed tools: OllyDbg with ODbgScript-Plugin
+//
+// This script will unpack all files in a Molebox 2.x packed file which are visible to the packed program into the subfolder "!UNPACKED!".
+// Unfortunately, in many cases the main executable is not included.
+//
+// 1. Copy "mbunpack.dll" and "filelen.exe" into the executable's folder.
+// 2. Open the moleboxed executable in Olly.
+// 3. Make sure EIP is at the entry point of Molebox stub, no breakpoints are set and all exceptions are ignored!!!
+// 4. Run this script.
+// 5. OEP address will be displayed and you will be asked if you want to unpack it or start exploring the file at OEP.
+// 6. If you start unpacking, you can follow the progress in the console window which will open. Be patient.
+//
+// Known bug: All folders in the root directory will be recreated in the "!UNPACKED!" subfolder, ignoring whether it existed in the archive or not.
+//
+// Have fun!
+// Greetings, Cherry
+
+
+
+
+molbox:
+
+var temp
+
+mov temp, eip
+sub temp, 440
+find temp, #615858FFD0#
+
+cmp $RESULT, 0
+jne okaya
+
+sub temp, 0BC0
+find temp, #615858FFD0#
+
+cmp $RESULT, 0
+jne okaya
+
+sub temp, 1000
+find temp, #615858FFD0#
+
+cmp $RESULT, 0
+jne okaya
+
+sub temp, 1000
+find temp, #615858FFD0#
+
+cmp $RESULT, 0
+je failed
+
+okaya:
+mov temp, $RESULT
+add temp, 3
+bphws temp, "x"
+run
+bphwc temp
+sti
+
+itoa eip
+msgyn "OEP is at VA " + $RESULT + "! Unpack?"
+cmp $RESULT, 0
+jne unpack
+an 400000
+ret
+
+unpack:
+
+var mname
+mov mname, eip
+mov temp, eip
+mov [temp], "mbunpack.dll"
+add temp, 0C
+mov [temp], #00#
+inc temp
+
+var fname
+mov fname, temp
+mov [temp], "MBUNPACK_ALL@0"
+add temp, 0E
+mov [temp], #00#
+inc temp
+
+var uep
+mov uep, temp
+mov [temp], #68#
+inc temp
+mov [temp], mname
+add temp, 4
+
+asm temp, "call eax"
+add temp, 2
+asm temp, "call ebx"
+add temp, 2
+asm temp, "ret"
+
+mov edx, mname
+mov ebx, fname
+
+exec
+	push edx
+	call LoadLibraryA
+	mov edx, eax
+	
+	push ebx
+	push edx
+	call GetProcAddress
+	mov ebx, eax
+	
+	push edx
+	call FreeLibrary
+ende
+
+cmp ebx, 100000
+jb nolib
+
+mov eip, uep
+
+findmem #558BEC6A00FF7508E8????????59595DC20400#
+mov eax, $RESULT
+cmp eax, 0
+jne okayb
+
+findmem #558BEC8B45086A0050E8????????83C4085DC20400#
+mov eax, $RESULT
+cmp eax, 0
+je failed
+
+okayb:
+mov temp, uep
+add temp, 9
+bphws temp, "x"
+run
+bphwc temp
+ret 
+
+failed:
+msg "Cannot unpack this file. Make sure EIP is at the EP of Molebox stub, no breakpoints are set and all exceptions are ignored! If everything is fine: Maybe the file is not packed with Molebox 2.x or it's packed with another packer too?"
+ret
+
+nolib:
+msg "Loading mbunpack.dll failed! Make sure it's in the executable's directory, as well as filelen.exe!"
+ret

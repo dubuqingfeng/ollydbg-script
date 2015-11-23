@@ -1,0 +1,50 @@
+/*
+FileName :   Detect all versions of ThemIDA/WinLicense (dll supported)    
+Features :   If your target is packed with Themida/WinLicense,this script can help you detect it's version. 
+Environment :   WinXP,ODV1.10,OllyScript V1.65          
+Support     :   Themida all versions (1.1.0.0-2.0.5.0)
+Thanks    :   What/goldsun/stupidass/KooJiSung/Playboysen                
+Author    :   Kissy(LCG)                                     
+Date        :   2008-12-26  
+*/
+
+var temp
+var verStr
+var search
+var search1
+var search2
+
+
+Ask   "themida code base"
+mov search,$RESULT
+bc                               //先清除一下断点
+gpa "ZwContinue", "ntdll.dll"    //bp ZwContinue
+bp $RESULT
+esto
+esto
+bc
+find search,#457863657074696F6E20496E666F726D6174696F6E#
+cmp $RESULT,0
+je exit
+sub $RESULT,80
+mov search1,$RESULT
+find search1,#000000000000000000000000000000000000#
+sub $RESULT,5
+mov search2,$RESULT
+find search2,#00#,1
+cmp $RESULT,0
+je version
+add search2,1
+find search2,#00#,1
+cmp $RESULT,0
+je version
+add search2,1
+
+version:
+mov verStr,"Themida/winlicense version: "
+READSTR [search2],5
+add verStr,$RESULT
+msg verStr
+
+exit:
+ret

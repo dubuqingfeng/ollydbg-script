@@ -1,6 +1,6 @@
 ////////////////////////Château-Saint-Martin/////////////////////////////////////////////////
 //                                                                 /////////////////////////
-//  FileName    :  Armadillo v3.x-v5.x Finger-Print-Patcher 0.1    ////////////////////////
+//  FileName    :  Armadillo v3.x-v5.x Finger-Print-Patcher 0.2    ////////////////////////
 //  Features    :                                                  ///////////////////////
 //                 This script can store the new HWID information  //////////////////////
 //                 permanently on your system.Unpacking of HWID    /////////////////////
@@ -21,13 +21,13 @@
 //                                                                 //////
 //  Environment :  WinXP,OllyDbg V1.10,OllyScript V1.62.3          /////
 //  Author      :  LCF-AT                                          ////
-//  Date        :  2008-03-20                                      ///
+//  Date        :  2008-04-05                                      ///
 //                                                                 //
 //                                                                // 
 ///////////////WILLST DU SPAREN,DANN MUßT DU SPAREN!///////////////  
 
 
-var Armadillo_v3.x_v5.x_Finger_Print_Patcher_0.1
+var Armadillo_v3.x_v5.x_Finger_Print_Patcher_0.2
 var 
 var gRn
 var 
@@ -38,6 +38,7 @@ var
 var LCF_AT
 var 
 var 
+var OutputDebugStringA
 var OpenMutexA
 var GetSystemTime
 var VirtualProtect
@@ -56,9 +57,10 @@ var T1
 var T2
 var T3
 var DFG
+var mers
 
 dbh
-
+mov mers, 0
 
 mov $RESULT, 0
 ask "Enter 1 for Method 1 / or 2 for Method 2 / or 3 for Method 3!"
@@ -85,7 +87,14 @@ verlo:
 
 mov Reger, 65E6C08A
 
+gpa "OutputDebugStringA", "kernel32.dll"
+mov OutputDebugStringA, $RESULT
+mov [OutputDebugStringA], #C20400#
+
 gpa "OpenMutexA", "kernel32.dll"
+mov OpenMutexA, $RESULT
+
+find OpenMutexA, #C20C00#
 mov OpenMutexA, $RESULT
 
 gpa "GetSystemTime", "kernel32.dll"
@@ -98,31 +107,74 @@ mov GetSystemTime, $RESULT
 gpa "VirtualProtect", "kernel32.dll"
 mov VirtualProtect, $RESULT
 
+find VirtualProtect, #C21000#
+mov VirtualProtect, $RESULT
 
 
 bphws OpenMutexA, "x"
+bp OpenMutexA
 esto
-exec
-PUSH EDX
-PUSH 0
-PUSH 0
-CALL CreateMutexA
-JMP OpenMutexA
-ende
 sti
-rtu
-mov eax,1
-bphwc OpenMutexA
+mov eax, 1
 
+
+bphws VirtualProtect, "x"
+bp VirtualProtect
+
+esto
+
+cmp eip, VirtualProtect
+je malsa
+
+
+
+malsa2:
+bphwc VirtualProtect
+bc VirtualProtect
+
+
+sti
+mov eax, 1
+
+bphwc OpenMutexA
+bc OpenMutexA
+jmp malsa5
+
+
+malsa:
+var mers
+inc mers
+jmp malsa6
+
+malsa5:
+sti
+mov eax, 1
+
+malsa6:
+
+bphwc OpenMutexA
+bc OpenMutexA
+bphwc VirtualProtect
+bc VirtualProtect
 
 cmp DFG, 1
 je hota
 cmp DFG, 2
 je hota
 
+
+cmp mers, 1
+je malsa3
+
+
 bphws VirtualProtect, "x"
+bp VirtualProtect
 esto
+bc VirtualProtect
 bphwc VirtualProtect
+
+malsa3:
+
 
 mov T1, [esp+4]
 
@@ -130,9 +182,13 @@ jmp TTTT
 
 hota:
 
+
 bphws GetSystemTime, "x"
+bp GetSystemTime
 esto
+bc GetSystemTime
 bphwc GetSystemTime
+
 sti
 jmp Mazo
 ///////////////////////////////////////////////////

@@ -1,0 +1,281 @@
+var va
+var sz 
+var szwr
+var base
+var pnwr
+var palloc
+var espval
+var chk_oep
+var codebase
+var count2
+var szcode
+var stoep
+var codepr
+var sf1
+var sf2
+var sf3
+var sf4
+var ifunc
+var chw
+var chkf
+var chkfz
+var oep
+var f1
+var f2
+var f3
+var f4
+var fjmp
+var fnen
+var adrlstr
+var thlstrl
+var cint
+var peadr
+var const
+
+GMEMI eip, MEMORYBASE
+mov codepr,$RESULT
+mov count,0
+mov count2,1
+GMI eip, CODEBASE
+mov codebase,$RESULT
+GMI eip, CODESIZE
+mov szcode,$RESULT
+mov espval,esp-4
+gpa "VirtualAlloc","kernel32.dll"
+find $RESULT,#C21000#
+mov va,$RESULT
+bp va
+erun
+erun
+mov palloc,eax
+erun
+bc va
+jmp spat
+oepsrh:
+gpa "VirtualAlloc","kernel32.dll" 
+find $RESULT,#C21000# 
+mov va,$RESULT
+bp va
+erun
+bc va
+spat:
+find palloc,#66A92000EB0?#
+
+
+cmp $RESULT,0
+je oepsrh
+
+mov f1,$RESULT
+mov intad,[$RESULT+5],1
+add intad,C
+bp f1
+GMEMI f1, MEMORYBASE
+mov f3,$RESULT
+gpa "CreateFileA","kernel32.dll"
+mov otb,$RESULT
+rev otb
+mov otb,$RESULT
+eval "#{otb}#"
+find f3,$RESULT
+mov otb,$RESULT
+find f3,#E8000000005DEB#
+
+cmp $RESULT,0
+je quit
+mov ebpi,$RESULT+5
+find f3,#FFA485??????00#
+cmp $RESULT,0
+je quit
+
+mov const,[$RESULT+3]
+
+find ebpi,#81ED??????00#
+cmp $RESULT,0
+je quit
+
+sub ebpi,[$RESULT+2]
+find f3,#00014000#
+mov peadr,$RESULT
+find codepr, #FF55FCEB0?#
+cmp $RESULT, 0
+je n
+mov f2,$RESULT+3
+find codepr,#5151515250FF5354EB#
+cmp $RESULT,0
+je n
+mov codepr,$RESULT+8
+find f1, #FF501850#
+cmp $RESULT, 0
+je n
+mov sf1,$RESULT
+find sf1, #FF5018EB1C#
+cmp $RESULT, 0
+je n
+mov sf2,$RESULT
+find sf2, #FF5018EB0D#
+cmp $RESULT, 0
+je n
+mov sf3,$RESULT
+find sf3, #FF5018C603#
+cmp $RESULT, 0
+je n
+mov sf4,$RESULT
+bp sf1
+bp sf2
+bp sf3
+bp sf4
+bp f2
+mov [sf4+1E],#9090#
+lf:
+erun
+cmp eip,f1
+je imppr
+
+cmp eip,sf1
+je resf
+cmp eip,sf2
+je resf
+cmp eip,sf3
+je resf
+cmp eip,sf4
+je resf
+nocpf:
+cmp eip,f2
+je l2
+
+
+l2:
+bc sf1
+bc sf2
+bc sf3
+bc sf4
+bc f1
+bc f2
+
+find codepr,#313731770431770831770C4683C71083EB1075E033C0405B5F5E5DC21000#
+cmp $RESULT,0
+je quit
+mov chk_oep,$RESULT+1B
+bp chk_oep
+loop:
+
+erun
+mov chw,[esp+C]
+mov f2,[chw]
+cmp f2,E8
+jne loop
+
+find chw,#61EB0?#
+cmp $RESULT,0
+je quit
+mov oep,$RESULT
+mov intad1,[$RESULT+2],1
+add intad1,4
+add oep,intad1
+bp oep
+erun
+bc eip
+sti
+sti
+sti
+mov [thlstrl],adrlstr
+cmt eip,"OEP Faund Import fixed!"
+bpmc
+quit:
+ret
+
+resf:
+sti
+bp codepr
+erun
+mov ifunc,edi
+mov [ifunc],eax
+
+bc  codepr
+jmp lf
+
+n:
+MSG "not 1.4 version"
+jmp quit
+
+imppr:
+mov chkfz,[esi+4]
+mov chkf,ax
+cmp chkf,8
+je pr8
+cmp chkf,80
+je pr80
+
+cmp chkf,40
+je pr40
+cmp chkfz,0
+je lf
+add eip,intad
+
+jmp lf
+pr80:
+mov calc,ebpi
+mov ifunc,edi
+mov cint,chkfz
+mul cint,4
+add cint,const 
+
+add cint,calc
+add calc,[cint]
+mov cint,[calc+2]
+add cint,peadr
+mov cint,[cint]
+mov calc,cint+E
+find calc,#FFB6#
+
+mov cint,[$RESULT+2]
+add calc,cint
+mov fnen,[calc]
+mov [ifunc],fnen
+jmp lf
+
+pr40:
+mov ifunc,edi
+cmp chkfz,0
+jne k1
+gpa "VirtualQuery","kernel32.dll"
+mov [ifunc],$RESULT
+jmp lf
+k1:
+cmp chkfz,1
+jne k2
+
+/*
+gpa "","kernel32.dll"
+mov [ifunc],$RESULT
+*/
+jmp lf
+k2:
+cmp chkfz,2
+jne k3
+gpa "FreeResource","kernel32.dll"
+mov [ifunc],$RESULT
+jmp lf
+k3:
+cmp chkfz,4
+jne k4
+gpa "ExitProcess","kernel32.dll"
+mov [ifunc],$RESULT
+jmp lf
+k4:
+cmp chkfz,3
+jne k5
+gpa "ExitThread","kernel32.dll"
+mov [ifunc],$RESULT
+jmp lf
+k5:
+jmp lf
+pr8:
+mov ifunc,edi
+cmp chkfz,4
+jne lf
+
+gpa "lstrlen","kernel32.dll"
+mov adrlstr,$RESULT	
+mov thlstrl,edi
+jmp lf

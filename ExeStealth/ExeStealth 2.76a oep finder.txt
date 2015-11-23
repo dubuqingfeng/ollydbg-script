@@ -1,0 +1,27 @@
+start:
+#log
+sto
+sto
+bphws esp, "r"
+run
+bphwc
+find eip, #50#
+cmp $RESULT,0
+je _error
+gmi eip,CODEBASE
+mov cbase,$RESULT
+log cbase
+gmi eip,CODESIZE
+mov csize,$RESULT
+log csize
+bprm cbase,csize 
+run
+cmt eip, "This is the OEP! "
+msg "Dumped and fix IAT now! Thanx for using my Script...!"
+ret
+
+
+_error:
+msg "ERRORR!!!"
+ret
+end:

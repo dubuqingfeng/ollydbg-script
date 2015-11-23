@@ -1,0 +1,1217 @@
+/*
+Script written by VolX
+version  : v0.92
+Date     : 14-Mar-2009
+Debugging options : Tick all items in Exceptions page.
+Test Environment : OllyDbg 1.1, StrongOD 2.3, ODBGScript 1.65 under WINXP
+Thanks : Oleh Yuschuk - author of OllyDbg
+         SHaG - author of OllyScript
+         Epsylon3 - author of ODbgScript
+         hnhuqiong  - author of chinese ODbgScript
+*/
+//support Enigma Protect 1.55, 1.60, 1.61
+
+var tmp1
+var tmp2
+var tmp3
+var tmp4
+var tmp5
+var tmp6
+var tmp7
+var ori1
+var ori2
+var ori3
+var imgbase
+var imgbasefromdisk
+var 1stsecbase
+var 1stsecsize
+var signVA
+var sizeofimg
+var dllimgbase
+var freeloc
+var OEP
+var OEPscaddr
+var bkp1
+var crcfunc
+var patch1
+var patch2
+var patch3
+var patch4
+
+//for IAT fixing
+var iatsecbase
+var iatcrypted
+var iat_start
+var iat_end
+var iatsize
+var APIcount
+var IATTable
+
+//for dll
+var reloc_rva
+var reloc_size
+var isdll
+
+//stolen code
+var stfreeloc
+var vm@OEPdatatable
+var tableA
+var fakeOEP
+var vmdatatable
+var v160
+
+
+cmp $VERSION, "1.64"
+jb odbgver
+dbh
+BPHWCALL
+GMI eip, MODULEBASE
+mov imgbase, $RESULT
+log imgbase
+mov tmp1, [imgbase+3C]
+add tmp1, imgbase
+mov signVA, tmp1
+mov imgbasefromdisk, [signVA+34]
+mov sizeofimg, [signVA+50]
+mov 1stsecsize, [signVA+100]
+log 1stsecsize
+mov 1stsecbase, [signVA+104]
+add 1stsecbase, imgbase
+log 1stsecbase
+
+//check if its an exe or dll
+cmp imgbasefromdisk, imgbase
+je lab1
+mov isdll, 1
+jmp lab2
+
+lab1:
+GPI EXEFILENAME
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+GPI PROCESSNAME
+mov tmp2, $RESULT
+GPI CURRENTDIR
+mov tmp3, $RESULT
+eval "{tmp3}{tmp2}.exe"
+mov tmp4, $RESULT
+eval "{tmp3}{tmp2}.dll"
+mov tmp5, $RESULT
+scmpi tmp1, tmp4
+je lab2
+scmpi tmp1, tmp5
+jne error
+mov isdll, 1
+
+lab2:
+gpa "QueryPerformanceCounter", "kernel32.dll"
+mov tmp1, $RESULT
+bphws tmp1, "x" 
+eob lab3
+eoe lab3
+run
+
+lab3:
+cmp eip, tmp1
+je lab4
+esto
+
+lab4:
+cob
+coe
+BPHWC tmp1
+rtr
+sti
+sti
+mov !ZF, 0
+sti
+sti
+mov eax, 1
+sti
+
+GMEMI eip, MEMORYBASE
+mov dllimgbase, $RESULT
+cmp dllimgbase, 0
+je error
+log dllimgbase
+find dllimgbase, #C6430201#  //search "mov [ebx+2], 1"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+add tmp1, 4
+GCI tmp1, DESTINATION
+mov tmp2, $RESULT
+find tmp2, #5?E8??000000#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+add tmp1, 1
+GCI tmp1, DESTINATION
+mov crcfunc, $RESULT
+find dllimgbase, #C6430601#  //search "mov [ebx+6], 1"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+mov bkp1, tmp1
+bp bkp1
+call godest
+cob
+coe
+bc bkp1
+sti
+mov tmp5, eip
+add tmp5, 5      //end point
+GCI eip, DESTINATION
+mov tmp4, $RESULT
+find tmp4, #8B5204890A#  //Search "MOV EDX,[EDX+4]", "MOV [EDX],ECX"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+add tmp1, 3
+mov ori1, [tmp1]
+mov [tmp1], #9090#  //patch to avoid relocate API in Engima'dll
+bp tmp5
+run
+bc tmp5
+mov [tmp1], ori1, 2
+alloc 2000
+mov freeloc, $RESULT
+
+//01123009   C643 17 01       MOV BYTE PTR DS:[EBX+17],1
+//0112300D   33D2             XOR EDX,EDX
+//0112300F   B0 01            MOV AL,1
+
+//01123028   A1 A8C01301      MOV EAX,DWORD PTR DS:[113C0A8]
+//0112302D   80B8 5B0C0000 00 CMP BYTE PTR DS:[EAX+C5B],0
+//01123034   74 0F            JE SHORT notepad_.01123045
+//01123036   A1 18BC1301      MOV EAX,DWORD PTR DS:[113BC18]
+//0112303B   8038 00          CMP BYTE PTR DS:[EAX],0
+//0112303E   75 05            JNZ SHORT notepad_.01123045
+//01123040   E8 2784FDFF      CALL notepad_.010FB46C                   ; Registration Form
+
+find eip, #C643170133D2B001#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+find tmp1, #80B8????00000074??#
+mov tmp2, $RESULT
+add tmp2, 7
+mov bkp1, tmp2
+bp bkp1
+call godest
+bc bkp1
+cmp !ZF, 1
+je lab18
+sti
+sti
+sti
+cmp !ZF, 1
+je lab18
+//msg "Registration Form"
+msg "注册对话框"
+pause
+//加入对策 add your solution here
+
+lab18:
+//跳过启动密码 bypass startup password
+ 
+//010FCD6F   8B35 A8C01301    MOV ESI,DWORD PTR DS:[113C0A8]
+//010FCD75   80BE 6E200000 00 CMP BYTE PTR DS:[ESI+206E],0
+//010FCD7C   0F84 E9070000    JE notepad_.010FD56B   
+//010FCD82   80BE 70200000 00 CMP BYTE PTR DS:[ESI+2070],0
+//010FCD89   74 1A            JE SHORT notepad_.010FCDA5  
+
+find dllimgbase, #80BE????0000000F84????????80BE????000000741A#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+add tmp1, 7
+mov bkp1, tmp1  
+bp bkp1
+call godest
+bc bkp1
+mov !zf, 1
+
+lab20:
+find dllimgbase, #C6431E01#  //search "mov [ebx+1E], 1"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+mov tmp6, tmp1
+sub tmp1, 20
+find tmp1, #80B8????????007405#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+add tmp1, 7
+mov bkp1, tmp1
+bp bkp1
+call godest
+cob
+coe
+bc bkp1
+
+//004E9599   894C82 04        MOV DWORD PTR DS:[EDX+EAX*4+4],ECX
+//004E959D   83C3 04          ADD EBX,4
+//004E95A0   66:8B3B          MOV DI,WORD PTR DS:[EBX]
+//004E95A3   83C3 02          ADD EBX,2
+//004E95A6   66:85FF          TEST DI,DI
+//004E95A9   74 5E            JE SHORT splitter.004E9609
+
+find dllimgbase, #894C820483C304668B3B#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+mov ori1, [tmp1]
+mov [tmp1], #90909090#
+bphws tmp6, "x"
+mov !zf, 1    //by pass destroy kernel32.dll export table
+run
+BPHWCALL
+mov [tmp1], ori1
+
+//004EA174   894C82 04        MOV DWORD PTR DS:[EDX+EAX*4+4],ECX
+//004EA178   47               INC EDI
+//004EA179   FF4D D0          DEC DWORD PTR SS:[EBP-30]
+//004EA17C   0F85 CAFAFFFF    JNZ splitter.004E9C4C
+
+find dllimgbase, #894C820447# 
+mov patch1, $RESULT
+cmp patch1, 0
+je error
+mov ori1, [patch1]
+mov [patch1], #90909090#
+find patch1, #8BE55?C3#
+mov tmp2, $RESULT
+cmp tmp2, 0
+je error
+add tmp2, 3
+mov bkp1, tmp2
+bp bkp1
+call godest
+cob
+coe
+bc bkp1
+mov [patch1], ori1
+sti
+sti
+sti
+mov tmp1, eip
+add tmp1, 2
+GCI tmp1, DESTINATION
+mov tmp3, $RESULT
+find tmp3, #5?5?5?5?5?BD#, 10
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+mov tmp2, 0
+mov tmp2, [tmp1+6]
+mov IATTable, [tmp2]
+log IATTable
+mov APIcount, [IATTable-4]
+log APIcount
+mov tmp1, IATTable
+mov tmp5, 0        //count
+
+//find iatsecbase
+loop1:
+cmp tmp5, 2
+je lab31
+mov tmp2, [tmp1+8]
+mov tmp3, [tmp2]
+cmp tmp3, 0
+jne error
+mov tmp3, [tmp2+4]
+cmp tmp3, 0
+je loop1_2
+add tmp3, imgbase
+cmp iatsecbase, 0
+jne loop1_1
+GMEMI tmp3, MEMORYBASE
+mov iatsecbase, $RESULT
+add tmp5, 1
+jmp loop1_4
+
+loop1_1:
+GMEMI tmp3, MEMORYBASE
+mov tmp2, $RESULT
+cmp tmp2, iatsecbase
+jne error
+add tmp5, 1
+jmp loop1_4
+
+loop1_2:
+mov tmp3, [tmp2+8]
+cmp tmp3, 1
+je loop1_4
+cmp tmp3, 0
+jne error
+mov tmp3, [tmp2+0C]
+cmp tmp3, 0
+je error
+cmp iatsecbase, 0
+jne loop1_3
+add tmp3, imgbase
+mov tmp3, [tmp3]
+GMEMI tmp3, MEMORYBASE
+mov iatsecbase, $RESULT
+add tmp5, 1
+jmp loop1_4
+
+loop1_3:
+add tmp3, imgbase
+mov tmp3, [tmp3]
+GMEMI tmp3, MEMORYBASE
+mov tmp2, $RESULT
+cmp tmp2, iatsecbase
+jne error
+add tmp5, 1
+
+loop1_4:
+add tmp1, 0C
+jmp loop1
+
+lab31:
+log iatsecbase
+cmp !ZF, 1
+je lab32
+find eip, #EB05#, 20
+mov tmp5, $RESULT
+cmp tmp5, 0
+je error
+
+//004E99D7   8B0D A4F05200    MOV ECX,DWORD PTR DS:[52F0A4]
+//004E99DD   0311             ADD EDX,DWORD PTR DS:[ECX]
+//004E99DF   8902             MOV DWORD PTR DS:[EDX],EAX
+//004E99E1   46               INC ESI
+//004E99E2   4F               DEC EDI
+//004E99E3   75 99            JNZ SHORT splitter.004E997E
+
+find dllimgbase, #8B0D????????03118902#
+mov patch1, $RESULT
+cmp patch1, 0
+je error
+mov ori1, [patch1]
+mov ori2, [patch1+4]
+eval "jmp 0{freeloc}"
+asm patch1, $RESULT
+mov [patch1+5], #90#
+mov tmp1, freeloc
+mov [tmp1], ori1
+add tmp1, 4
+mov [tmp1], ori2
+mov tmp1, freeloc
+add tmp1, 6
+mov [tmp1], #03118B008B128902#
+mov tmp1, freeloc
+add tmp1, 0E
+mov tmp3, patch1
+add tmp3, A
+eval "jmp 0{tmp3}"
+asm tmp1, $RESULT
+mov tmp1, patch1
+sub tmp1, 30
+find tmp1, #E8????????EB22#
+mov tmp3, $RESULT
+cmp tmp3, 0
+je error
+GCI tmp3, DESTINATION
+mov tmp1, $RESULT
+
+//004E4DE9   A1 8C875400      MOV EAX,DWORD PTR DS:[54878C]
+//004E4DEE   E8 6572F9FF      CALL splitter.0047C058
+//004E4DF3   85C0             TEST EAX,EAX
+//004E4DF5   74 48            JE SHORT splitter.004E4E3F  -> jmp no stolen OEP
+//004E4DF7   4B               DEC EBX                     -> patch here
+//004E4DF8   74 0B            JE SHORT splitter.004E4E05
+//004E4DFA   4B               DEC EBX
+//004E4DFB   74 17            JE SHORT splitter.004E4E14
+//004E4DFD   4B               DEC EBX
+//004E4DFE   74 23            JE SHORT splitter.004E4E23
+//004E4E00   4B               DEC EBX
+//004E4E01   74 2F            JE SHORT splitter.004E4E32
+//004E4E03   EB 3A            JMP SHORT splitter.004E4E3F
+
+find tmp1, #74??4B74??4B74??4B74??4B74??EB3A#
+mov patch2, $RESULT
+cmp patch2, 0
+je error
+GCI patch2, DESTINATION
+mov tmp4, $RESULT         //end
+add patch2, 2
+mov ori3, [patch2+1]
+mov tmp1, freeloc
+add tmp1, 20
+eval "jmp 0{tmp1}"
+asm patch2, $RESULT
+mov tmp1, freeloc
+add tmp1, 20
+mov [tmp1], #6BC615C7C20000000083FB01741483FB02741583FB03741683FB047417E9000000008B741004EB108B741008EB0A8B74#
+add tmp1, 30
+mov [tmp1], #100CEB048B7410108B3F893EE900000000#
+mov tmp1, freeloc
+add tmp1, 23        //23
+mov tmp2, [patch2-0D]
+eval "mov edx, [0{tmp2}]"
+asm tmp1, $RESULT
+add tmp1, 1A        //3D
+eval "jmp 0{tmp4}"
+asm tmp1, $RESULT
+add tmp1, 1F        //5C
+eval "jmp 0{tmp4}"
+asm tmp1, $RESULT
+bp tmp5
+run
+bc tmp5
+mov [patch1], ori1
+mov [patch1+4], ori2
+mov [patch2], #4B#
+mov [patch2+1], ori3
+fill freeloc, 80, 00
+
+lab32:
+
+//005163EE   A1 A8F05200      MOV EAX,DWORD PTR DS:[52F0A8]
+//005163F3   83B8 A8000000 00 CMP DWORD PTR DS:[EAX+A8],0
+//005163FA   76 1E            JBE SHORT splitter.0051641A
+
+find eip, #83B8????????0076??#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+add tmp1, 7
+mov bkp1, tmp1
+bp bkp1
+call godest
+cob
+coe
+bc bkp1
+bc crcfunc
+cmp !ZF, 0
+je lab35
+mov tmp1, 0
+mov tmp1, [eip+2], 1
+cmp tmp1, 8B
+jne error
+mov tmp1, [eip+4]
+mov tmp1, [tmp1]
+mov tmp2, [tmp1+10C]
+add tmp2, imgbase
+mov OEP, tmp2
+log OEP
+bphws tmp2, "x" 
+eob lab33
+eoe lab33
+run
+
+lab33:
+cmp eip, OEP
+je lab34
+esto
+
+lab34:
+BPHWCALL
+jmp lab57
+
+lab35:
+find dllimgbase, "Invalid EP" 
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+sub tmp1, 600
+
+//004E4F0E   64:FF30          PUSH DWORD PTR FS:[EAX]
+//004E4F11   64:8920          MOV DWORD PTR FS:[EAX],ESP
+//004E4F14   A1 8C875400      MOV EAX,DWORD PTR DS:[54878C]
+
+find tmp1, #64FF30648920A1# 
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+mov tmp2, [tmp1+7]
+mov vm@OEPdatatable, [tmp2]
+cmp vm@OEPdatatable, 0
+je error
+log vm@OEPdatatable
+find tmp1, #434F0F85#
+mov tmp5, $RESULT
+cmp tmp5, 0
+je error
+add tmp5, 8
+
+//004E4F94   A1 8C875400      MOV EAX,DWORD PTR DS:[54878C]
+//004E4F99   8B4430 10        MOV EAX,DWORD PTR DS:[EAX+ESI+10]
+//004E4F9D   8945 DC          MOV DWORD PTR SS:[EBP-24],EAX
+
+//009B4EC8   A1 880D9F00      MOV EAX,DWORD PTR DS:[9F0D88]
+//009B4ECD   8B44F0 10        MOV EAX,DWORD PTR DS:[EAX+ESI*8+10]
+//009B4ED1   8945 DC          MOV DWORD PTR SS:[EBP-24],EAX
+find tmp1, #A1????????8B44?0108945DC#
+mov tmp2, $RESULT
+cmp tmp2, 0
+je error
+mov tmp3, 0
+mov tmp3, [tmp2+7], 1
+cmp tmp3, 0F0
+jne lab36
+mov v160, 1
+
+lab36:
+alloc 10000
+mov stfreeloc, $RESULT
+log stfreeloc
+alloc 2000
+mov tableA, $RESULT
+log tableA
+
+//01099F24   81FA E1000000    CMP EDX,0E1
+//01099F2A   0F87 6D110000    JA notepad_.0109B09D
+//01099F30   FF2495 379F0901  JMP DWORD PTR DS:[EDX*4+1099F37]
+
+find dllimgbase, #81FAE10000000F87????????FF2495#
+mov patch1, $RESULT
+add patch1, 6
+mov ori1, [patch1+2]
+GCI patch1, DESTINATION
+mov patch2, $RESULT
+log patch2
+mov ori2, [patch2]
+mov ori3, [patch2+4]
+eval "jmp 0{stfreeloc}" 
+asm patch1, $RESULT
+mov [patch1+5], #90#
+lm stfreeloc, 10000, "D:\Enigmavm.bin"
+mov tmp1, stfreeloc
+eval "ja 0{patch2}"
+asm tmp1, $RESULT
+mov tmp2, tmp1
+add tmp2, 07f30         //jmp flag loc
+add tmp1, 2EB   //2eb
+mov [tmp1], tmp2
+add tmp1, 5    //2f0
+mov tmp2, patch1
+add tmp2, 6
+eval "jmp 0{tmp2}"
+asm tmp1, $RESULT
+mov tmp1, stfreeloc
+add tmp1, 07f00         //stfreeloc+7f00
+mov [tmp1], ori2
+mov [tmp1+4], ori3
+eval "jmp 0{tmp1}"
+asm patch2, $RESULT
+bphws tmp5, "x"
+run
+BPHWCALL
+mov [patch1], #0F87#
+mov [patch1+2], ori1
+mov [patch2], ori2
+mov [patch2+4], ori3
+mov OEPscaddr, [ebp-0C]
+mov tmp2, [ebp-28]
+cmp tmp2, 0
+je error
+log tmp2, "Address of linetable @ OEP: "
+mov tmp3, [vm@OEPdatatable-4]
+log tmp3, "Command count: "
+mov tmp1, tmp3
+shl tmp1, 2
+//log tmp1
+mov [tableA], [tmp2], tmp1
+mov bkp1, OEPscaddr
+bp bkp1
+call godest
+cob
+coe
+bc bkp1
+bc crcfunc
+mov tmp1, [vm@OEPdatatable-4]
+mov tmp2, tableA
+shl tmp1, 2
+add tmp2, tmp1
+sub tmp2, 4        //last addr not included
+mov tmp3, [tmp2]   //tmp3 2nd last addr
+//log tmp3
+opcode tmp3
+mov tmp2, $RESULT_2
+mov tmp4, tmp2
+add tmp4, tmp3     //last cmd addr
+GCI tmp4, DESTINATION
+mov tmp5, $RESULT
+mov fakeOEP, tmp5
+log fakeOEP
+
+
+lm freeloc, 800, "D:\Enigmapatch2.bin"
+mov tmp1, freeloc
+mov tmp2, tmp1
+add tmp2, 1E00
+add tmp1, 2   //2
+mov [tmp1], tmp2
+add tmp1, 7  //09
+mov [tmp1], vm@OEPdatatable
+add tmp1, 7  //10
+mov [tmp1], tableA
+add tmp1, 7  //17
+mov [tmp1], imgbase
+add tmp1, 7  //1E
+mov [tmp1], fakeOEP
+add tmp1, 7  //25
+mov [tmp1], OEPscaddr
+add tmp1, 7  //2C
+mov tmp2, freeloc
+add tmp2, 1000
+mov [tmp1], tmp2
+add tmp1, 159  //185
+GMEMI fakeOEP, MEMORYSIZE
+mov tmp2, $RESULT
+mov [tmp1], tmp2
+add tmp1, 5    //18A
+GMEMI fakeOEP, MEMORYBASE
+mov tmp2, $RESULT
+mov [tmp1], tmp2
+add tmp1, 4   //18E
+eval "call VirtualProtect"
+asm tmp1, $RESULT
+cmp v160, 0
+je lab37
+mov tmp1, freeloc
+add tmp1, 0AE    //AE
+mov [tmp1], #18#
+add tmp1, 12D    //1DB
+mov [tmp1], #18#
+add tmp1, 1F5    //3D0
+mov [tmp1], #18#
+add tmp1, 8A    //45A
+mov [tmp1], #18#
+add tmp1, 168   //5C2
+mov [tmp1], #18#
+add tmp1, 60    //622
+mov [tmp1], #18#
+add tmp1, 70    //692
+mov [tmp1], #18#
+
+lab37:
+mov tmp7, eip
+mov eip, freeloc
+mov tmp1, freeloc
+add tmp1, 21B    //end point
+mov tmp2, freeloc
+add tmp2, 0230   //error point
+bp tmp1
+bp tmp2
+eob lab38
+eoe lab38
+run
+
+lab38:
+cmp eip, tmp1
+je lab39
+cmp eip, tmp2
+je error
+msg "What!"
+pause
+jmp end
+
+lab39:
+bc tmp1
+bc tmp2
+mov OEP, [freeloc+1E28]
+mov eip, OEP
+fill freeloc, 2000, 00
+
+lab57:
+cob
+coe
+mov tmp1, freeloc
+mov [tmp1], #609CBD0003D100BF00B05A00B9FC3F00008B0783F800752883E90483C70483F90077EE9090909D619000000000000000#
+add tmp1, 30
+mov [tmp1], #0000000000000000000000000000009090608BC78BDFBF00104000B9FC6F2D00F2AE83F90074493947FF75F466817FFD#
+add tmp1, 30    //60
+mov [tmp1], #FF15740866817FFDFF2575E4837D04007503894504894508C7450C000000008B003D00104000720E3D00806D007707C7#
+add tmp1, 30    //90
+mov [tmp1], #45000100000061E97CFFFFFF00000000837D040074138B1881FB000000107709837D0C08741AFF450C61E959FFFFFF00#
+add tmp1, 30    //C0
+mov [tmp1], #0000000000000000000000000000009061E94DFFFFFF00000000000000000000#
+mov tmp1, freeloc
+mov tmp2, tmp1
+add tmp1, 3    //3
+add tmp2, 300   //freeloc+300
+mov [tmp1], tmp2
+add tmp1, 5    //8
+mov [tmp1], iatsecbase
+add tmp1, 05   //0D
+gmemi iatsecbase,MEMORYSIZE
+mov tmp2, $RESULT
+sub tmp2, 4
+mov [tmp1], tmp2
+add tmp1, 3A   //47
+mov [tmp1], 1stsecbase
+add tmp1, 5    //4C
+mov tmp2, sizeofimg
+sub tmp2, 1004
+mov [tmp1], tmp2
+add tmp1, 36   //82
+mov [tmp1], 1stsecbase
+add tmp1, 7    //89
+mov tmp2, sizeofimg
+add tmp2, imgbase
+mov [tmp1], tmp2
+mov tmp6, eip
+mov eip, freeloc
+mov tmp4, freeloc
+add tmp4, 23    //endpoint
+bp tmp4
+run
+cmp eip, tmp4
+jne error
+bc tmp4
+mov tmp1, freeloc
+add tmp1, 300
+mov iatcrypted, [tmp1]
+mov iat_start, [tmp1+4]
+mov iat_end, [tmp1+8]
+sti
+sti
+sti
+sti
+sti
+mov eip, tmp6
+fill freeloc, 400, 00
+mov tmp1, iat_end
+mov tmp4, 2
+
+lab58:
+cmp tmp4, 0
+je lab60
+mov tmp2, [tmp1]
+cmp tmp2, 0
+je lab59
+gn tmp2
+mov tmp3, $RESULT_2
+cmp tmp3, 0
+je lab60
+mov iat_end, tmp1
+add tmp1, 4
+mov tmp4, 2
+jmp lab58
+
+lab59:
+add tmp1, 4
+sub tmp4, 1
+jmp lab58
+
+lab60:
+
+//0092C4A0   60               PUSHAD
+//0092C4A1   8B4424 20        MOV EAX,DWORD PTR SS:[ESP+20]
+//0092C4A5   50               PUSH EAX
+//0092C4A6   E8 09000000      CALL Enigma.0092C4B4
+//0092C4AB   894424 20        MOV DWORD PTR SS:[ESP+20],EAX
+//0092C4AF   61               POPAD
+//0092C4B0   C3               RETN
+
+find dllimgbase, #608B44242050E8????????8944242061C3#
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+add tmp1, 6
+mov tmp5, tmp1
+GCI tmp1, DESTINATION
+mov tmp6, $RESULT
+//0092C4C8   B9 04000000      MOV ECX,4
+//0092C4CD   E8 7650FAFF      CALL Enigma.008D1548
+//0092C4D2   A1 7CC79500      MOV EAX,DWORD PTR DS:[95C77C]
+//0092C4D7   E8 F479F9FF      CALL Enigma.008C3ED0
+find tmp6, #B904000000E8????????A1????????E8#
+mov tmp3, $RESULT
+cmp tmp3, 0
+je error
+add tmp3, 0B
+mov tmp4, [tmp3]
+log tmp4
+mov vmdatatable, [tmp4]
+log vmdatatable
+mov tmp1, [vmdatatable-4]
+cmp tmp1, 0
+je lab70
+cmp stfreeloc, 0
+jnz lab61
+alloc 10000
+mov stfreeloc, $RESULT
+log stfreeloc
+
+lab61:
+cmp OEPscaddr, 0
+jnz lab62
+//01099F24   81FA E1000000    CMP EDX,0E1
+//01099F2A   0F87 6D110000    JA notepad_.0109B09D
+//01099F30   FF2495 379F0901  JMP DWORD PTR DS:[EDX*4+1099F37]
+find dllimgbase, #81FAE10000000F87????????FF2495#
+mov patch1, $RESULT
+cmp patch1, 0
+je error
+add patch1, 6
+lm stfreeloc, 10000, "D:\Enigmavm.bin"
+
+lab62:
+fill freeloc, 1000, 00
+mov tmp1, freeloc
+mov [tmp1], #60C70538FFAB0100000000BF00104000B900802800B868000000F2AE83F9000F844B000000807F04E975EF8B5F0503DF#
+add tmp1, 30
+mov [tmp1], #83C30981FBA0C4920075DFC70530FFAB0100000000C70534FFAB0100000000E84C000000608B0750E857C440FF909090#
+add tmp1, 30   //60
+mov [tmp1], #830538FFAB01016183F90075AD909090619090909090#
+mov tmp1, freeloc
+add tmp1, 3    // 3
+mov tmp2, stfreeloc
+add tmp2, 07f38   //VM block index
+mov [tmp1], tmp2
+add tmp1, 9    //0C
+mov [tmp1], 1stsecbase
+add tmp1, 5    //11
+mov [tmp1], 1stsecsize
+add tmp1, 24   //35
+mov tmp2, tmp5
+sub tmp2, 6
+mov [tmp1], tmp2
+add tmp1, 08   //3D
+mov tmp2, stfreeloc
+add tmp2, 07f30   //jmp flag loc
+mov [tmp1], tmp2
+add tmp1, 0A   //47
+add tmp2, 4       //length of last cmd
+mov [tmp1], tmp2
+add tmp1, 11   //58
+eval "call 0{tmp6}"
+asm tmp1, $RESULT
+add tmp1, 0A   //62
+mov tmp2, stfreeloc
+add tmp2, 07f38   //VM block index
+mov [tmp1], tmp2
+GCI patch1, DESTINATION
+mov patch2, $RESULT
+log patch2
+eval "jmp 0{stfreeloc}" 
+asm patch1, $RESULT
+mov [patch1+5], #90#
+mov tmp1, stfreeloc
+eval "ja 0{patch2}"
+asm tmp1, $RESULT
+mov tmp2, tmp1
+add tmp2, 07f30     //jmp flag loc
+add tmp1, 2EB   //2eb
+mov [tmp1], tmp2
+add tmp1, 5    //2F0
+mov tmp2, patch1
+add tmp2, 6
+eval "jmp 0{tmp2}"
+asm tmp1, $RESULT
+mov tmp1, stfreeloc
+add tmp1, 07f00
+mov [tmp1], [patch2], 4
+add tmp1, 4            //7f04
+mov [tmp1], #83FE017506#
+add tmp1, 5            //7f09
+mov tmp2, stfreeloc
+add tmp2, 7f34         //length of last cmd
+eval "mov [0{tmp2}], eax"
+asm tmp1, $RESULT
+add tmp1, 6            //7f0F
+mov [tmp1], #C20C00#
+sub tmp1, 0F
+eval "jmp 0{tmp1}"
+asm patch2, $RESULT
+
+find dllimgbase, "Invalid VM instruction"
+mov tmp1, $RESULT
+cmp tmp1, 0
+je error
+mov tmp2, tmp1
+sub tmp1, 500
+//0092BFC1   833C38 00        CMP DWORD PTR DS:[EAX+EDI],0
+//0092BFC5   0F84 AC000000    JE Enigma.0092C077
+//0092BFCB   8B45 D8          MOV EAX,DWORD PTR SS:[EBP-28]
+//0092BFCE   8B55 DC          MOV EDX,DWORD PTR SS:[EBP-24]
+find tmp1, #0F84????????8B45D88B55DC#
+mov patch3, $RESULT
+cmp patch3, 0
+je error
+add patch3, 6
+mov tmp1, freeloc
+add tmp1, 80
+eval "jmp 0{tmp1}"
+asm patch3, $RESULT
+mov [patch3+5], #90#
+mov [tmp1], #8B55DCA100025201891083C004A3000252018B45D8E9B7BE40FF0000000000006033C0B900200000BF00009E01893D00#
+add tmp1, 30    //B0
+mov [tmp1], #0D5401F2AA61C3000000000000000000#
+mov tmp1, freeloc
+add tmp1, 84
+mov tmp4, freeloc
+add tmp4, 0D00
+mov [tmp1], tmp4
+add tmp1, 0A    //8E
+mov [tmp1], tmp4
+add tmp1, 7     //95
+mov tmp2, patch3
+add tmp2, 6 
+eval "jmp 0{tmp2}"
+asm tmp1, $RESULT
+add tmp1, 14   //A9
+mov [tmp1], tableA
+add tmp1, 6    //AF
+mov [tmp1], tmp4
+mov [freeloc+0D00], tableA
+
+//copy code splicing
+find tmp6, #5?6800100000#, 200
+mov patch4, $RESULT
+cmp patch4, 0
+je error
+add patch4, 1
+mov tmp1, freeloc
+add tmp1, 100
+eval "jmp 0{tmp1}"
+asm patch4, $RESULT
+mov [tmp1], #833D30FFAB01000F85F300000060BD0000AC018B7C24284F8B75008BC68B4D0483F90074132BCEF2A48038E87505E81D#
+add tmp1, 30   //130
+mov [tmp1], #00000083C504EBE08B0D34FFAB01F2A4616800100000E939C240FF00000000908BD88BD73BDA770A2BD383EA052957FC#
+add tmp1, 30   //160
+mov [tmp1], #EB082BDA83C305015FFCC30000000000#
+mov tmp2, stfreeloc
+add tmp2, 07f30   //jmp flag loc
+mov tmp1, freeloc
+add tmp1, 102     //102
+mov [tmp1], tmp2
+add tmp1, 0D      //10F
+mov [tmp1], tableA
+add tmp1, 2B      //13A
+add tmp2, 4       //length of last cmd
+mov [tmp1], tmp2
+add tmp1, C      //146
+mov tmp2, patch4
+add tmp2, 5
+eval "jmp 0{tmp2}"
+asm tmp1, $RESULT
+
+mov tmp1, freeloc
+add tmp1, 200
+lm tmp1, 800, "D:\Enigmapatch2.bin"
+mov tmp1, freeloc
+mov tmp2, tmp1
+add tmp1, 200
+add tmp2, 1E00
+add tmp1, 2   //202
+mov [tmp1], tmp2
+add tmp1, 4  //206
+mov [tmp1], #90909090909090#
+add tmp1, A  //210
+mov [tmp1], tableA
+add tmp1, 7  //217
+mov [tmp1], imgbase
+add tmp1, 4  //21b
+mov [tmp1], #90909090909090E8890700009090#
+add tmp1, 11  //22C
+mov tmp2, freeloc
+add tmp2, 1000
+mov [tmp1], tmp2
+mov tmp1, freeloc
+add tmp1, 200
+add tmp1, 7B0   //9B0
+mov [tmp1], #A1387FAB01C1E0048D98F0796E018B430C8945048B43040345108945148B4308894518C3000000000000000000000000#
+mov tmp2, stfreeloc
+add tmp2, 07f38   //index
+add tmp1, 1       //9B1
+mov [tmp1], tmp2  
+add tmp1, 9       //9BA
+mov [tmp1], vmdatatable
+mov tmp1, freeloc
+add tmp1, 200
+add tmp1, 161  //361
+mov [tmp1], #9B050000#
+add tmp1, C  //36d
+mov [tmp1], #8BC890909090#
+add tmp1, 0E   //37B
+fill tmp1, 19, 90
+add tmp1, 3c   //3B7
+mov [tmp1], #14#
+add tmp1, 64   //41B
+mov [tmp1], #E921FDFFFF#
+add tmp1, 25   //440
+mov [tmp1], #909090909090#
+add tmp1, 60   //4A0
+mov [tmp1], #909090909090#
+add tmp1, 60   //500
+mov [tmp1], #909090909090#
+add tmp1, 60   //560
+mov [tmp1], #9090909090908B5004#
+mov tmp1, freeloc
+add tmp1, 75E  //75E
+fill tmp1, 11, 90
+mov tmp1, freeloc
+add tmp1, 900
+mov [tmp1], #8B0D347FAB01c3#
+add tmp1, 2   //902
+mov tmp2, stfreeloc
+add tmp2, 07f34   //length of last cmd
+mov [tmp1], tmp2
+mov tmp1, 0
+mov tmp1, [patch3-8], 1
+cmp tmp1, 0F8
+jne lab63
+//v1.60
+mov tmp1, freeloc
+add tmp1, 2AE    //2AE
+mov [tmp1], #18#
+add tmp1, 12D    //3DB
+mov [tmp1], #18#
+add tmp1, 1F5    //5D0
+mov [tmp1], #18#
+add tmp1, 8A    //65A
+mov [tmp1], #18#
+add tmp1, 168   //7C2
+mov [tmp1], #18#
+add tmp1, 60    //822
+mov [tmp1], #18#
+add tmp1, 70    //892
+mov [tmp1], #18#
+
+lab63:
+mov tmp7, eip
+mov eip, freeloc
+mov tmp1, freeloc
+mov tmp2, tmp1
+add tmp1, 71      //end point
+bp tmp1
+add tmp2, 430     //error point
+bp tmp2
+eob lab64
+eoe lab64
+run
+
+lab64:
+cmp eip, tmp1
+je lab65
+cmp eip, tmp2
+je error
+
+lab65:
+bc tmp1
+
+lab70:
+cob
+coe
+GPI PROCESSNAME
+mov tmp6, $RESULT
+mov tmp1, freeloc
+mov [tmp1], #609C546A4068001000006800004000E88A160577B80002400033D2668B50068BF081C600010000B9080000008BFE83C7#
+add tmp1, 30         //30
+mov [tmp1], #08F2A4664A6683FA00740583C620EBE783C618C70661737072C7460800200000C7460C00003D01C7461000200000C746#
+add tmp1, 30         //60
+mov [tmp1], #1400003D01C74624400000E066FF4006814050002000009D6190900000000000#
+mov tmp1, freeloc
+add tmp1, 0B
+mov [tmp1], imgbase
+add tmp1, 4     //0F
+asm tmp1, "call VirtualProtect"
+add tmp1, 6     //15
+mov [tmp1], signVA
+mov tmp1, freeloc
+add tmp1, 40
+mov [tmp1], #9D619090#
+add tmp1, 2     //42 -- end point
+bp tmp1
+mov tmp7, eip
+mov eip, freeloc
+eob lab71
+eoe lab71
+run
+
+lab71:
+cmp eip, tmp1
+je lab72
+jmp error
+
+lab72:
+bc tmp1
+mov eip, tmp7
+fill freeloc, 100, 00
+mov tmp1, signVA
+add tmp1, 3C             //signVA+3C -- FileAlignment
+mov [tmp1], 1000
+add tmp1, 18             //signVA+54 -- SizeOfHeaders
+mov [tmp1], 1000
+cmp isdll, 0
+je lab75
+msg "DLL"
+pause
+
+lab75:
+eval "de_{tmp6}.exe"
+mov tmp5, $RESULT
+dm imgbase, sizeofimg, tmp5      //dump file
+
+lab76:
+mov tmp1, iat_end
+sub tmp1, iat_start
+add tmp1, 4
+mov iatsize, tmp1
+log iat_start, "Address of IAT = "
+mov tmp1, iat_start
+sub tmp1, imgbase
+log tmp1, "RVA of IAT = "
+log iatsize, "Size of IAT = "
+mov eip, OEP
+//eval "OEP = {OEP}, IAT RVA = {tmp1}, IAT size = {iatsize}"
+eval "OEP = {OEP}, IAT RVA = {tmp1}, IAT 大小 = {iatsize}"
+msg $RESULT
+pause
+jmp end
+
+godest:
+bp crcfunc
+eob godest_1
+eoe godest_1
+run
+
+godest_1:
+cmp eip, crcfunc
+je godest_2
+cmp eip, bkp1
+je godest_3
+run
+
+godest_2:
+cob
+coe
+bc crcfunc
+bc bkp1
+mov tmp3, 0
+mov tmp3, [esp]
+bphws tmp3, "x"
+run
+bphwc tmp3
+bp crcfunc
+bp bkp1
+eob godest_1
+eoe godest_1
+run
+
+godest_3:
+bc crcfunc
+ret
+
+error:
+msg "Error!"
+pause
+jmp end
+
+odbgver:
+//msg "This script work with ODbgscript 1.64 or above"
+msg "本脚本须配合 ODbgscript 1.64 或以上的版本"
+pause
+jmp end
+
+end:
+ret 
